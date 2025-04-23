@@ -105,7 +105,6 @@ export default function usePlotPanelSettings(
           }),
         );
       } else if (payload.id === "add-series") {
-        console.log("add-series");
         saveConfig(
           produce<PIDPlotConfig>((draft: PIDPlotConfig) => {
             handleAddSeriesAction({ draft });
@@ -119,7 +118,6 @@ export default function usePlotPanelSettings(
         );
       }
       else if (payload.id === "add-pidseries") {
-        console.log("add-pidseries");
         saveConfig(
           produce<PIDPlotConfig>((draft: PIDPlotConfig) => {
             handleAddPIDSeriesAction({ draft });

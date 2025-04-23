@@ -24,17 +24,17 @@ import { useSelectedPanels } from "@lichtblick/suite-base/context/CurrentLayoutC
 import { useWorkspaceActions } from "@lichtblick/suite-base/context/Workspace/useWorkspaceActions";
 import { getLineColor } from "@lichtblick/suite-base/util/plotColors";
 
-import { PIDPlotPath, plotPathDisplayName } from "@lichtblick/suite-base/panels/Plot/utils/config";
+import { PIDLinePlotPath, plotPathDisplayName } from "@lichtblick/suite-base/panels/Plot/utils/config";
 
 type PlotLegendRowProps = Immutable<{
   hasMismatchedDataLength: boolean;
   index: number;
   onClickPath: () => void;
-  path: PIDPlotPath;
-  paths: PIDPlotPath[];
+  path: PIDLinePlotPath;
+  paths: PIDLinePlotPath[];
   value?: unknown;
   valueSource: "hover" | "current";
-  savePaths: (paths: PIDPlotPath[]) => void;
+  savePaths: (paths: PIDLinePlotPath[]) => void;
 }>;
 
 export const ROW_HEIGHT = 30;
@@ -147,16 +147,16 @@ function renderValue(value: unknown): string | number | undefined {
   }
 }
 
-export function PlotLegendRow({
-  hasMismatchedDataLength,
-  index,
-  onClickPath,
-  path,
-  paths,
-  savePaths,
-  value,
-  valueSource,
-}: PlotLegendRowProps): React.JSX.Element {
+export function PlotLineLegendRow({
+                                hasMismatchedDataLength,
+                                index,
+                                onClickPath,
+                                path,
+                                paths,
+                                savePaths,
+                                value,
+                                valueSource,
+                              }: PlotLegendRowProps): React.JSX.Element {
   const { openPanelSettings } = useWorkspaceActions();
   const { id: panelId } = usePanelContext();
   const { setSelectedPanelIds } = useSelectedPanels();
@@ -171,8 +171,6 @@ export function PlotLegendRow({
     // so whatever sidebar the user is already viewing says active.
     //
     // This prevents the click event from going up to the entire row and showing the sidebar.
-
-
     ev.stopPropagation();
 
     const newPaths = paths.slice();

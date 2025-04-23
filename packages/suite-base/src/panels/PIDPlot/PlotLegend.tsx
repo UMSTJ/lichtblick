@@ -20,12 +20,12 @@ import tinycolor from "tinycolor2";
 import { makeStyles } from "tss-react/mui";
 
 import { Immutable } from "@lichtblick/suite";
-import { DEFAULT_PIDPLOT_PATH } from "@lichtblick/suite-base/panels/Plot/constants";
+// import { DEFAULT_PIDLINEPLOT_PATH, DEFAULT_PIDPLOT_PATH } from "@lichtblick/suite-base/panels/Plot/constants";
 import { SaveConfig } from "@lichtblick/suite-base/types/panels";
 
 import type { PIDPlotCoordinator } from "./PIDPlotCoordinator";
 import { PlotLegendRow, ROW_HEIGHT } from "./PlotLegendRow";
-import {  PIDPlotConfig, PIDPlotPath } from "@lichtblick/suite-base/panels/Plot/utils/config";
+import { PIDPlotConfig, PIDPlotPath } from "@lichtblick/suite-base/panels/Plot/utils/config";
 
 const minLegendWidth = 25;
 const maxLegendWidth = 800;
@@ -152,6 +152,7 @@ function PlotLegendComponent(props: Props): React.JSX.Element {
     legendDisplay,
     onClickPath,
     paths,
+
     saveConfig,
     showLegend,
     sidebarDimension,
@@ -276,7 +277,7 @@ function PlotLegendComponent(props: Props): React.JSX.Element {
             width: legendDisplay === "left" ? Math.round(sidebarDimension) : undefined,
           }}
         >
-          {(paths.length === 0 ? [DEFAULT_PIDPLOT_PATH] : paths).map((path, index) => (
+          {(paths.length === 0 ? [] : paths).map((path, index) => (
             <PlotLegendRow
               hasMismatchedDataLength={pathsWithMismatchedDataLengths.includes(path.value)}
               index={index}
@@ -291,6 +292,21 @@ function PlotLegendComponent(props: Props): React.JSX.Element {
               valueSource={valueSource}
             />
           ))}
+          {/*{(pidline.length === 0 ? [] : pidline).map((path, index) => (*/}
+          {/*  <PlotLineLegendRow*/}
+          {/*    hasMismatchedDataLength={pathsWithMismatchedDataLengths.includes(path.value)}*/}
+          {/*    index={index}*/}
+          {/*    key={index}*/}
+          {/*    onClickPath={() => {*/}
+          {/*      onClickPath(index);*/}
+          {/*    }}*/}
+          {/*    path={path}*/}
+          {/*    paths={pidline}*/}
+          {/*    savePaths={savePaths}*/}
+          {/*    value={valuesBySeriesIndex?.[index]}*/}
+          {/*    valueSource={valueSource}*/}
+          {/*  />*/}
+          {/*))}*/}
         </div>
       )}
       {legendDisplay !== "floating" && (

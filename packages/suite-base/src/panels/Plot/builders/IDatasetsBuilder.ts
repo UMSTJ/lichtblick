@@ -94,6 +94,7 @@ export type HandlePlayerStateResult = {
  * to happen on a worker.
  */
 interface IDatasetsBuilder {
+
   handlePlayerState(state: Immutable<PlayerState>): HandlePlayerStateResult | undefined;
 
   /**

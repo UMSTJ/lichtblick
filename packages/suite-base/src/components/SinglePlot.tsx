@@ -351,6 +351,7 @@ const SinglePlot = ({ config, saveConfig,configPath,onSelect}: SinglePlotProps) 
               }),
             );
           } else if (payload.id === "add-series") {
+
             saveConfig(
               produce<PlotConfig>((draft: PlotConfig) => {
                 handleAddSeriesAction({ draft });

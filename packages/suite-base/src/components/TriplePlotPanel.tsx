@@ -3,8 +3,11 @@ import SinglePlot from "./SinglePlot";
 import PanelToolbar from "@lichtblick/suite-base/components/PanelToolbar";
 //@ts-ignore
 const TriplePlotPanel = ({ config , saveConfig }) => {
-  const updatePlotConfig = (plotKey: string) => (updater: (prevConfig: any) => any) => {
+    const updatePlotConfig = (plotKey: string) => (updater: (prevConfig: any) => any) => {
     saveConfig((prevConfig: { [x: string]: any }) => {
+      console.log("Prev Config:", prevConfig);
+      console.log("Updater:", updater);
+      console.log("Updated Config:", updater(prevConfig[plotKey]));
       // 只更新指定的 plot 配置，避免影响其他 plot
       return { ...prevConfig, [plotKey]: updater(prevConfig[plotKey]) };
     });

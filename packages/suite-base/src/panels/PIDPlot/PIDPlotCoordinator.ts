@@ -23,7 +23,7 @@ import { Bounds } from "@lichtblick/suite-base/types/Bounds";
 import delay from "@lichtblick/suite-base/util/delay";
 import { getContrastColor, getLineColor } from "@lichtblick/suite-base/util/plotColors";
 
-import { OffscreenCanvasRenderer } from "@lichtblick/suite-base/panels/Plot/OffscreenCanvasRenderer";
+import {  PIDOffscreenCanvasRenderer } from "./PIDOffscreenCanvasRenderer";
 import {
   CsvDataset,
   IDatasetsBuilder,
@@ -62,7 +62,7 @@ const replaceUndefinedWithEmptyDataset = (dataset: Dataset | undefined) => datas
  * renderer.
  */
 export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> {
-  private renderer: OffscreenCanvasRenderer;
+  private renderer: PIDOffscreenCanvasRenderer;
   private datasetsBuilder: IDatasetsBuilder;
   private shouldSync: boolean = false;
   private configBounds: ConfigBounds = { x: {}, y: {} };
@@ -91,11 +91,11 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
   private queueBlocks = debouncePromise(this.dispatchBlocks.bind(this));
   private destroyed = false;
   private latestBlocks?: Immutable<(MessageBlock | undefined)[]>;
-  // @ts-ignore
-  private pidseries: Immutable<SeriesItem>[];
-
-  public constructor(renderer: OffscreenCanvasRenderer, builder: IDatasetsBuilder) {
+  // 1. 在类属性区域添加网格线控制标志
+  private showGrid: boolean = false; // 默认关闭网格线
+  public constructor(renderer: PIDOffscreenCanvasRenderer, builder: IDatasetsBuilder,) {
     super();
+
 
     this.renderer = renderer;
     this.datasetsBuilder = builder;
@@ -188,6 +188,9 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
     colorScheme: "light" | "dark",
     globalVariables: GlobalVariables,
   ): void {
+    
+    // 新增网格线控制
+    this.showGrid = false; // 强制关闭所有网格线
     if (this.isDestroyed()) {
       return;
     }
@@ -229,6 +232,7 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
     this.updateAction.showXAxisLabels = config.showXAxisLabels;
     this.updateAction.showYAxisLabels = config.showYAxisLabels;
     this.updateAction.referenceLines = referenceLines;
+    this.updateAction.grid = { x:false,y:false};
 
     if (configYBoundsChanged) {
       this.updateAction.yBounds = this.configBounds.y;
@@ -269,14 +273,14 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
 
       return seriesItem;
     });
-    console.log("this.series", this.series);
+
 
     this.currentValuesByConfigIndex = newCurrentValuesByConfigIndex;
     this.emit("currentValuesChanged", this.currentValuesByConfigIndex);
 
     this.queueDispatchRender();
     this.datasetsBuilder.setSeries(this.series);
-    console.log("this.datasetsBuilder", this.datasetsBuilder);
+
     this.queueDispatchDownsample();
   }
 
@@ -398,6 +402,11 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
       return;
     }
     this.updateAction.xBounds = this.getXBounds();
+    // 新增网格线配置
+    this.updateAction.grid = {
+      x: this.showGrid,
+      y: this.showGrid
+    };
 
     if (this.shouldResetY) {
       const yMin = this.interactionBounds?.y.min ?? this.configBounds.y.min;
@@ -411,6 +420,7 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
     const action = this.updateAction;
     this.updateAction = {
       type: "update",
+
     };
 
     const bounds = await this.renderer.update(action);

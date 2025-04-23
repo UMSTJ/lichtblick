@@ -155,6 +155,7 @@ const Plot = (props: PlotProps): React.JSX.Element => {
     if (!renderer || !canvasDiv) {
       return;
     }
+    console.log("here4")
 
     const contentRect = canvasDiv.getBoundingClientRect();
 

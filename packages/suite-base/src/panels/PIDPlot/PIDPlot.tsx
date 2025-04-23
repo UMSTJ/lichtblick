@@ -33,7 +33,7 @@ import { PlotLegend } from "./PlotLegend";
 import useGlobalSync from "./useGlobalSync";
 import usePIDPlotDataHandling from "./usePIDPlotDataHandling";
 import usePlotPanelSettings from "@lichtblick/suite-base/panels/PIDPlot/usePIDPlotPanelSettings";
-import useRenderer from "@lichtblick/suite-base/panels/Plot/hooks/useRenderer";
+import useRenderer from "./useRenderer";
 import usePIDSubscriptions from "./usePIDSubscriptions";
 import { PIDPlotConfig } from "@lichtblick/suite-base/panels/Plot/utils/config";
 
@@ -42,6 +42,7 @@ import { PIDPlotConfig } from "@lichtblick/suite-base/panels/Plot/utils/config";
 const PIDPlot = (props: PIDPlotProps): React.JSX.Element => {
   const { saveConfig, config } = props;
   const {
+    pidline:pidline,
     paths: series,
     showLegend,
     xAxisVal: xAxisMode,
@@ -170,8 +171,13 @@ const PIDPlot = (props: PIDPlotProps): React.JSX.Element => {
     }
 
     const contentRect = canvasDiv.getBoundingClientRect();
-
-    const plotCoordinator = new PIDPlotCoordinator(renderer, datasetsBuilder);
+    console.log("datasetsBuilder",datasetsBuilder)
+    // @ts-ignore
+    const plotCoordinator = new PIDPlotCoordinator(renderer, datasetsBuilder,{ // 新增的配置参数
+      grid: {
+        x: { enabled: false }, // 关闭x轴网格线
+        y: { enabled: false }, // 关闭y轴网格线
+      }});
     setCoordinator(plotCoordinator);
 
     plotCoordinator.setSize({
@@ -190,7 +196,7 @@ const PIDPlot = (props: PIDPlotProps): React.JSX.Element => {
       }
     });
     resizeObserver.observe(canvasDiv);
-    console.log(plotCoordinator)
+    console.log("plotCoordinator",plotCoordinator)
     return () => {
       resizeObserver.disconnect();
       plotCoordinator.destroy();
@@ -198,16 +204,17 @@ const PIDPlot = (props: PIDPlotProps): React.JSX.Element => {
   }, [canvasDiv, datasetsBuilder, renderer]);
 
   const numSeries = config.paths.length;
+  const numPidline = config.pidline.length;
   const tooltipContent = useMemo(() => {
     return activeTooltip ? (
       <TimeBasedChartTooltipContent
         content={activeTooltip.data}
-        multiDataset={numSeries > 1}
+        multiDataset={numSeries+numPidline > 1}
         colorsByConfigIndex={colorsByDatasetIndex}
         labelsByConfigIndex={labelsByDatasetIndex}
       />
     ) : undefined;
-  }, [activeTooltip, colorsByDatasetIndex, labelsByDatasetIndex, numSeries]);
+  }, [activeTooltip, colorsByDatasetIndex, labelsByDatasetIndex, numSeries, numPidline]);
 
   const hoveredValuesBySeriesIndex = useMemo(() => {
     if (!config.showPlotValuesInLegend || !activeTooltip?.data) {
@@ -218,7 +225,6 @@ const PIDPlot = (props: PIDPlotProps): React.JSX.Element => {
     for (const item of activeTooltip.data) {
       values[item.configIndex] ??= item.value;
     }
-
     return values;
   }, [activeTooltip, config.paths.length, config.showPlotValuesInLegend]);
 
@@ -244,7 +250,8 @@ const PIDPlot = (props: PIDPlotProps): React.JSX.Element => {
             coordinator={coordinator}
             legendDisplay={legendDisplay}
             onClickPath={onClickPath}
-            paths={series}
+            paths={[...series,...pidline]}
+
             saveConfig={saveConfig}
             showLegend={showLegend}
             sidebarDimension={sidebarDimension}

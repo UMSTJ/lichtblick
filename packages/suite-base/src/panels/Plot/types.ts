@@ -6,7 +6,9 @@ import { MutableRefObject } from "react";
 
 import { PanelContextMenuItem } from "@lichtblick/suite-base/components/PanelContextMenu";
 import { TimeBasedChartTooltipData } from "@lichtblick/suite-base/components/TimeBasedChart/TimeBasedChartTooltipContent";
-import { OffscreenCanvasRenderer } from "@lichtblick/suite-base/panels/Plot/OffscreenCanvasRenderer";
+import {
+  OffscreenCanvasRenderer
+} from "@lichtblick/suite-base/panels/Plot/OffscreenCanvasRenderer";
 import type { PlotCoordinator } from "@lichtblick/suite-base/panels/Plot/PlotCoordinator";
 import { CurrentCustomDatasetsBuilder } from "@lichtblick/suite-base/panels/Plot/builders/CurrentCustomDatasetsBuilder";
 import { CustomDatasetsBuilder } from "@lichtblick/suite-base/panels/Plot/builders/CustomDatasetsBuilder";
@@ -18,6 +20,7 @@ import { SaveConfig } from "@lichtblick/suite-base/types/panels";
 
 import { OriginalValue } from "./utils/datum";
 import { PIDPlotCoordinator } from "@lichtblick/suite-base/panels/PIDPlot/PIDPlotCoordinator";
+import { PIDOffscreenCanvasRenderer } from "@lichtblick/suite-base/panels/PIDPlot/PIDOffscreenCanvasRenderer";
 
 export type Scale = {
   min: number;
@@ -70,6 +73,7 @@ export type Size = { width: number; height: number };
 export type ReferenceLine = { color: string; value: number };
 
 export type UpdateAction = {
+  grid?: { x: boolean; y: boolean };
   type: "update";
   size?: { width: number; height: number };
   showXAxisLabels?: boolean;
@@ -197,7 +201,7 @@ export type UsePIDPlotInteractionHandlersProps = {
   config: PIDPlotConfig;
   coordinator: PIDPlotCoordinator | undefined;
   draggingRef: MutableRefObject<boolean>;
-  renderer: OffscreenCanvasRenderer | undefined;
+  renderer?: PIDOffscreenCanvasRenderer;
   setActiveTooltip: (data: TooltipStateSetter | undefined) => void;
   shouldSync: boolean;
   subscriberId: string;
