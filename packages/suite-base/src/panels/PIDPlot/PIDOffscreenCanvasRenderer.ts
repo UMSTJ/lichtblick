@@ -35,7 +35,7 @@ export class PIDOffscreenCanvasRenderer {
       // foxglove-depcheck-used: babel-plugin-transform-import-meta
       new URL("./ChartRenderer.worker", import.meta.url),
     );
-    console.log("worker", worker)
+    console.log("worker", worker);
     const { remote, dispose } = ComlinkWrap<Service<Comlink.RemoteObject<ChartRenderer>>>(worker);
 
     // Set the promise without await so init creates only one instance of renderer even if called
@@ -56,6 +56,9 @@ export class PIDOffscreenCanvasRenderer {
 
     registry.register(this, dispose);
   }
+  public getBaseGridLineColor(): string {
+    return this.#theme.palette.divider;
+  }
 
   public async update(action: Immutable<UpdateAction>): Promise<Bounds | undefined> {
     return await (await this.#remote).update(action);
@@ -65,7 +68,9 @@ export class PIDOffscreenCanvasRenderer {
     return await (await this.#remote).getElementsAtPixel(pixel);
   }
 
-  public async updateDatasets(datasets: Dataset[]): Promise<Scale | undefined> {
+  public async updateDatasets(
+    datasets: Dataset[],
+  ): Promise<Scale | undefined> {
     return await (await this.#remote).updateDatasets(datasets);
   }
 }

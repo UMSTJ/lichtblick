@@ -37,14 +37,17 @@ const usePanning = (
     });
 
     hammerManager.on("panmove", (event) => {
-      const boundingRect = event.target.getBoundingClientRect();
-      coordinator.addInteractionEvent({
-        type: "panmove",
-        cancelable: false,
-        deltaY: event.deltaY,
-        deltaX: event.deltaX,
-        boundingClientRect: boundingRect.toJSON(),
-      });
+      // 只有在水平方向移动时才会触发逻辑
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+        const boundingRect = event.target.getBoundingClientRect();
+        coordinator.addInteractionEvent({
+          type: "panmove",
+          cancelable: false,
+          deltaY: event.deltaY,
+          deltaX: event.deltaX,
+          boundingClientRect: boundingRect.toJSON(),
+        });
+      }
     });
 
     hammerManager.on("panend", (event) => {
@@ -57,8 +60,6 @@ const usePanning = (
         boundingClientRect: boundingRect.toJSON(),
       });
 
-      // We need to do this a little bit later so that the onClick handler still sees
-      // draggingRef.current===true and can skip the seek.
       setTimeout(() => {
         draggingRef.current = false;
       }, 0);

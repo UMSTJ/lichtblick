@@ -135,7 +135,7 @@ contextBridge.exposeInMainWorld("electron", {
     },
   },
 } as ElectronAPI);
-export function main(): void {
+export function mainPreload(): void {
   const log = Logger.getLogger(__filename);
 
   log.debug(`Start Preload`);

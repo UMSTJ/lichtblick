@@ -15,7 +15,7 @@ export interface FileOperation {
 type Callback = (result: FileOperation) => void;
 
 export class StorageManager {
-  private static _instance: StorageManager;
+  public static _instance: StorageManager;
   private readonly basePath: string;
   private readonly directories: string[];
 
@@ -219,7 +219,7 @@ export class StorageManager {
 }
 
 // 使用示例：
-/*
+// /*
 const storage = StorageManager.getInstance();
 
 // 保存文件
@@ -248,4 +248,4 @@ storage.listFiles("documents", (result) => {
     console.error("List failed:", result.error);
   }
 });
-*/
+// */

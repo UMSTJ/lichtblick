@@ -36,9 +36,19 @@ import usePlotPanelSettings from "@lichtblick/suite-base/panels/PIDPlot/usePIDPl
 import useRenderer from "./useRenderer";
 import usePIDSubscriptions from "./usePIDSubscriptions";
 import { PIDPlotConfig } from "@lichtblick/suite-base/panels/Plot/utils/config";
-
-
-
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip as chartTooltip, Legend } from 'chart.js';
+import  Annotation  from 'chartjs-plugin-annotation'; // 单独导入插件
+// 注册所有组件，包括注解插件
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  chartTooltip,
+  Legend,
+  Annotation // 注册注解插件
+);
 const PIDPlot = (props: PIDPlotProps): React.JSX.Element => {
   const { saveConfig, config } = props;
   const {
@@ -280,6 +290,7 @@ const PIDPlot = (props: PIDPlotProps): React.JSX.Element => {
               onClick={onClick}
               onDoubleClick={onResetView}
             />
+
             <VerticalBars
               coordinator={coordinator}
               hoverComponentId={subscriberId}

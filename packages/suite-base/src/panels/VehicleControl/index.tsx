@@ -616,7 +616,7 @@ const VehicleControlPanel: React.FC<Props> = ({ config, saveConfig }) => {
 
       // 读取文件，无论它是什么类型
       const result = await window.electron.fileRenderer.readFile("documents", fileName);
-
+      console.log("File read result:", result)
       if (!result.success || !result.data) {
         console.error("Failed to read file:", fileName);
         setMap({ map: demap, json: {} });
@@ -772,9 +772,9 @@ const VehicleControlPanel: React.FC<Props> = ({ config, saveConfig }) => {
     const loadMapFiles = async () => {
       try {
         const result = await window.electron.fileRenderer.listFiles("documents");
-        if (result.success && result.data) {
+        if (result.success && result.files) {
           // 只过滤 .json 文件
-          const jsonFiles = result.data.filter((file: string) => file.endsWith(".json"));
+          const jsonFiles = result.files.filter((file: string) => file.endsWith(".json"));
           setMapFiles(jsonFiles);
           setMapName(jsonFiles[0]);
         }

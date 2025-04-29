@@ -33,6 +33,7 @@ import {
 
 const log = Logger.getLogger(__filename);
 
+
 /**
  * Determine whether an item in argv is a file that we should try opening as a data source.
  *
@@ -283,10 +284,12 @@ export async function main(): Promise<void> {
       "style-src": "'self' 'unsafe-inline'",
       "connect-src": "'self' ws: wss: http: https: package: blob: data: file:",
       "font-src": "'self' data:",
-      // Include http in the CSP to allow loading images (i.e. map tiles) from http endpoints like localhost
-      "img-src": "'self' data: https: package: x-foxglove-converted-tiff: http:",
+      // 修正点 1：blob: 単独声明
+      // 修正点 2：移除 http:（除非明确需要）
+      "img-src": "'self' data: https: package: x-foxglove-converted-tiff: blob:",
       "media-src": "'self' data: https: http: blob: file:",
     };
+
     const cspHeader = Object.entries(contentSecurityPolicy)
       .map(([key, val]) => `${key} ${val}`)
       .join("; ");
@@ -334,4 +337,86 @@ export async function main(): Promise<void> {
       app.quit();
     }
   });
+
+  ipcMain.on("file-save", (event, { directory, filename, data }) => {
+    const filePath = path.join(directory, filename);
+    // 1. 先确保目录存在
+    fs.mkdir(directory, { recursive: true }, (err) => {
+      if (err) {
+        err.message  = `Failed to create directory: ${filePath}`;
+        event.reply("file-save-response", {
+          success: false,
+          error: `Failed to create directory: ${err.message}`
+        });
+        return;
+      }
+    });
+    // 2. 目录存在后写入文件
+    fs.writeFile(filePath, data, (err) => {
+      if (err) {
+        err.message  = `Failed to write file: ${filePath}`;
+        event.reply("file-save-response", {
+          success: false,
+          error: `Failed to write file: ${err.message}`
+        });
+      } else {
+        event.reply("file-save-response", { success: true });
+      }
+    });
+  });
+  ipcMain.on("file-read", (event, { directory, filename }) => {
+    const filePath = path.join(directory, filename);
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        event.reply("file-read-response", { success: false, error: err.message });
+      } else {
+        event.reply("file-read-response", { success: true, data });
+      }
+    });
+  });
+
+  ipcMain.on("file-list", (event, { directory }) => {
+
+    fs.readdir(directory, (err, files) => {
+      if (err) {
+        event.reply("file-list-response", { success: false, error: err.message });
+      } else {
+        event.reply("file-list-response", { success: true, files });
+      }
+    });
+  });
+
+  ipcMain.on("file-delete", (event, { directory, filename }) => {
+    const filePath = path.join(directory, filename);
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        event.reply("file-delete-response", { success: false, error: err.message });
+      } else {
+        event.reply("file-delete-response", { success: true });
+      }
+    });
+  });
+
+  ipcMain.on("file-exists", (event, { directory, filename }) => {
+    const filePath = path.join(directory, filename);
+    fs.access(filePath, fs.constants.F_OK, (err) => {
+      if (err) {
+        event.reply("file-exists-response", { success: false });
+      } else {
+        event.reply("file-exists-response", { success: true });
+      }
+    });
+  });
+
+  ipcMain.on("file-stats", (event, { directory, filename }) => {
+    const filePath = path.join(directory, filename);
+    fs.stat(filePath, (err, stats) => {
+      if (err) {
+        event.reply("file-stats-response", { success: false, error: err.message });
+      } else {
+        event.reply("file-stats-response", { success: true, stats });
+      }
+    });
+  });
+
 }

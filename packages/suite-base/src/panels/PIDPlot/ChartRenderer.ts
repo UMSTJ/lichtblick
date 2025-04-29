@@ -6,10 +6,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { Chart } from "chart.js";
-import { AnnotationOptions, } from "chartjs-plugin-annotation";
-import EventEmitter from "eventemitter3";
-import AnnotationPlugin from 'chartjs-plugin-annotation';
 
+import EventEmitter from "eventemitter3";
 import { Zoom as ZoomPlugin } from "@lichtblick/chartjs-plugin-zoom";
 import { unwrap } from "@lichtblick/den/monads";
 import { Immutable } from "@lichtblick/suite";
@@ -17,7 +15,6 @@ import {
   addEventListener,
   removeEventListener,
 } from "@lichtblick/suite-base/components/Chart/worker/eventHandler";
-import { DEFAULT_ANNOTATION } from "@lichtblick/suite-base/panels/Plot/constants";
 import { getChartOptions } from "./getChartOptions"
 import { Bounds } from "@lichtblick/suite-base/types/Bounds";
 import { maybeCast } from "@lichtblick/suite-base/util/maybeCast";
@@ -49,14 +46,16 @@ export class ChartRenderer {
         removeEventListener: removeEventListener(this.#fakeDocumentEvents),
       },
     };
-    Chart.register(AnnotationPlugin);
+    console.log("iamhere")
+    console.log(Chart.registry.plugins)
+
     const chartOptions = getChartOptions({
       devicePixelRatio: args.devicePixelRatio,
       gridColor: args.gridColor,
       tickColor: args.tickColor,
     });
 
-    console.log("Effective Annotations:", chartOptions.plugins?.annotation);
+    console.log("Effective Annotations:", chartOptions);
     const origZoomStart = ZoomPlugin.start?.bind(ZoomPlugin);
     ZoomPlugin.start = (chartInstance: MutableContext<unknown>, startArgs, pluginOptions) => {
       // swap the canvas with our fake dom node canvas to support zoom plugin addEventListener
@@ -82,12 +81,18 @@ export class ChartRenderer {
       options: chartOptions,
       plugins: [ZoomPlugin],
     });
+    console.log("chartOptions", chartOptions)
 
     ZoomPlugin.start = origZoomStart;
     this.#chartInstance = chartInstance;
+    // @ts-ignore
+    console.log("chartInstance", chartInstance);
   }
 
   public update(action: Immutable<UpdateAction>): Bounds | undefined {
+    console.log("UpdateAction", action)
+
+
     if (action.grid) {
       const xGrid = this.#chartInstance.options.scales?.x?.grid;
       const yGrid = this.#chartInstance.options.scales?.y?.grid;
@@ -152,16 +157,21 @@ export class ChartRenderer {
         return;
       }
 
-      const newAnnotations: AnnotationOptions[] = action.referenceLines.map((config) => {
-        return {
-          ...DEFAULT_ANNOTATION,
-          borderColor: config.color,
-          value: config.value,
-        };
-      });
+      // 清除现有的注解
+      annotation.annotations = [];
 
-      annotation.annotations = newAnnotations;
+      // 添加新的参考线
+      for (const line of action.referenceLines) {
+        annotation.annotations.push({
+          type: 'line',
+          scaleID: 'y',
+          value: line.value,
+          borderColor: line.color,
+          borderWidth: 2,
+        });
+      }
     }
+
 
     // NOTE: "none" disables animations - this is important for chart performance because we update
     // the entire data set which does not preserve history for the chart animations
@@ -174,10 +184,6 @@ export class ChartRenderer {
     if (!xScale || !yScale) {
       return undefined;
     }
-    // // @ts-ignore
-    // this.#chartInstance.options.plugins.customXAxis.afterDraw();
-    // 在 ChartRenderer.update() 方法末尾添加
-    console.log("Current annotations:", this.#chartInstance.options.plugins?.annotation?.annotations);
     return {
       x: {
         min: xScale.min,

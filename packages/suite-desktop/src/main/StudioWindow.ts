@@ -89,7 +89,7 @@ function createUdpServer() {
 function newStudioWindow(deepLinks: string[] = [], reloadMainWindow: () => void): BrowserWindow {
   const { crashReportingEnabled, telemetryEnabled } = getTelemetrySettings();
   const preloadPath = path.join(app.getAppPath(), "main", "preload.js");
-
+  console.log("preloadPath:", preloadPath);
   const macTrafficLightInset =
     Math.floor((APP_BAR_HEIGHT - /*button size*/ 12) / 2) - /*for good measure*/ 1;
 

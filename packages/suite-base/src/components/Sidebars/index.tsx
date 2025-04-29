@@ -88,7 +88,8 @@ function mosaicLeftSidebarSplitPercentage(node: MosaicNode<LayoutNode>): number 
     return node.splitPercentage;
   } else {
     return (
-      mosaicLeftSidebarSplitPercentage(node.first) ?? mosaicLeftSidebarSplitPercentage(node.second)
+      mosaicLeftSidebarSplitPercentage(node.first) ??
+      mosaicLeftSidebarSplitPercentage(node.second)
     );
   }
 }

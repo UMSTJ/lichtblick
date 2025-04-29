@@ -24,43 +24,7 @@ export const getChartOptions = ({
     size: 10,
   },
   responsive: false,
-  // scales: {
-  //   x: {
-  //     type: "linear",
-  //     display: true,
-  //     grid: {
-  //       display: false, // 关闭X轴网格线
-  //       color:gridColor
-  //     },
-  //     ticks: {
-  //       font: {
-  //         family: fontMonospace,
-  //         size: 10,
-  //       },
-  //       color: tickColor,
-  //       maxRotation: 0,
-  //       crossAlign: 'center' // 标签居中
-  //     },
-  //   },
-  //   y: {
-  //     type: "linear",
-  //     display: true,
-  //     position: 'left',   // Y轴固定在左侧
-  //     grid: {
-  //       display: false,  // 关闭Y轴网格线
-  //       color:gridColor,
-  //     },
-  //     ticks: {
-  //       font: {
-  //         family: fontMonospace,
-  //         size: 10,
-  //       },
-  //       color: tickColor,
-  //       padding: 0,
-  //       precision: 3,
-  //     },
-  //   },
-  // },
+
   scales: {
     x: {
       type: "linear",
@@ -111,21 +75,6 @@ export const getChartOptions = ({
     },
   },
   plugins: {
-    // 新增注解配置
-    annotation: {
-      annotations: {
-        zeroLine: {
-          type: 'line',
-          yMin: 0,
-          yMax: 0,
-          borderColor: '#FFD700', // 使用截图中的黄金色
-          borderWidth: 2,         // 与轴线保持相同粗细
-          display: true,
-          drawTime: 'afterDraw', // ✅ 改为在最终阶段绘制
-          z: 9999                // 强制最高层级
-        }
-      }
-    },
     decimation: {
       enabled: false,
     },

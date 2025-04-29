@@ -188,7 +188,7 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
     colorScheme: "light" | "dark",
     globalVariables: GlobalVariables,
   ): void {
-    
+
     // 新增网格线控制
     this.showGrid = false; // 强制关闭所有网格线
     if (this.isDestroyed()) {
@@ -227,8 +227,11 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
         value,
       };
     });
-    console.log("referenceLines", referenceLines);
-
+    // 添加 y=0 的参考线
+    referenceLines.push({
+      color: getLineColor(this.renderer.getBaseGridLineColor(), referenceLines.length), // 黑色
+      value: 0,
+    });
     this.updateAction.showXAxisLabels = config.showXAxisLabels;
     this.updateAction.showYAxisLabels = config.showYAxisLabels;
     this.updateAction.referenceLines = referenceLines;
@@ -417,13 +420,10 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
 
     const haveInteractionEvents = (this.updateAction.interactionEvents?.length ?? 0) > 0;
 
-    const action = this.updateAction;
-    this.updateAction = {
-      type: "update",
 
-    };
+    this.updateAction.type="update"
 
-    const bounds = await this.renderer.update(action);
+    const bounds = await this.renderer.update(this.updateAction);
     if (this.isDestroyed()) {
       return;
     }
@@ -471,7 +471,6 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
     if (this.isDestroyed()) {
       return;
     }
-
     this.latestXScale = await this.renderer.updateDatasets(datasets);
     if (this.isDestroyed()) {
       return;

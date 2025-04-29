@@ -44,6 +44,17 @@ export const DEFAULT_ANNOTATION: AnnotationOptions = {
   borderWidth: 1,
   borderDash: [5, 5],
 };
+export const ZEROLINE_ANNOTATION: AnnotationOptions = {
+  type: 'line',
+  yMin: 0,
+  yMax: 0,
+  borderColor: '#FFD700',
+  borderWidth: 2,
+  drawTime: 'beforeDatasetsDraw',
+  scaleID: 'y', // 确保与Y轴ID一致（默认是'y'）
+  display: true
+};
+
 
 // @ts-ignore
 export const DEFAULT_PLOT_CONFIG: PlotConfig = {

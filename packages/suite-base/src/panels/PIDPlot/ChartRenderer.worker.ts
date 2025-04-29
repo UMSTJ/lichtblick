@@ -19,7 +19,7 @@ import {
   Tooltip,
 } from "chart.js";
 import AnnotationPlugin from "chartjs-plugin-annotation";
-
+import annotationPlugin from 'chartjs-plugin-annotation';
 import * as Comlink from "@lichtblick/comlink";
 import { loadDefaultFont } from "@lichtblick/suite-base/panels/shared/loadFont";
 
@@ -54,6 +54,7 @@ Chart.register(
   Filler,
   Tooltip,
   AnnotationPlugin,
+  annotationPlugin,
 );
 
 Comlink.expose({

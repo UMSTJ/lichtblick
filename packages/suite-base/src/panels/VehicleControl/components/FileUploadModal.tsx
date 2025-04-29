@@ -18,7 +18,7 @@ import {
 import React, { useState, useRef } from "react";
 
 import FileList from "@lichtblick/suite-base/panels/VehicleControl/components/FileList";
-// import { FileOperation } from "@lichtblick/suite-desktop/src/main/StorageManager";
+// import { storage } from "three/examples/jsm/nodes/shadernode/ShaderNodeBaseElements";
 
 export interface FileUploadModalProps {
   open: boolean;
@@ -74,25 +74,34 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ open, onClose }) => {
       imageReader.readAsArrayBuffer(imageFile);
 
       imageReader.onload = async () => {
-        if (imageReader.result) {
-          // 保存文件到用户文件夹
-          const jsonResult = await window.electron.fileRenderer.saveFile(
-            "documents",
-            jsonFile.name,
-            jsonContent,
-          );
+        console.log('JSON save result:', jsonContent);
+        console.log('Image save result:', imageReader);
+        try {
+          if (imageReader.result) {
+            // 保存文件到用户文件夹
+            console.log('Calling saveFile for JSON');
+            const jsonResult = await window.electron.fileRenderer.saveFile(
+              "documents",
+              jsonFile.name,
+              jsonContent,
+            );
+            console.log('JSON save result:', jsonResult);
 
-          const imageResult = await window.electron.fileRenderer.saveFile(
-            "documents",
-            imageFile.name,
-            Buffer.from(imageReader.result as ArrayBuffer),
-          );
+            const imageResult = await window.electron.fileRenderer.saveFile(
+              "documents",
+              imageFile.name,
+              Buffer.from(imageReader.result as ArrayBuffer),
+            );
 
-          if (jsonResult.success && imageResult.success) {
-            onClose();
-          } else {
-            setError("保存文件失败");
+            if (jsonResult.success && imageResult.success) {
+              onClose();
+            } else {
+              setError("保存文件失败");
+            }
           }
+        }
+        catch (error){
+          console.error(error);
         }
       };
     } catch (err) {
