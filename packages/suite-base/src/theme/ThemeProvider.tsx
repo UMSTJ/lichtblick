@@ -4,7 +4,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
-
+import { CssBaseline } from "@mui/material";
 import createCache from "@emotion/cache";
 import { CacheProvider } from "@emotion/react";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material";
@@ -37,7 +37,53 @@ export default function ThemeProvider({
     document.querySelector("#loading-styles")?.remove();
   }, [isDark]);
 
-  const muiTheme = useMemo(() => createMuiTheme(isDark ? "dark" : "light"), [isDark]);
+  const baseTheme = useMemo(() => createMuiTheme(isDark ? "dark" : "light"), [isDark]);
+  // 再在 baseTheme 上打补丁，注入全局组件样式覆盖
+  const muiTheme = useMemo(() => {
+    return {
+      ...baseTheme,
+      components: {
+        // 保留原来可能已经在 createMuiTheme 里定义的
+        ...baseTheme.components,
+        MuiDrawer: {
+          styleOverrides: {
+            paper: ({ theme }: { theme: typeof baseTheme }) => ({
+              backgroundColor: theme.palette.background.paper,
+              color: theme.palette.text.primary,
+              borderLeft: `1px solid ${
+                theme.palette.mode === "light"
+                  ? "rgba(0,0,0,0.12)"
+                  : "rgba(255,255,255,0.12)"
+              }`,
+            }),
+          },
+        },
+        MuiListItemButton: {
+          styleOverrides: {
+            root: ({ theme }: { theme: typeof baseTheme }) => ({
+              "&.Mui-selected": {
+                backgroundColor: theme.palette.action.selected,
+                "& .MuiListItemText-primary": {
+                  color: theme.palette.primary.main,
+                },
+              },
+              "&:hover": {
+                backgroundColor: theme.palette.action.hover,
+              },
+            }),
+          },
+        },
+        MuiListItemIcon: {
+          styleOverrides: {
+            root: {
+              color: "inherit",
+            },
+          },
+        },
+      },
+    };
+  }, [baseTheme]);
+
 
   useLayoutEffect(() => {
     // Set the theme color to match the sidebar and playback bar
@@ -52,7 +98,10 @@ export default function ThemeProvider({
 
   return (
     <CacheProvider value={muiCache}>
-      <MuiThemeProvider theme={muiTheme}>{children}</MuiThemeProvider>
+      <MuiThemeProvider theme={muiTheme}>
+        <CssBaseline />
+        {children}
+      </MuiThemeProvider>
     </CacheProvider>
   );
 }

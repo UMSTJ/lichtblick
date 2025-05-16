@@ -8,7 +8,7 @@
 export const panels = {
   pidPlot: "PID Plot",
   pidPlotDescription: "PID Plot Description",
-
+  SlamMapEditPanel: "Slam Map Edit Panel",
   motionStateDescription: "Description of motion state",
   motionState: "Motion State",
   hardwareInfo: "Local Hardware Info",

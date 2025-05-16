@@ -13,6 +13,9 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "module": "commonjs",
-    "noEmit": true
+    "noEmit": true,
+//    "paths": {
+//      "@lichtblick/suite-web/*": ["packages/suite-web/src/*"],
+//    }
   }
 }

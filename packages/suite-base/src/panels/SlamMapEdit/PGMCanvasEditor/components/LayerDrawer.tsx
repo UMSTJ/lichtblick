@@ -209,8 +209,9 @@ const StyledDrawer = styled(Drawer)(({ theme }) => ({
     position: "absolute",
     height: "calc(100% - 48px)",
     top: "48px",
-    borderTop: "1px solid #e0e0e0",
-    backgroundColor: "#f5f5f5",
+    borderTop: `1px solid ${theme.palette.divider}`,         // 从 theme.divider 里拿分隔线色
+    backgroundColor: theme.palette.background.paper,         // 统一用主题背景
+    color: theme.palette.text.primary,                       // 文字也继承主题
     overflow: "hidden",
   },
   "& .MuiBackdrop-root": {

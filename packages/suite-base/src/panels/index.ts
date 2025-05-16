@@ -51,8 +51,9 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     module: async () => await import("./hardwareInfo"),
   },
   {
-    title:"123",
+    title:t("SlamMapEditPanel"),
     type: "SlamMapEditPanel",
+    description: t("SlamMapEditPanel"),
     module: async () => await import("./SlamMapEdit"),
   },
   {

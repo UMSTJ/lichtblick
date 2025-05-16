@@ -9,6 +9,7 @@ export const panels = {
   dnumber:"d值",
   pidPlotDescription: "PID 绘图描述",
   motionStateDescription: "运动状态描述",
+  SlamMapEditPanel: "Slam 地图编辑面板",
   motionState: "运动状态",
   hardwareInfo: "本地硬件信息",
   LaunchMotion: "节点管理器",
