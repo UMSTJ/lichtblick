@@ -122,8 +122,11 @@ function newStudioWindow(deepLinks: string[] = [], reloadMainWindow: () => void)
       // remote data, etc. In production, the app is served from file:// URLs so
       // the Origin header is not sent, disabling the CORS
       // Access-Control-Allow-Origin check
-      webSecurity: isProduction,
+      // webSecurity: isProduction,
+      webSecurity: false, // 允许加载本地文件
+      enableRemoteModule: true, // 新增这行
     },
+
   };
   if (!isProduction) {
     const devIcon = getDevModeIcon();

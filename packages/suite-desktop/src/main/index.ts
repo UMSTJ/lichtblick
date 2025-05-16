@@ -237,6 +237,8 @@ export async function main(): Promise<void> {
   ipcMain.handle("updateLanguage", () => {
     void updateLanguage();
   });
+  // 在文件末尾（类定义外）添加：
+  ipcMain.handle('get-app-path', () => app.getAppPath());
 
   // This method will be called when Electron has finished
   // initialization and is ready to create browser windows.

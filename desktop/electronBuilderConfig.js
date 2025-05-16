@@ -13,4 +13,19 @@ const {
 
 module.exports = makeElectronBuilderConfig({
   appPath: path.resolve(__dirname, ".webpack"),
+
+  // 新增以下配置
+  files: [
+    "dist/**/*",
+    "main/**/*",
+    "public/**/*", // ✅ 包含public目录
+    "preload.js"
+  ],
+  extraResources: [
+    {
+      "from": "public",  // 源目录
+      "to": "public",    // 目标目录（会复制到app资源目录）
+      "filter": ["**/*"] // 包含所有文件
+    }
+  ]
 });

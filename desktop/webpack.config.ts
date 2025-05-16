@@ -15,7 +15,9 @@ import { webpackQuicklookConfig } from "@lichtblick/suite-desktop/src/webpackQui
 import { webpackRendererConfig } from "@lichtblick/suite-desktop/src/webpackRendererConfig";
 
 import packageJson from "../package.json";
-
+import CopyWebpackPlugin from "copy-webpack-plugin";
+import { Configuration } from "webpack"; // 新增导入
+import type { Configuration as WebpackConfig } from 'webpack';
 const params: WebpackConfigParams = {
   packageJson,
   outputPath: path.resolve(__dirname, ".webpack"),
@@ -29,11 +31,51 @@ const params: WebpackConfigParams = {
   preloadContext: path.resolve(__dirname, "preload"),
   preloadEntrypoint: "./index.ts",
 };
+// 修改开发服务器配置
+const customDevServerConfig = (config: Configuration) => {
+  return {
+    ...webpackDevServerConfig(params)(config),
+    static: {
+      directory: path.join(__dirname, "public"), // 添加静态资源目录
+      publicPath: "/public",
+    },
+  };
+};
+// 修改渲染器配置
+const customRendererConfig = (config: Configuration) => {
+  return {
+    ...webpackRendererConfig(params)(config),
+    plugins: [
+      ...(webpackRendererConfig(params)(config).plugins || []),
+      new CopyWebpackPlugin({
+        patterns: [
+          {
+            from: path.resolve(__dirname, "public"), // 源目录
+            to: path.resolve(__dirname, ".webpack/renderer/public"), // 输出目录
+            globOptions: {
+              ignore: ["**/.DS_Store"], // 忽略Mac系统文件
+            },
+          },
+        ],
+      }),
+    ],
+  };
+};
 
-export default [
-  webpackDevServerConfig(params),
+// export default [
+//   webpackDevServerConfig(params),
+//   webpackMainConfig(params),
+//   webpackPreloadConfig(params),
+//   webpackRendererConfig(params),
+//   webpackQuicklookConfig(params),
+//
+// ];
+const configs: WebpackConfig[] = [
+  customDevServerConfig,
   webpackMainConfig(params),
   webpackPreloadConfig(params),
-  webpackRendererConfig(params),
+  customRendererConfig,
   webpackQuicklookConfig(params),
 ];
+
+export default configs;

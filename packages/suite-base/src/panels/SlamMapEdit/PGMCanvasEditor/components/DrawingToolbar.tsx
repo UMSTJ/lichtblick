@@ -258,12 +258,18 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
                   },
                 }}
               />
-              <Typography variant="body2" sx={{ minWidth: 40 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  minWidth: 40,
+                  color: 'black' // 这里添加固定黑色
+                }}
+              >
                 {brushColor}
               </Typography>
             </Box>
 
-            <Divider orientation="vertical" flexItem />
+            {/*<Divider orientation="vertical" flexItem />*/}
 
             {/* 笔刷大小部分保持原样 */}
             <Tooltip title={`Brush Size: ${brushSize}`}>

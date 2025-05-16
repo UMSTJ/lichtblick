@@ -107,6 +107,7 @@
     "@typescript-eslint/utils": "8.16.0",
     "assert": "2.1.0",
     "babel-plugin-transform-import-meta": "2.2.1",
+    "copy-webpack-plugin": "11.0.0",
     "cross-env": "7.0.3",
     "depcheck": "1.4.7",
     "electron": "34.3.0",

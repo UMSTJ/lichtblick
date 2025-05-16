@@ -25,7 +25,10 @@ import {
 } from "@lichtblick/suite-base/components/MessagePipeline";
 import { openCode } from "@lichtblick/suite-base/components/UdpMessage";
 import { useWorkspaceActions } from "@lichtblick/suite-base/context/Workspace/useWorkspaceActions";
-
+import React from "react";
+import { Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import path from "path";
 const { Sider } = Layout;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -60,7 +63,7 @@ const VerticalAppBar: React.FC = () => {
   const playerName = useMessagePipeline(selectPlayerName);
   const [nowIPAddr, setIPAddr] = useState<string>("");
   const [codeOnlineState, setCodeOnlineState] = useState<boolean>(false);
-
+  const [openManual, setOpenManual] = React.useState(false);
   useEffect(() => {
     // eslint-disable-next-line no-restricted-syntax
 
@@ -194,11 +197,50 @@ const VerticalAppBar: React.FC = () => {
         ></AppBarButton>
         <AppBarButton
           icon={<NotebookQuestionMark24Regular />}
-          onClick={() => {
-
-          }}
+          onClick={() => setOpenManual(true)}
           text={t("usermanual")}
         ></AppBarButton>
+        <Dialog
+          fullWidth
+          maxWidth="lg"
+          open={openManual}
+          onClose={() => setOpenManual(false)}
+        >
+          <DialogTitle sx={{ m: 0, p: 2 }}>
+            {t("usermanual")}
+            <IconButton
+              aria-label="close"
+              onClick={() => setOpenManual(false)}
+              sx={{
+                position: "absolute",
+                right: 8,
+                top: 8,
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+
+          <DialogContent dividers sx={{ height: "80vh", p: 0 }}>
+            {/* 方式 A：简单用 iframe */}
+            <iframe
+              src="/usermanual.pdf" // 假设PDF放在public/manuals目录
+              title="User Manual"
+              width="100%"
+              height="100%"
+              style={{ border: "none" }}
+            />
+
+            {/*
+          // 方式 B：更高级的 react-pdf，你可以：
+          // npm install react-pdf
+          // import { Document, Page } from 'react-pdf';
+          // <Document file="/usermanual.pdf">
+          //   <Page pageNumber={1} />
+          // </Document>
+          */}
+          </DialogContent>
+        </Dialog>
         {/* <Button
           type="text"
           // type="primary"

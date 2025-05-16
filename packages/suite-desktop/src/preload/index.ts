@@ -62,6 +62,10 @@ export interface ElectronAPI {
   };
 }
 
+contextBridge.exposeInMainWorld('electronAPI', {
+  getAppPath: () => ipcRenderer.invoke('get-app-path')
+});
+
 // 将 ipcRenderer 暴露到渲染进程中
 contextBridge.exposeInMainWorld("electron", {
   ipcRenderer: {
