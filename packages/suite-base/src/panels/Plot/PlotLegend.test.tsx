@@ -96,7 +96,7 @@ describe("PlotLegend", () => {
     jest.clearAllMocks();
   });
 
-  it("renders PlotLegend without crashing", () => {
+  it("renders NoDeletePlotLegend without crashing", () => {
     setup();
     expect(screen.getByTitle("Add series")).toBeDefined();
   });

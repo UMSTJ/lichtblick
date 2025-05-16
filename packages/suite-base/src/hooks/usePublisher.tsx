@@ -46,6 +46,7 @@ export default function usePublisher({
   useEffect(() => {
     if (canPublish && topic && schemaName) {
       setPublishers(id, [{ topic, schemaName, options: { datatypes } }]);
+      console.log(`Registered publisher for topic ${topic} with name ${name}`);
       return () => {
         setPublishers(id, []);
       };

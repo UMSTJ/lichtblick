@@ -24,8 +24,9 @@ import { Immutable } from "@lichtblick/suite";
 import { SaveConfig } from "@lichtblick/suite-base/types/panels";
 
 import type { PIDPlotCoordinator } from "./PIDPlotCoordinator";
-import { PlotLegendRow, ROW_HEIGHT } from "./PlotLegendRow";
+import { ROW_HEIGHT } from "./PlotLegendRow";
 import { PIDPlotConfig, PIDPlotPath } from "@lichtblick/suite-base/panels/Plot/utils/config";
+import { NoDeletetPIDPlotLegendRow } from "@lichtblick/suite-base/panels/PIDPlot/NoDeletePlotLegendRow";
 
 const minLegendWidth = 25;
 const maxLegendWidth = 800;
@@ -278,7 +279,7 @@ function PlotLegendComponent(props: Props): React.JSX.Element {
           }}
         >
           {(paths.length === 0 ? [] : paths).map((path, index) => (
-            <PlotLegendRow
+            <NoDeletetPIDPlotLegendRow
               hasMismatchedDataLength={pathsWithMismatchedDataLengths.includes(path.value)}
               index={index}
               key={index}

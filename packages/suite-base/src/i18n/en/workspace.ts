@@ -15,4 +15,5 @@ export const workspace = {
   variables: "Variables",
   layouts: "Layouts",
   vehiclesState: "Vehicles State",
+  systemState: "System State",
 };

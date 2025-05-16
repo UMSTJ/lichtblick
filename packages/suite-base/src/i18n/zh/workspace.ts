@@ -12,4 +12,5 @@ export const workspace = {
   variables: "变量",
   layouts: "布局",
   vehiclesState: "车辆状态",
+  systemState:"系统状态",
 };

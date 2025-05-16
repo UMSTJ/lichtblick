@@ -18,7 +18,7 @@ import { isReferenceLinePIDPlotPathType } from "@lichtblick/suite-base/panels/Pl
 import { pathToSubscribePayload } from "@lichtblick/suite-base/panels/Plot/utils/subscription";
 
 const usePIDSubscriptions = (config: PIDPlotConfig, subscriberId: string): void => {
-  const { paths, xAxisVal } = config;
+  const { pidline, xAxisVal } = config;
   const { globalVariables } = useGlobalVariables();
 
   const setSubscriptions = useMessagePipeline(
@@ -38,7 +38,7 @@ const usePIDSubscriptions = (config: PIDPlotConfig, subscriberId: string): void 
     const preloadType: SubscriptionPreloadType =
       xAxisVal === "index" || xAxisVal === "currentCustom" ? "partial" : "full";
 
-    const subscriptions = filterMap(paths, (item) => {
+    const subscriptions = filterMap(pidline, (item) => {
       if (isReferenceLinePIDPlotPathType(item)) {
         return;
       }
@@ -47,7 +47,9 @@ const usePIDSubscriptions = (config: PIDPlotConfig, subscriberId: string): void 
       if (!parsedPath) {
         return;
       }
-
+      console.log("parsedPath: ", parsedPath);
+      console.log("globalVariables: ", globalVariables);
+      console.log("preloadType: ", preloadType);
       return pathToSubscribePayload(
         fillInGlobalVariablesInPath(parsedPath, globalVariables),
         preloadType,
@@ -68,7 +70,7 @@ const usePIDSubscriptions = (config: PIDPlotConfig, subscriberId: string): void 
     }
 
     setSubscriptions(subscriberId, subscriptions);
-  }, [config, xAxisVal, paths, globalVariables, setSubscriptions, subscriberId]);
+  }, [config, xAxisVal, pidline, globalVariables, setSubscriptions, subscriberId]);
 
   // Only unsubscribe on unmount so that when the above subscriber effect dependencies change we
   // don't transition to unsubscribing all to then re-subscribe.

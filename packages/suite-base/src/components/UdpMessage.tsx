@@ -45,6 +45,7 @@ const UdpMessageComponent: React.FC = () => {
   useEffect(() => {
     const handleUdpMessage = (_event: IpcRendererEvent, message: string) => {
       // 现在 message 是你在主进程中发送的实际消息内容
+
       if (!udpIp.includes(message)) {
         setUdpIp((prevUdpIp) => [...prevUdpIp, message]);
       }

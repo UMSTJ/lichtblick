@@ -77,6 +77,7 @@ function createUdpServer() {
   udpServer.on("message", (msg) => {
     // console.log(`UDP server got: ${msg} from ${rinfo.address}:${rinfo.port}`);
     BrowserWindow.getAllWindows().forEach((win) => {
+
       win.webContents.send("udp-message", msg.toString());
     }); // 处理接收到的广播消息
   });

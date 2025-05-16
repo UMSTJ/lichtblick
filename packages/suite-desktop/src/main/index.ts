@@ -337,7 +337,9 @@ export async function main(): Promise<void> {
       app.quit();
     }
   });
-
+  // ipcMain.on("udp-message", (_event, message) => {
+  //
+  // });
   ipcMain.on("file-save", (event, { directory, filename, data }) => {
     const filePath = path.join(directory, filename);
     // 1. 先确保目录存在

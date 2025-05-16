@@ -26,6 +26,7 @@ export function NewSidebar<K extends string>({
 }: NewSidebarProps<K>): React.JSX.Element {
   const { classes, cx } = useStyles();
 
+
   const handleTabChange = useCallback(
     (_ev: React.SyntheticEvent, newValue: K) => {
       if (newValue !== activeTab) {

@@ -13,7 +13,7 @@ import { PlotProps } from "@lichtblick/suite-base/panels/Plot/types";
 
 import { useStyles } from "@lichtblick/suite-base/panels/Plot/Plot.style";
 import { PlotCoordinator } from "@lichtblick/suite-base/panels/Plot/PlotCoordinator";
-import { PlotLegend } from "@lichtblick/suite-base/panels/Plot/PlotLegend";
+
 import useGlobalSync from "@lichtblick/suite-base/panels/Plot/hooks/useGlobalSync";
 import usePlotDataHandling from "@lichtblick/suite-base/panels/Plot/hooks/usePlotDataHandling";
 import useRenderer from "@lichtblick/suite-base/panels/Plot/hooks/useRenderer";
@@ -25,8 +25,7 @@ import { SettingsTreeAction } from "@lichtblick/suite";
 import { produce } from "immer";
 import { buildSettingsTree } from "@lichtblick/suite-base/panels/Plot/utils/buildSettingsTree";
 import {
-  handleAddSeriesAction, handleDeleteSeriesAction,
-  handleUpdateAction
+ handleUpdateAction
 } from "@lichtblick/suite-base/panels/Plot/hooks/usePlotPanelSettings";
 
 type SinglePlotProps = PlotProps & {
@@ -42,7 +41,10 @@ import { useMountedState } from "react-use";
 
 import { debouncePromise } from "@lichtblick/den/async";
 import { add as addTimes, fromSec, isTime, toSec } from "@lichtblick/rostime";
-import { useMessagePipelineGetter } from "@lichtblick/suite-base/components/MessagePipeline";
+import {
+  useMessagePipelineGetter,
+  useMessagePipelineSubscribe
+} from "@lichtblick/suite-base/components/MessagePipeline";
 import { PanelContextMenuItem } from "@lichtblick/suite-base/components/PanelContextMenu";
 import { TimeBasedChartTooltipData } from "@lichtblick/suite-base/components/TimeBasedChart/TimeBasedChartTooltipContent";
 import {
@@ -58,6 +60,9 @@ import {
 } from "@lichtblick/suite-base/panels/Plot/types";
 import { downloadCSV } from "@lichtblick/suite-base/panels/Plot/utils/csv";
 import { PANEL_TITLE_CONFIG_KEY } from "@lichtblick/suite-base/util/layout";
+import { NoDeletePlotLegend } from "@lichtblick/suite-base/panels/MotionState/NoDeletePlotLegend";
+import useGlobalVariables from "@lichtblick/suite-base/hooks/useGlobalVariables";
+import useSubscriptions from "@lichtblick/suite-base/panels/Plot/hooks/useSubscriptions";
 
 const selectSetGlobalBounds = (store: TimelineInteractionStateStore) => store.setGlobalBounds;
 type  NewUsePlotInteractionHandlersProps = UsePlotInteractionHandlersProps&{
@@ -302,11 +307,18 @@ const SinglePlot = ({ config, saveConfig,configPath,onSelect}: SinglePlotProps) 
     const legendDisplay = config.legendDisplay ?? (config.showSidebar ? "left" : "floating");
     const sidebarDimension = config.sidebarWidth ?? DEFAULT_SIDEBAR_DIMENSION;
     const shouldSync = config.isSynced;
+    const { globalVariables } = useGlobalVariables();
+    const getMessagePipelineState = useMessagePipelineGetter();
+    const subscribeMessagePipeline = useMessagePipelineSubscribe();
 
     const renderer = useRenderer(canvasDiv, theme);
+  useSubscriptions(config, subscriberId);
+  useGlobalSync(coordinator, setCanReset, { shouldSync }, subscriberId);
+
+  usePanning(canvasDiv, coordinator, draggingRef);
     const { colorsByDatasetIndex, labelsByDatasetIndex, datasetsBuilder } = usePlotDataHandling(
       config,
-      {},
+      {globalVariables},
     );
 
     // @ts-ignore
@@ -352,22 +364,37 @@ const SinglePlot = ({ config, saveConfig,configPath,onSelect}: SinglePlotProps) 
             );
           } else if (payload.id === "add-series") {
 
-            saveConfig(
-              produce<PlotConfig>((draft: PlotConfig) => {
-                handleAddSeriesAction({ draft });
-              }),
-            );
+            // saveConfig(
+            //   produce<PlotConfig>((draft: PlotConfig) => {
+            //     handleAddSeriesAction({ draft });
+            //   }),
+            // );
           } else if (payload.id === "delete-series") {
-            saveConfig(
-              produce<PlotConfig>((draft) => {
-                handleDeleteSeriesAction({ draft, index: Number(payload.path[1]) });
-              }),
-            );
+            // saveConfig(
+            //   produce<PlotConfig>((draft) => {
+            //     handleDeleteSeriesAction({ draft, index: Number(payload.path[1]) });
+            //   }),
+            // );
           }
         },
         [saveConfig],
       );
+      useEffect(() => {
+        coordinator?.handleConfig(config, theme.palette.mode, globalVariables);
+      }, [coordinator, config, globalVariables, theme.palette.mode]);
+      useEffect(() => {
+        if (!coordinator) {
+          return;
+        }
 
+        const unsub = subscribeMessagePipeline((state) => {
+          coordinator.handlePlayerState(state.playerState);
+        });
+
+        // Subscribing only gets us _new_ updates, so we feed the latest state into the chart
+        coordinator.handlePlayerState(getMessagePipelineState().playerState);
+        return unsub;
+      }, [coordinator, getMessagePipelineState, subscribeMessagePipeline]);
       useEffect(() => {
         console.log("start")
         console.log("focusedPath:", focusedPath);
@@ -464,7 +491,7 @@ const SinglePlot = ({ config, saveConfig,configPath,onSelect}: SinglePlotProps) 
           position="relative"
         >
           {legendDisplay !== "none" && (
-            <PlotLegend
+            <NoDeletePlotLegend
               coordinator={coordinator}
               legendDisplay={legendDisplay}
               onClickPath={onClickPath}

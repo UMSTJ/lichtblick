@@ -8,23 +8,22 @@ import memoizeWeak from "memoize-weak";
 import { SettingsTreeNode, SettingsTreeNodes } from "@lichtblick/suite";
 import {
   DEFAULT_PIDLINEPLOT_PATH,
-  DEFAULT_PIDPLOT_PATH,
 } from "@lichtblick/suite-base/panels/Plot/constants";
 import {
   PIDLinePlotPath,
-  PIDPlotConfig, PIDPlotPath,
+  PIDPlotConfig,
   plotPathDisplayName
 } from "@lichtblick/suite-base/panels/Plot/utils/config";
 import { PLOTABLE_ROS_TYPES } from "@lichtblick/suite-base/panels/shared/constants";
 import { lineColors } from "@lichtblick/suite-base/util/plotColors";
 
-type MakeSeriesNode = {
-  path: PIDPlotPath;
-  index: number;
-  canDelete: boolean;
-
-  t: TFunction<"plot">;
-};
+// type MakeSeriesNode = {
+//   path: PIDPlotPath;
+//   index: number;
+//   canDelete: boolean;
+//
+//   t: TFunction<"plot">;
+// };
 type MakeSeriesPIDNode  = {
   pidline: PIDLinePlotPath;
   index: number;
@@ -33,10 +32,10 @@ type MakeSeriesPIDNode  = {
   t: TFunction<"plot">;
 };
 
-type MakeRootSeriesNode = {
-  paths: PIDPlotPath[];
-  t: TFunction<"plot">;
-};
+// type MakeRootSeriesNode = {
+//   paths: PIDPlotPath[];
+//   t: TFunction<"plot">;
+// };
 type MakeRootSeriesPIDNode = {
   pidpaths: PIDLinePlotPath[];
   t: TFunction<"plot">;
@@ -164,99 +163,99 @@ export function buildSettingsTree(config: PIDPlotConfig, t: TFunction<"plot">): 
         },
       },
     },
-    paths: makeRootSeriesNode({ paths: config.paths, t }),
+    // paths: makeRootSeriesNode({ paths: config.paths, t }),
     pidline:makeRootSeriesPIDNode({ pidpaths: config.pidline, t }),
     // pidline:makeSeriesPIDNode({ canDelete: false, pidline: DEFAULT_PIDLINEPLOT_PATH, index: 0, t })
   };
 }
 
-const makeSeriesNode = memoizeWeak(
-  ({ canDelete, index, path, t }: MakeSeriesNode): SettingsTreeNode => {
-    // 校验 path 对象及其关键属性
-    if (!path || typeof path !== 'object') {
-      throw new Error('Invalid path object');
-    }
-
-    const validPath = {
-
-      value: path.value || '',
-      enabled: path.enabled || false,
-      color: path.color,
-      label: path.label,
-      timestampMethod: path.timestampMethod || 'receiveTime',
-      showLine: path.showLine,
-      lineSize: path.lineSize,
-      pidtype: path.pidtype || "pnumber", // 默认类型
-    };
-
-    return {
-      actions: canDelete
-        ? [
-          {
-            type: "action",
-            id: "delete-series",
-            label: t("deleteSeries"),
-            display: "inline",
-            icon: "Clear",
-          },
-        ]
-        : [],
-      label: plotPathDisplayName(validPath, index),
-      visible: validPath.enabled,
-      fields: {
-        value: {
-          input: "messagepath",
-          label: t("messagePath"),
-          supportsMathModifiers: true,
-          validTypes: PLOTABLE_ROS_TYPES,
-          value: validPath.value,
-        },
-        label: {
-          input: "string",
-          label: t("label"),
-          value: validPath.label,
-        },
-        color: {
-          input: "rgb",
-          label: t("color"),
-          value: validPath.color ?? lineColors[index % lineColors.length],
-        },
-        lineSize: {
-          input: "number",
-          label: t("lineSize"),
-          value: validPath.lineSize,
-          step: 0.2,
-          min: 0,
-          placeholder: "auto",
-        },
-        showLine: {
-          input: "boolean",
-          label: t("showLine"),
-          value: validPath.showLine ?? true,
-        },
-        timestampMethod: {
-          input: "select",
-          label: t("timestamp"),
-          options: [
-            { label: t("receiveTime"), value: "receiveTime" },
-            { label: t("headerStamp"), value: "headerStamp" },
-          ],
-          value: validPath.timestampMethod,
-        },
-        pidtype: {
-          input: "select",
-          label: t("pidtype"),
-          options: [
-            { label: t("pnumber"), value: "pnumber" },
-            { label: t("inumber"), value: "inumber" },
-            { label: t("dnumber"), value: "dnumber" },
-          ],
-          value: validPath.pidtype,
-        },
-      },
-    };
-  },
-);
+// const makeSeriesNode = memoizeWeak(
+//   ({ canDelete, index, path, t }: MakeSeriesNode): SettingsTreeNode => {
+//     // 校验 path 对象及其关键属性
+//     if (!path || typeof path !== 'object') {
+//       throw new Error('Invalid path object');
+//     }
+//
+//     const validPath = {
+//
+//       value: path.value || '',
+//       enabled: path.enabled || false,
+//       color: path.color,
+//       label: path.label,
+//       timestampMethod: path.timestampMethod || 'receiveTime',
+//       showLine: path.showLine,
+//       lineSize: path.lineSize,
+//       pidtype: path.pidtype || "pnumber", // 默认类型
+//     };
+//
+//     return {
+//       actions: canDelete
+//         ? [
+//           {
+//             type: "action",
+//             id: "delete-series",
+//             label: t("deleteSeries"),
+//             display: "inline",
+//             icon: "Clear",
+//           },
+//         ]
+//         : [],
+//       label: plotPathDisplayName(validPath, index),
+//       visible: validPath.enabled,
+//       fields: {
+//         value: {
+//           input: "messagepath",
+//           label: t("messagePath"),
+//           supportsMathModifiers: true,
+//           validTypes: PLOTABLE_ROS_TYPES,
+//           value: validPath.value,
+//         },
+//         label: {
+//           input: "string",
+//           label: t("label"),
+//           value: validPath.label,
+//         },
+//         color: {
+//           input: "rgb",
+//           label: t("color"),
+//           value: validPath.color ?? lineColors[index % lineColors.length],
+//         },
+//         lineSize: {
+//           input: "number",
+//           label: t("lineSize"),
+//           value: validPath.lineSize,
+//           step: 0.2,
+//           min: 0,
+//           placeholder: "auto",
+//         },
+//         showLine: {
+//           input: "boolean",
+//           label: t("showLine"),
+//           value: validPath.showLine ?? true,
+//         },
+//         timestampMethod: {
+//           input: "select",
+//           label: t("timestamp"),
+//           options: [
+//             { label: t("receiveTime"), value: "receiveTime" },
+//             { label: t("headerStamp"), value: "headerStamp" },
+//           ],
+//           value: validPath.timestampMethod,
+//         },
+//         pidtype: {
+//           input: "select",
+//           label: t("pidtype"),
+//           options: [
+//             { label: t("pnumber"), value: "pnumber" },
+//             { label: t("inumber"), value: "inumber" },
+//             { label: t("dnumber"), value: "dnumber" },
+//           ],
+//           value: validPath.pidtype,
+//         },
+//       },
+//     };
+//   },
+// );
 const makeSeriesPIDNode = memoizeWeak(
   ({canDelete, index, pidline, t }: MakeSeriesPIDNode): SettingsTreeNode => {
     // 校验 path 对象及其关键属性
@@ -291,7 +290,7 @@ const makeSeriesPIDNode = memoizeWeak(
         ]
         : [],
       label: plotPathDisplayName(validPath, index),
-      visible: validPath.enabled,
+      // visible: validPath.enabled,
       fields: {
         value: {
           input: "messagepath",
@@ -352,49 +351,55 @@ const makeSeriesPIDNode = memoizeWeak(
   },
 );
 
-const makeRootSeriesNode = memoizeWeak(({ paths, t }: MakeRootSeriesNode): SettingsTreeNode => {
-  const children = Object.fromEntries(
-    paths.length === 0
-      ? [["default", makeSeriesNode({ canDelete: false, path: DEFAULT_PIDPLOT_PATH, index: 0, t })]]
-      : paths.map((path, index) => [
-        `${index}`,
-        makeSeriesNode({ canDelete: true, index, path, t }),
-      ]),
-  );
-  return {
-    label: t("series"),
-    children,
-    actions: [
-      {
-        type: "action",
-        id: "add-series",
-        display: "inline",
-        icon: "Addchart",
-        label: t("addSeries"),
-      },
-    ],
-  };
-});
+// const makeRootSeriesNode = memoizeWeak(({ paths, t }: MakeRootSeriesNode): SettingsTreeNode => {
+//   const children = Object.fromEntries(
+//     paths.length === 0
+//       ? [["default", makeSeriesNode({ canDelete: false, path: DEFAULT_PIDPLOT_PATH, index: 0, t })]]
+//       : paths.map((path, index) => [
+//         `${index}`,
+//         makeSeriesNode({ canDelete: true, index, path, t }),
+//       ]),
+//   );
+//   return {
+//     label: t("series"),
+//     children,
+//     actions: [
+//       {
+//         type: "action",
+//         id: "add-series",
+//         display: "inline",
+//         icon: "Addchart",
+//         label: t("addSeries"),
+//       },
+//     ],
+//   };
+// });
 const makeRootSeriesPIDNode = memoizeWeak(({ pidpaths, t }: MakeRootSeriesPIDNode): SettingsTreeNode => {
+  // const children = Object.fromEntries(
+  //   pidpaths.length === 0
+  //     ? [["defaultline", makeSeriesPIDNode({ canDelete: false, pidline: DEFAULT_PIDLINEPLOT_PATH, index: 0, t })]]
+  //     : pidpaths.map((pidline, index) => [
+  //       `${index}`,
+  //       makeSeriesPIDNode({ canDelete: false, index, pidline, t }),
+  //     ]),
+  // );
   const children = Object.fromEntries(
-    pidpaths.length === 0
-      ? [["defaultline", makeSeriesPIDNode({ canDelete: false, pidline: DEFAULT_PIDLINEPLOT_PATH, index: 0, t })]]
-      : pidpaths.map((pidline, index) => [
-        `${index}`,
-        makeSeriesPIDNode({ canDelete: true, index, pidline, t }),
-      ]),
+    pidpaths.map((pidline, index) => [
+            `${index}`,
+            makeSeriesPIDNode({ canDelete: false, index, pidline, t }),
+          ])
   );
   return {
     label: t("pidline"),
     children,
-    actions: [
-      {
-        type: "action",
-        id: "add-pidseries",
-        display: "inline",
-        icon: "Addchart",
-        label: t("addSeries"),
-      },
-    ],
+    // actions: [
+    //   {
+    //     type: "action",
+    //     id: "add-pidseries",
+    //     display: "inline",
+    //     icon: "Addchart",
+    //     label: t("addSeries"),
+    //   },
+    // ],
   };
 });

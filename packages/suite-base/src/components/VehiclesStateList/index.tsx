@@ -69,7 +69,8 @@ export default function VehiclesStateList(): ReactElement {
   }, [nowIPAddr]);
   return (
     <Stack flex="auto" fullWidth overflowX="auto">
-      {isRunningInElectron() && (
+      {/*{isRunningInElectron() && (*/}
+      {(
         <Card variant="outlined">
           <Box sx={{ p: 2 }}>
             <Stack direction="row">
@@ -90,7 +91,8 @@ export default function VehiclesStateList(): ReactElement {
           </Box>
         </Card>
       )}
-      {codeOnlineState && (
+      {/*{codeOnlineState && (*/}
+      {(
         <Card variant="outlined">
           <Box sx={{ p: 2 }}>
             <Stack direction="row">

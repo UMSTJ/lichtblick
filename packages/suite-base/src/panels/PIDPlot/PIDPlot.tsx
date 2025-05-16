@@ -37,7 +37,9 @@ import useRenderer from "./useRenderer";
 import usePIDSubscriptions from "./usePIDSubscriptions";
 import { PIDPlotConfig } from "@lichtblick/suite-base/panels/Plot/utils/config";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip as chartTooltip, Legend } from 'chart.js';
-import  Annotation  from 'chartjs-plugin-annotation'; // 单独导入插件
+import  Annotation  from 'chartjs-plugin-annotation';
+import { useMessagePipeline } from "@lichtblick/suite-base/components/MessagePipeline";
+
 // 注册所有组件，包括注解插件
 ChartJS.register(
   CategoryScale,
@@ -60,6 +62,9 @@ const PIDPlot = (props: PIDPlotProps): React.JSX.Element => {
     sidebarDimension = config.sidebarWidth ?? DEFAULT_SIDEBAR_DIMENSION,
   } = config;
 
+  const parameters = useMessagePipeline(ctx => ctx.playerState.activeData?.parameters ?? new Map());
+
+
   const { classes } = useStyles();
   const theme = useTheme();
   const { t } = useTranslation("plot");
@@ -77,10 +82,26 @@ const PIDPlot = (props: PIDPlotProps): React.JSX.Element => {
   const [coordinator, setCoordinator] = useState<PIDPlotCoordinator | undefined>(undefined);
   const shouldSync = config.isSynced;
   const renderer = useRenderer(canvasDiv, theme);
+  // useSubscriptions(config, subscriberId);
+
   const { globalVariables } = useGlobalVariables();
+  useEffect(() => {
+    // 只有当 parameters 真正“有用”（至少包含 KP）时才跑赋值逻辑
+    console.log("parameters:", parameters)
+    const pidlineCopy = [...pidline];
+    // @ts-ignore
+    pidlineCopy[0] = {
+      ...pidlineCopy[0],
+      kp: parameters.get("/ums_fiction_driver_node.KP"),
+      ki: parameters.get("/ums_fiction_driver_node.KI"),
+      kd: parameters.get("/ums_fiction_driver_node.KD"),
+    };
+    config.pidline = pidlineCopy;
+  }, [
+    config
+  ]);
   const getMessagePipelineState = useMessagePipelineGetter();
   const subscribeMessagePipeline = useMessagePipelineSubscribe();
-
   // @ts-ignore
   const {
     onMouseMove,
@@ -102,11 +123,12 @@ const PIDPlot = (props: PIDPlotProps): React.JSX.Element => {
     shouldSync,
     subscriberId,
   });
-
-  usePlotPanelSettings(config, saveConfig, focusedPath);
+  const setParameters = useMessagePipeline(ctx => ctx.setParameter);
   usePIDSubscriptions(config, subscriberId);
   useGlobalSync(coordinator, setCanReset, { shouldSync }, subscriberId);
   usePanning(canvasDiv, coordinator, draggingRef);
+  usePlotPanelSettings(config, saveConfig, focusedPath,setParameters);
+
   const { colorsByDatasetIndex, labelsByDatasetIndex, datasetsBuilder } = usePIDPlotDataHandling(
     config,
     globalVariables,

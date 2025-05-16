@@ -182,6 +182,7 @@ function Parameters(): ReactElement {
   const setParameter = useDebouncedCallback(
     useCallback(
       (name: string, value: ParameterValue) => {
+        console.log("setParameter", name, value);
         setParameterUnbounced(name, value);
       },
       [setParameterUnbounced],

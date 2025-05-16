@@ -35,4 +35,5 @@ export const appBar = {
   start: "Start",
   panels: "Panels",
   general: "General",
+  usermanual: "User manual",
 };

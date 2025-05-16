@@ -5,9 +5,9 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Time } from "@lichtblick/rostime";
+
 import { Immutable } from "@lichtblick/suite";
-import { MessagePathDataItem } from "@lichtblick/suite-base/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
+
 import { MessageEvent } from "@lichtblick/suite-base/players/types";
 import { PANEL_TITLE_CONFIG_KEY } from "@lichtblick/suite-base/util/layout";
 import { TimestampMethod } from "@lichtblick/suite-base/util/time";
@@ -41,11 +41,6 @@ export type PlotXAxisVal =
   // for x-axis and each series
   | "currentCustom";
 
-export type PlotDataItem = {
-  queriedData: MessagePathDataItem[];
-  receiveTime: Time;
-  headerStamp?: Time;
-};
 
 /**
  * A "reference line" plot path is a numeric value. It creates a horizontal line on the plot at the

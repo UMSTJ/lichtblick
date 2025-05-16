@@ -99,7 +99,7 @@ export const DEFAULT_PIDLINEPLOT_PATH: PIDLinePlotPath = Object.freeze({
   id:nanoid(),
   label:"预定轨迹绘制",
   timestampMethod: "receiveTime",
-  value: "",
+  value: "/select_index.data",
   enabled: true,
   pidtype: "pnumber",
   kp: 0.1,
@@ -107,7 +107,24 @@ export const DEFAULT_PIDLINEPLOT_PATH: PIDLinePlotPath = Object.freeze({
   kd: 0.1,
 });
 export const DEFAULT_PLOT_CONFIG1: PlotConfig = {
-  paths: [],
+  paths: [
+    {
+      ...DEFAULT_PLOT_PATH,
+      label: "加速度x",
+      value:"/imu.linear_acceleration.x"
+
+    },
+    {
+      ...DEFAULT_PLOT_PATH,
+      label: "加速度y",
+      value:"/imu.linear_acceleration.y"
+    },
+    {
+      ...DEFAULT_PLOT_PATH,
+      label: "加速度z",
+      value:"/imu.linear_acceleration.z"
+    }
+  ],
   minYValue: undefined,
   maxYValue: undefined,
   showXAxisLabels: true,
@@ -120,7 +137,23 @@ export const DEFAULT_PLOT_CONFIG1: PlotConfig = {
   sidebarDimension: DEFAULT_SIDEBAR_DIMENSION,
 };
 export const DEFAULT_PLOT_CONFIG2: PlotConfig = {
-  paths: [],
+  paths: [
+    {
+      ...DEFAULT_PLOT_PATH,
+      label: "角速度x",
+      value:"/imu.angular_velocity.x"
+    },
+    {
+      ...DEFAULT_PLOT_PATH,
+      label: "角速度y",
+      value:"/imu.angular_velocity.y"
+    },
+    {
+      ...DEFAULT_PLOT_PATH,
+      label: "角速度z",
+      value:"/imu.angular_velocity.z"
+    }
+  ],
   minYValue: undefined,
   maxYValue: undefined,
   showXAxisLabels: true,
@@ -133,7 +166,23 @@ export const DEFAULT_PLOT_CONFIG2: PlotConfig = {
   sidebarDimension: DEFAULT_SIDEBAR_DIMENSION,
 };
 export const DEFAULT_PLOT_CONFIG3: PlotConfig = {
-  paths: [],
+  paths: [
+    {
+      ...DEFAULT_PLOT_PATH,
+      label: "翻滚角",
+      value:"/imu.orientation.x"
+    },
+    {
+      ...DEFAULT_PLOT_PATH,
+      label: "俯仰角",
+      value:"/imu.orientation.y"
+    },
+    {
+      ...DEFAULT_PLOT_PATH,
+      label: "偏转角",
+      value:"/imu.orientation.z"
+    }
+  ],
   minYValue: undefined,
   maxYValue: undefined,
   showXAxisLabels: true,

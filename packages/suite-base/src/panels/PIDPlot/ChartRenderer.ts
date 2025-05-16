@@ -90,7 +90,7 @@ export class ChartRenderer {
   }
 
   public update(action: Immutable<UpdateAction>): Bounds | undefined {
-    console.log("UpdateAction", action)
+
 
 
     if (action.grid) {

@@ -32,4 +32,5 @@ export const appBar = {
   start: "开始",
   panels: "面板",
   general: "通用",
+  usermanual: "用户手册",
 };

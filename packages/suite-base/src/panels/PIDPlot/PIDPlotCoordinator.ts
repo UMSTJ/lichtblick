@@ -37,6 +37,7 @@ import {
   PIDPlotConfig,
 } from "@lichtblick/suite-base/panels/Plot/utils/config";
 
+
 type PlotCoordinatorEventTypes = {
   timeseriesBounds(bounds: Immutable<Bounds1D>): void;
 
@@ -96,7 +97,6 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
   public constructor(renderer: PIDOffscreenCanvasRenderer, builder: IDatasetsBuilder,) {
     super();
 
-
     this.renderer = renderer;
     this.datasetsBuilder = builder;
   }
@@ -114,8 +114,8 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
     if (this.isDestroyed()) {
       return;
     }
-
     const activeData = state.activeData;
+    // console.log("activeData",activeData)
     if (!activeData) {
       return;
     }
@@ -154,6 +154,7 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
     this.emit("currentValuesChanged", this.currentValuesByConfigIndex);
 
     const handlePlayerStateResult = this.datasetsBuilder.handlePlayerState(state);
+
 
     const blocks = state.progress.messageCache?.blocks;
     if (blocks && this.datasetsBuilder.handleBlocks) {
@@ -242,7 +243,7 @@ export class PIDPlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> 
     }
 
     const newCurrentValuesByConfigIndex: unknown[] = [];
-    this.series = filterMap(config.paths, (path, idx): Immutable<SeriesItem> | undefined => {
+    this.series = filterMap(config.pidline, (path, idx): Immutable<SeriesItem> | undefined => {
       if (isReferenceLinePIDPlotPathType(path)) {
         return;
       }

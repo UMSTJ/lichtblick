@@ -90,14 +90,18 @@ export class PlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> {
   private latestBlocks?: Immutable<(MessageBlock | undefined)[]>;
 
   public constructor(renderer: OffscreenCanvasRenderer, builder: IDatasetsBuilder) {
+
     super();
 
     this.renderer = renderer;
     this.datasetsBuilder = builder;
+
+
   }
 
   /** Stop the coordinator from sending any future updates to the renderer. */
   public destroy(): void {
+    console.log("Coordinator.destroy()");
     this.destroyed = true;
   }
 
@@ -106,6 +110,8 @@ export class PlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> {
   }
 
   public handlePlayerState(state: Immutable<PlayerState>): void {
+
+
     if (this.isDestroyed()) {
       return;
     }
@@ -150,7 +156,6 @@ export class PlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> {
     this.emit("currentValuesChanged", this.currentValuesByConfigIndex);
 
     const handlePlayerStateResult = this.datasetsBuilder.handlePlayerState(state);
-
     const blocks = state.progress.messageCache?.blocks;
     if (blocks && this.datasetsBuilder.handleBlocks) {
       this.latestBlocks = blocks;
@@ -184,6 +189,7 @@ export class PlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> {
     colorScheme: "light" | "dark",
     globalVariables: GlobalVariables,
   ): void {
+    console.log("handleConfig()", config);
     if (this.isDestroyed()) {
       return;
     }
@@ -407,6 +413,7 @@ export class PlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> {
   }
 
   private async dispatchRender(): Promise<void> {
+
     if (this.isDestroyed()) {
       return;
     }
@@ -471,6 +478,7 @@ export class PlotCoordinator extends EventEmitter<PlotCoordinatorEventTypes> {
 
   /** Render the provided datasets */
   private async dispatchDatasetsRender(datasets: Dataset[]): Promise<void> {
+
     if (this.isDestroyed()) {
       return;
     }

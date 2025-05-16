@@ -13,14 +13,15 @@ import {
 
 import { useWorkspaceActions } from "../context/Workspace/useWorkspaceActions";
 
+
 const selectWorkspacePrefsDialogOpen = (store: WorkspaceContextStore) =>
   store.dialogs.preferences.open;
-
 /**
  * Encapsulates dialogs shown and controlled at workspace level.
  */
 export function WorkspaceDialogs(): React.JSX.Element {
   const prefsDialogOpen = useWorkspaceStore(selectWorkspacePrefsDialogOpen);
+
   const { dialogActions } = useWorkspaceActions();
 
   return (

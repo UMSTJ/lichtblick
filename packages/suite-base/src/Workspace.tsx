@@ -12,7 +12,6 @@
 //   This source code is licensed under the Apache License, Version 2.0,
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
-
 import { Link, Typography, useTheme } from "@mui/material";
 import { ConfigProvider, theme } from "antd";
 import { t } from "i18next";
@@ -65,7 +64,7 @@ import {
 import { SyncAdapters } from "@lichtblick/suite-base/components/SyncAdapters";
 import { TopicList } from "@lichtblick/suite-base/components/TopicList";
 import VariablesList from "@lichtblick/suite-base/components/VariablesList";
-import VehiclesStateList from "@lichtblick/suite-base/components/VehiclesStateList";
+import NewVehiclesStateList from "@lichtblick/suite-base/components/NewVehiclesStateList";
 import { WorkspaceDialogs } from "@lichtblick/suite-base/components/WorkspaceDialogs";
 import { useAppContext } from "@lichtblick/suite-base/context/AppContext";
 import {
@@ -101,6 +100,7 @@ import isDesktopApp from "@lichtblick/suite-base/util/isDesktopApp";
 
 import VerticalAppBar from "./components/AppBar/VerticalAppBar";
 import { useWorkspaceActions } from "./context/Workspace/useWorkspaceActions";
+import VehiclesStateList from "@lichtblick/suite-base/components/VehiclesStateList";
 
 const log = Logger.getLogger(__filename);
 
@@ -466,15 +466,15 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
       [
         "variables",
         {
-          title: t("workspace:variables"),
-          component: VariablesList,
+          title: t("workspace:systemState"),
+          component: VehiclesStateList,
         },
       ],
       [
         "vehiclesState",
         {
           title: t("workspace:vehiclesState"),
-          component: VehiclesStateList,
+          component: NewVehiclesStateList,
         },
       ],
     ]);
@@ -667,6 +667,7 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
       <KeyListener global keyDownHandlers={keyDownHandlers} />
       <div className={classes.container} ref={containerRef} tabIndex={0}>
         <VerticalAppBar/>
+        {/* 直接在布局层渲染 */}
         {appBar}
         <Sidebars
           selectedKey=""

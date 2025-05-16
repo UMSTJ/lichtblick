@@ -112,6 +112,7 @@ export type PlotProps = {
   config: PlotConfig;
   saveConfig: SaveConfig<PlotConfig>;
 };
+
 export type PIDPlotProps = {
   config: PIDPlotConfig;
   saveConfig: SaveConfig<PIDPlotConfig>;

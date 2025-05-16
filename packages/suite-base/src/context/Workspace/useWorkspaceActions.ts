@@ -133,6 +133,7 @@ export function useWorkspaceActions(): WorkspaceActions {
           },
           open: (initialTab?: AppSettingsTab) => {
             set((draft) => {
+              console.log("preferences.open", initialTab)
               draft.dialogs.preferences = { open: true, initialTab };
             });
           },

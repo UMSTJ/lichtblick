@@ -47,8 +47,6 @@ export class PIDOffscreenCanvasRenderer {
           devicePixelRatio: window.devicePixelRatio,
           gridColor: this.#theme.palette.divider,
           tickColor: this.#theme.palette.text.secondary,
-          // gridColor: "rgba(0,0,0,0)",  // 透明网格线
-          // tickColor: "#FFFFFF",        // 白色刻度文字
         },
         [this.#canvas],
       ),
@@ -73,4 +71,6 @@ export class PIDOffscreenCanvasRenderer {
   ): Promise<Scale | undefined> {
     return await (await this.#remote).updateDatasets(datasets);
   }
+
+
 }

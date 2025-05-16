@@ -18,6 +18,7 @@ import { useCodeServerSettings } from "./settings";
 import { Joysetting } from "./types";
 import "./Joystick.css";
 import { Button } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
 type Props = {
   config: Joysetting;
@@ -30,6 +31,9 @@ interface Position {
 }
 
 function Joystick(props: Props): React.JSX.Element {
+  const theme = useTheme();
+  const textColor = theme.palette.mode === 'dark' ? '#ffffff' : '#000000';
+
   const { config, saveConfig } = props;
   const { topics, datatypes } = useDataSourceInfo();
   const [isDragging, setIsDragging] = useState(false);
@@ -56,10 +60,10 @@ function Joystick(props: Props): React.JSX.Element {
     schemaName: "geometry_msgs/msg/Twist",
     datatypes,
   });
-
   useEffect(() => {
     if (isEmergency) {
       intervalEmergencyRef.current = setInterval(() => {
+        console.log("Publishing cmd_vel:", position)
         cmdPublish({
           linear: { x: 0, y: 0, z: 0 },
           angular: { x: 0, y: 0, z: 0 },
@@ -108,6 +112,7 @@ function Joystick(props: Props): React.JSX.Element {
   const publishCmdVel = useCallback(() => {
     if (position.x !== 0 || position.y !== 0) {
       try {
+        console.log("Publishing cmd_vel:", position)
         cmdPublish({
           linear: { x: position.y * -1, y: 0, z: 0 },
           angular: { x: 0, y: 0, z: position.x * -1 },
@@ -287,13 +292,13 @@ function Joystick(props: Props): React.JSX.Element {
               }}
             >
               {/* 上方文字 */}
-              <div className="label-top">前进</div>
+              <div className="label-top" style={{ color: textColor }}>前进</div>
               {/* 左侧文字 */}
-              <div className="label-left">左转</div>
+              <div className="label-left" style={{ color: textColor }}>左转</div>
               {/* 右侧文字 */}
-              <div className="label-right">右转</div>
+              <div className="label-right" style={{ color: textColor }}>右转</div>
               {/* 下方文字 */}
-              <div className="label-bottom">后退</div>
+              <div className="label-bottom" style={{ color: textColor }}>后退</div>
 
               {/* 中心的摇杆把手 */}
               <div

@@ -20,7 +20,6 @@ const usePIDPlotDataHandling = (
   globalVariables: GlobalVariables,
 ): UsePlotDataHandling => {
   const { xAxisVal, xAxisPath } = config;
-
   const datasetsBuilder = useMemo(() => {
     switch (xAxisVal) {
       case "timestamp":
@@ -47,6 +46,7 @@ const usePIDPlotDataHandling = (
       }
 
       const parsed = parseMessagePath(xAxisPath.value);
+      console.log("parsed: ",parsed);
       if (!parsed) {
         datasetsBuilder.setXPath(undefined);
         return;

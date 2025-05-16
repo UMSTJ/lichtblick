@@ -5,7 +5,12 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Code24Regular, AppsAddIn24Regular, ContentSettings24Regular } from "@fluentui/react-icons";
+import {
+  Code24Regular,
+  AppsAddIn24Regular,
+  ContentSettings24Regular,
+  NotebookQuestionMark24Regular
+} from "@fluentui/react-icons";
 import { Layout } from "antd";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -58,7 +63,7 @@ const VerticalAppBar: React.FC = () => {
 
   useEffect(() => {
     // eslint-disable-next-line no-restricted-syntax
-    console.log("playerName: ", playerName);
+
     if (playerName != undefined) {
       const currentIp = getIpAddress(playerName);
       if (currentIp != undefined) {
@@ -168,6 +173,7 @@ const VerticalAppBar: React.FC = () => {
             }}
             text="Code"
           ></AppBarButton>
+
         </div>
       </div>
 
@@ -185,6 +191,13 @@ const VerticalAppBar: React.FC = () => {
             dialogActions.preferences.open("general");
           }}
           text={t("general")}
+        ></AppBarButton>
+        <AppBarButton
+          icon={<NotebookQuestionMark24Regular />}
+          onClick={() => {
+
+          }}
+          text={t("usermanual")}
         ></AppBarButton>
         {/* <Button
           type="text"
