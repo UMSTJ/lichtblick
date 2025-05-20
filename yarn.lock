@@ -8222,6 +8222,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@types/react-pdf@npm:7.0.0":
+  version: 7.0.0
+  resolution: "@types/react-pdf@npm:7.0.0"
+  dependencies:
+    react-pdf: "*"
+  checksum: 9c53f15ed6fc99882c382dd0d14811dadd4e7bd77edd332a7985e7c5acde11b8ab0c8e0be24c57be4a5ae04479266a28fe079b5b1c48032b43f280af1bf3f15d
+  languageName: node
+  linkType: hard
+
 "@types/react-refresh@npm:^0":
   version: 0.14.6
   resolution: "@types/react-refresh@npm:0.14.6"
@@ -9969,6 +9978,7 @@ __metadata:
     "@types/jest": 29.5.14
     "@types/license-checker": ^25.0.6
     "@types/node": 22.9.3
+    "@types/react-pdf": 7.0.0
     "@types/react-refresh": ^0
     "@types/semver": ^7.5.3
     "@typescript-eslint/eslint-plugin": 8.16.0
@@ -21442,7 +21452,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-pdf@npm:9.2.1":
+"react-pdf@npm:*, react-pdf@npm:9.2.1":
   version: 9.2.1
   resolution: "react-pdf@npm:9.2.1"
   dependencies:

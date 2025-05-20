@@ -6,19 +6,23 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import ReactRefreshPlugin from "@pmmmwh/react-refresh-webpack-plugin";
+// import CopyPlugin from "copy-webpack-plugin";
 import { ESBuildMinifyPlugin } from "esbuild-loader";
 import HtmlWebpackPlugin from "html-webpack-plugin";
 import path from "path";
-import { Configuration, WebpackPluginInstance } from "webpack";
+import {  Configuration,WebpackPluginInstance } from "webpack";
 
 import type { WebpackArgv } from "@lichtblick/suite-base/WebpackArgv";
 import { makeConfig } from "@lichtblick/suite-base/webpack";
 import * as palette from "@lichtblick/theme/src/palette";
 
-import { WebpackConfigParams } from "./WebpackConfigParams";
+
+import type { WebpackConfigParams } from "./WebpackConfigParams";
 
 export const webpackRendererConfig =
-  (params: WebpackConfigParams) =>
+  (
+    params: WebpackConfigParams, // 使用更新后的类型
+  ) =>
   (env: unknown, argv: WebpackArgv): Configuration => {
     const isDev = argv.mode === "development";
     const isServe = argv.env?.WEBPACK_SERVE ?? false;
@@ -38,7 +42,6 @@ export const webpackRendererConfig =
 
     const config: Configuration = {
       ...appWebpackConfig,
-
       // force web target instead of electron-render
       // Fixes "require is not defined" errors if nodeIntegration is off
       // https://gist.github.com/msafi/d1b8571aa921feaaa0f893ab24bb727b
@@ -69,7 +72,8 @@ export const webpackRendererConfig =
           templateContent: `
   <!doctype html>
   <html>
-    <head><meta charset="utf-8"></head>
+    <head><meta charset="utf-8">
+  </head>
     <script>
       global = globalThis;
     </script>
@@ -91,6 +95,7 @@ export const webpackRendererConfig =
   </html>
   `,
         }),
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       ],
     };
 

@@ -7,9 +7,9 @@
 
 import ReactRefreshPlugin from "@pmmmwh/react-refresh-webpack-plugin";
 import { CleanWebpackPlugin } from "clean-webpack-plugin";
-import CopyPlugin from "copy-webpack-plugin";
+// import CopyPlugin from "copy-webpack-plugin";
 import HtmlWebpackPlugin from "html-webpack-plugin";
-import path from "path";
+// import path from "path";
 import { Configuration, WebpackPluginInstance } from "webpack";
 import type {
   ConnectHistoryApiFallbackOptions,
@@ -144,10 +144,10 @@ export const mainConfig =
 
       plugins: [
         ...plugins,
-        ...(appWebpackConfig.plugins ?? []),
-        new CopyPlugin({
-          patterns: [{ from: path.resolve(__dirname, "..", "public") }],
-        }),
+        // ...(appWebpackConfig.plugins ?? []),
+        // new CopyPlugin({
+        //   patterns: [{ from: path.resolve(__dirname, "..", "public") }],
+        // }),
         new HtmlWebpackPlugin({
           templateContent: ({ htmlWebpackPlugin }) => `
   <!doctype html>

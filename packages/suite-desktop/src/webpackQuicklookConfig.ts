@@ -91,7 +91,8 @@ export const webpackQuicklookConfig =
           templateContent: `
 <!doctype html>
 <html>
-  <head><meta charset="utf-8"></head>
+  <head><meta charset="utf-8">
+  </head>
   <script>
     global = globalThis;
   </script>

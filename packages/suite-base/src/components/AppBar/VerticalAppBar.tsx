@@ -224,11 +224,12 @@ const VerticalAppBar: React.FC = () => {
           <DialogContent dividers sx={{ height: "80vh", p: 0 }}>
             {/* 方式 A：简单用 iframe */}
             <iframe
-              src="/usermanual.pdf" // 假设PDF放在public/manuals目录
+              src={
+                  `http://121.43.252.95/usermanual.pdf")}`
+              }
               title="User Manual"
               width="100%"
               height="100%"
-              style={{ border: "none" }}
             />
 
             {/*
