@@ -13,4 +13,5 @@ export const workspace = {
   layouts: "布局",
   vehiclesState: "车辆状态",
   systemState:"系统状态",
+  process: "进程",
 };

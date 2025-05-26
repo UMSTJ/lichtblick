@@ -124,7 +124,6 @@ function newStudioWindow(deepLinks: string[] = [], reloadMainWindow: () => void)
       // Access-Control-Allow-Origin check
       // webSecurity: isProduction,
       webSecurity: false, // 允许加载本地文件
-      enableRemoteModule: true, // 新增这行
     },
 
   };

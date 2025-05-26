@@ -101,6 +101,7 @@ import isDesktopApp from "@lichtblick/suite-base/util/isDesktopApp";
 import VerticalAppBar from "./components/AppBar/VerticalAppBar";
 import { useWorkspaceActions } from "./context/Workspace/useWorkspaceActions";
 import VehiclesStateList from "@lichtblick/suite-base/components/VehiclesStateList";
+import ProcessSidebar from "@lichtblick/suite-base/components/ProcessSidebar";
 
 const log = Logger.getLogger(__filename);
 
@@ -475,6 +476,13 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
         {
           title: t("workspace:vehiclesState"),
           component: NewVehiclesStateList,
+        },
+      ],
+      [
+        "process",
+        {
+          title: t("workspace:process"),
+          component: ProcessSidebar,
         },
       ],
     ]);

@@ -20,6 +20,7 @@ declare global {
         removeAllListeners: (channel: string) => void;
       };
       shell2: {
+        openPath(pdfPath: string): unknown;
         openExternal: (url: string) => Promise<void>;
       };
     };

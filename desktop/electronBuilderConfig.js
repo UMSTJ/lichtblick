@@ -23,9 +23,8 @@ module.exports = makeElectronBuilderConfig({
   ],
   extraResources: [
     {
-      "from": "public",  // 源目录
-      "to": "public",    // 目标目录（会复制到app资源目录）
-      "filter": ["**/*"] // 包含所有文件
+      "from": "public/usermanual.pdf",
+      "to": "usermanual.pdf"
     }
   ]
 });

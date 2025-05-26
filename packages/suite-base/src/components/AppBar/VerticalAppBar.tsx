@@ -64,6 +64,16 @@ const VerticalAppBar: React.FC = () => {
   const [nowIPAddr, setIPAddr] = useState<string>("");
   const [codeOnlineState, setCodeOnlineState] = useState<boolean>(false);
   const [openManual, setOpenManual] = React.useState(false);
+  const [manualPath, setManualPath] = useState("");
+
+// 在 useEffect 中动态拼接绝对路径
+  useEffect(() => {
+    if (window?.electron?.process?.resourcesPath) {
+      const pdfPath = path.join(window.electron.process.resourcesPath, "usermanual.pdf");
+      const fileUrl = `file://${pdfPath.replace(/\\/g, "/")}`; // 👈 注意 Windows 路径分隔符
+      setManualPath(fileUrl);
+    }
+  }, []);
   useEffect(() => {
     // eslint-disable-next-line no-restricted-syntax
 
@@ -222,24 +232,13 @@ const VerticalAppBar: React.FC = () => {
           </DialogTitle>
 
           <DialogContent dividers sx={{ height: "80vh", p: 0 }}>
-            {/* 方式 A：简单用 iframe */}
             <iframe
-              src={
-                  `http://121.43.252.95/usermanual.pdf")}`
-              }
+              src={manualPath}
               title="User Manual"
               width="100%"
               height="100%"
+              style={{ border: "none" }}
             />
-
-            {/*
-          // 方式 B：更高级的 react-pdf，你可以：
-          // npm install react-pdf
-          // import { Document, Page } from 'react-pdf';
-          // <Document file="/usermanual.pdf">
-          //   <Page pageNumber={1} />
-          // </Document>
-          */}
           </DialogContent>
         </Dialog>
         {/* <Button

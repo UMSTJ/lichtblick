@@ -47,6 +47,8 @@ export interface ElectronAPI {
   };
   shell2: {
     openExternal: (url: string) => Promise<void>;
+    openPath: (filePath: string) => Promise<void>;
+
   };
   fileRenderer: {
     saveFile: (
@@ -66,6 +68,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppPath: () => ipcRenderer.invoke('get-app-path')
 });
 
+
+
 // 将 ipcRenderer 暴露到渲染进程中
 contextBridge.exposeInMainWorld("electron", {
   ipcRenderer: {
@@ -82,6 +86,9 @@ contextBridge.exposeInMainWorld("electron", {
   shell2: {
     openExternal: async (url: string) => {
       await shell.openExternal(url);
+    },
+    openPath: async (filePath: string) => {
+      await shell.openPath(filePath);
     },
   },
   fileRenderer: {

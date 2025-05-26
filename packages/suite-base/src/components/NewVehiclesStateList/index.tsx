@@ -161,49 +161,9 @@ export default function NewVehiclesStateList(): ReactElement {
   useMessageDataItem("/battery_state")
   useMessageDataItem("/odom")
   // 订阅硬件信息主题
-  // const Messages = useMessagePipeline(ctx=>ctx);
-  // console.log("Messages: ", Messages)
   const battaryData = useMessageDataItem("/battery_state")
   const odomData = useMessageDataItem("/odom")
-  // console.log("battaryData: ", battaryData)
-  // console.log("odomData: ", odomData)
-  // useEffect(() => {
-  //   if (battaryData.length > 0) {
-  //     const battaryinfo = battaryData[battaryData.length - 1] as {
-  //       queriedData: {
-  //         value: {
-  //           percentage: number
-  //         }
-  //       }[];
-  //     };
-  //     if(odomData.length > 0){
-  //       const odominfo = odomData[odomData.length - 1] as {
-  //         queriedData: {
-  //           value: {
-  //             twist: {
-  //               twist: {
-  //                 linear: {
-  //                   x: number
-  //                 },
-  //                 angular: {
-  //                   z: number
-  //                 }
-  //               }
-  //             }
-  //           }
-  //         }[];
-  //       };
-  //       setDriveStatus({
-  //         power: battaryinfo.queriedData[0]?.value.percentage ?? 0,
-  //         angle: odominfo.queriedData[0]?.value.twist.twist.angular.z ?? 0,
-  //         speed: odominfo.queriedData[0]?.value.twist.twist.linear.x ?? 0,
-  //       })
-  //     }
-  //
-  //   } else {
-  //
-  //   }
-  // }, [battaryData,odomData]);
+
   const dataRef = useRef({ battaryData, odomData });
 
   useEffect(() => {

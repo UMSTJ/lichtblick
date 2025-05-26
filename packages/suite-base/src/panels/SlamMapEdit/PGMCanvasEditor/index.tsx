@@ -8,7 +8,8 @@ import {
   Layer,
   LayerDrawer,
 } from "@lichtblick/suite-base/panels/SlamMapEdit/PGMCanvasEditor/components/LayerDrawer";
-
+import { texture } from "three/examples/jsm/nodes/shadernode/ShaderNodeBaseElements";
+import * as yaml from 'js-yaml';
 // PGM 格式定义
 export interface PGMImage {
   width: number;
@@ -16,7 +17,14 @@ export interface PGMImage {
   maxVal: number;
   data: Uint8Array;
 }
-
+interface ROSMapConfig {
+  image: string;
+  resolution: number;
+  origin: number[];
+  negate: 0 | 1;
+  occupied_thresh: number;
+  free_thresh: number;
+}
 // PGM 解析函数
 export function parsePGM(data: string): PGMImage | undefined {
   try {
@@ -96,6 +104,8 @@ const PGMCanvasEditor: React.FC = () => {
 
   const [pgmData, setPGMData] = useState<PGMImage | undefined>(undefined);
   const [drawing, setDrawing] = useState(false);
+  const [drawPoint,setDrawPoint] = useState(false);
+  const [points, setPoints] = useState<Array<{x: number, y: number}>>([]);
   const [isMouseDown, setIsMouseDown] = useState(false);
 
   const [pgmFile, setPgmFile] = useState<File | undefined>(undefined);
@@ -103,6 +113,116 @@ const PGMCanvasEditor: React.FC = () => {
 
   const [brushColor, setBrushColor] = useState<number>(0);
   const [brushSize, setBrushSize] = useState(5);
+
+  // 在现有 state 中新增：
+  const [mapConfig, setMapConfig] = useState<ROSMapConfig>({
+    image: '',
+    resolution: 0.05,
+    origin: [0, 0, 0],
+    negate: 0,
+    occupied_thresh: 0.65,
+    free_thresh: 0.25
+  });
+  // 统一文件处理状态
+  const [configFile, setConfigFile] = useState<File | undefined>(undefined);
+  // 5. 添加 YAML 处理函数
+  // YAML文件处理函数（与PGM处理类似）
+  const handleYamlUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setConfigFile(file);
+  };
+
+  // 独立YAML解析逻辑
+  const parseYAMLConfig = useCallback(async (file: File) => {
+    try {
+      const text = await file.text();
+      const config = yaml.load(text) as ROSMapConfig;
+
+      // 验证必要字段
+      if (!config.image || !config.resolution) {
+        throw new Error("Missing required fields in YAML");
+      }
+
+      // 类型转换和默认值处理
+      const processedConfig: ROSMapConfig = {
+        image: config.image,
+        resolution: Number(config.resolution),
+        origin: config.origin?.map(Number) || [0, 0, 0],
+        negate: config.negate ? 1 : 0,
+        occupied_thresh: Number(config.occupied_thresh || 0.65),
+        free_thresh: Number(config.free_thresh || 0.25)
+      };
+
+      setMapConfig(processedConfig);
+
+      return processedConfig;
+    } catch (error) {
+      console.error("YAML解析失败:", error);
+      alert("YAML文件格式错误，请检查配置");
+      return null;
+    }
+  }, []);
+
+  // 添加导出点位函数
+  const exportPoints = useCallback(() => {
+    if (!mapConfig || points.length === 0) return;
+
+    // 转换坐标为字符串
+    const csvContent = "x,y\n" +
+      points.map(p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "map_points.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [points, mapConfig]);
+
+  // 修改处理配置文件的useEffect
+  useEffect(() => {
+    if (!configFile) return;
+
+    const processConfig = async () => {
+      const config = await parseYAMLConfig(configFile);
+      if (!config) return;
+
+      // 提取纯文件名（去除路径）
+      const targetFilename = config.image.split('/').pop()?.split('\\').pop();
+
+      // 提示用户上传对应的PGM文件
+      const uploadConfirmed = window.confirm(
+        `YAML配置中指定的地图文件为：${config.image}\n请选择对应的PGM文件（文件名需为：${targetFilename}）`
+      );
+
+      if (uploadConfirmed && targetFilename) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.pgm';
+
+        input.onchange = (e: Event) => {
+          const selectedFile = (e.target as HTMLInputElement).files?.[0];
+          if (!selectedFile) return;
+
+          // 验证文件名匹配（不区分大小写）
+          const selectedFilename = selectedFile.name;
+          const isValidFile = selectedFilename.localeCompare(targetFilename, undefined, { sensitivity: 'accent' }) === 0;
+
+          if (isValidFile) {
+            setPgmFile(selectedFile);
+          } else {
+            alert(`文件名称不匹配！\n预期文件：${targetFilename}\n当前选择：${selectedFilename}`);
+          }
+        };
+
+        input.click();
+      }
+    };
+
+    processConfig();
+  }, [configFile, parseYAMLConfig]);
 
   const handleBrushSizeChange = (size: number) => {
     setBrushSize(size);
@@ -562,20 +682,26 @@ const PGMCanvasEditor: React.FC = () => {
     },
     [sceneRef, textureRef],
   );
-  // 文件上传处理
+  // 修改原始PGM上传处理（保持独立上传通道）
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) {
-      return;
+    if (!file) return;
+
+    // 独立上传时不强制名称验证
+    if (mapConfig.image && file.name !== mapConfig.image) {
+      const override = window.confirm(
+        `当前文件名为：${file.name}\n与配置中的地图文件（${mapConfig.image}）不一致\n是否继续加载？`
+      );
+      if (!override) return;
     }
 
-    // 添加文件大小限制 (例如 50MB)
+    // 原有验证逻辑
     if (file.size > 50 * 1024 * 1024) {
       alert("文件太大，请选择更小的文件");
       return;
     }
-
     setPgmFile(file);
+    setPoints([]);
   };
 
   function updateBrushPreviewScale(camera: THREE.OrthographicCamera, pgmData: PGMImage) {
@@ -647,18 +773,78 @@ const PGMCanvasEditor: React.FC = () => {
   const startDraw = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!drawing) {
       return;
-    } // 修正为仅在绘制模式下触发
+    }
+    // 修正为仅在绘制模式下触发
     // 在绘制前检查
     // if (getActiveLayer()?.id === 'base') {
     //   alert('请先选择非基础图层');
     //   return;
     // }
 
-    setIsMouseDown(true);
-    if (brushPreviewRef.current) {
-      brushPreviewRef.current.visible = true;
+    // 优先处理点绘制模式
+    if (drawPoint) {
+      handleAddPoint(e);
+    } else {
+      setIsMouseDown(true);
+      if (brushPreviewRef.current) {
+        brushPreviewRef.current.visible = true;
+      }
+      draw(e);
     }
-    draw(e); // 在状态更新后调用
+  };
+
+  // 新增处理坐标转换的函数
+  const handleAddPoint = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!pgmData || !sceneRef.current || !canvasRef.current || !cameraRef.current) return;
+
+    const canvas = canvasRef.current;
+    const camera = cameraRef.current;
+    const mesh = layers[0]?.mesh;
+
+    if (!mesh) return;
+
+    // 获取鼠标位置
+    const rect = canvas.getBoundingClientRect();
+    const mouse = new THREE.Vector2(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1
+    );
+
+    // 执行射线检测
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const intersection = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(plane, intersection)) return;
+
+    // 转换到纹理坐标
+    const worldToLocal = new THREE.Matrix4().copy(mesh.matrixWorld).invert();
+    const localPoint = intersection.clone().applyMatrix4(worldToLocal);
+    const { x: pixelX, y: pixelY } = uvToTextureCoords(localPoint, mesh, pgmData);
+
+    // 转换为实际坐标（使用YAML参数）
+    const { origin, resolution } = mapConfig;
+    // 米制坐标计算（包含像素中心偏移）
+    const worldX = origin[0] + (pixelX + 0.5) * resolution;
+    const worldY = origin[1] + (pgmData.height - pixelY - 0.5) * resolution;
+    console.log("添加点 原始像素坐标:", pixelX, pixelY);
+    console.log("添加点 实际坐标:", worldX, worldY);
+
+    // 添加点到状态
+    setPoints(prev => [...prev, { x: worldX, y: worldY }]);
+
+    // 在场景中添加可视化标记
+    const markerGeometry = new THREE.SphereGeometry(0.005);
+    const markerMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+      // 添加半透明效果
+      transparent: true,
+      opacity: 0.8
+    });
+    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+    marker.position.set(intersection.x, intersection.y, 0.5);
+    sceneRef.current.add(marker);
   };
 
   const endDraw = () => {
@@ -786,6 +972,11 @@ const PGMCanvasEditor: React.FC = () => {
       return newDrawingState;
     });
   }, []);
+  const toggleDrawPoint = useCallback(() => {
+    setDrawPoint((prev) => {
+      return !prev;
+    });
+  }, []);
 
   // 缩略图绘制
   const drawThumbnail = (pgm: PGMImage) => {
@@ -868,41 +1059,75 @@ const PGMCanvasEditor: React.FC = () => {
     }
   };
 
-  const savePGM = () => {
-    if (!pgmData || !textureRef.current) {
-      return;
-    }
+  // 在ThreeJS场景渲染循环中添加点标记（可选）
+  useEffect(() => {
+    if (!sceneRef.current) return;
 
-    // 创建新的数据数组，长度为图像的宽x高（每个像素一个值）
-    const newData = new Uint8Array(pgmData.width * pgmData.height);
-    const pixels = textureRef.current.image.data;
-
-    // 遍历像素数据
-    for (let y = 0; y < pgmData.height; y++) {
-      for (let x = 0; x < pgmData.width; x++) {
-        const srcIndex = (y * pgmData.width + x) * 4; // RGBA 数据的索引
-        const destIndex = y * pgmData.width + x; // 新数组的索引
-
-        // 只读取 R 通道的值（因为我们使用的是灰度图）
-        const value = pixels[srcIndex]; // R 通道
-
-        // 二值化处理：只保留黑(0)和白(maxVal)
-        newData[destIndex] = value < 128 ? 0 : pgmData.maxVal;
+    // 清除旧标记
+    sceneRef.current.children.forEach(child => {
+      if (child.userData?.isPointMarker) {
+        sceneRef.current?.remove(child);
       }
-    }
+    });
 
-    // 创建更新后的 PGM 对象
-    const updatedPGM = {
-      width: pgmData.width,
-      height: pgmData.height,
-      maxVal: pgmData.maxVal,
-      data: newData,
+    // 添加新标记
+    points.forEach(point => {
+      const markerGeometry = new THREE.SphereGeometry(0.05);
+      const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+      marker.position.set(
+        (point.x - mapConfig.origin[0]) / mapConfig.resolution * 0.05,
+        (point.y - mapConfig.origin[1]) / mapConfig.resolution * 0.05,
+        0.5
+      );
+      marker.userData.isPointMarker = true;
+      sceneRef.current?.add(marker);
+    });
+  }, [points, mapConfig]);
+
+  const savePGM = () => {
+    if (!pgmData || !sceneRef.current || layers.length === 0) return;
+
+    // 初始化合并数据（保留原始PGM数据）
+    const mergedData = new Uint8Array(pgmData.data);
+
+    // 按渲染顺序处理图层（从底层到顶层）
+    const sortedLayers = [...layers].sort((a, b) => a.mesh.renderOrder - b.mesh.renderOrder);
+
+    sortedLayers.forEach(layer => {
+      if (!layer.visible) return;
+
+      const textureData = new Uint8Array(layer.texture.image.data.buffer);
+
+      for (let i = 0; i < textureData.length; i += 4) {
+        // 跳过完全透明的像素
+        if (textureData[i + 3] < 1) continue;
+
+        // 获取原始坐标
+        const x = (i / 4) % pgmData.width;
+        const y = Math.floor((i / 4) / pgmData.width);
+
+        // 转换为PGM坐标系（Y轴翻转）
+        const pgmIndex = (pgmData.height - 1 - y) * pgmData.width + x;
+
+        // 将RGBA转换为灰度值（考虑原始maxVal）
+        const gray = Math.round(
+          (textureData[i] / 255) * pgmData.maxVal // R通道作为灰度值
+        );
+
+        // 直接覆盖（上层优先）
+        mergedData[pgmIndex] = gray;
+      }
+    });
+
+    // 生成最终PGM文件
+    const updatedPGM: PGMImage = {
+      ...pgmData,
+      data: mergedData
     };
 
-    // 创建 PGM 文件内容
+    // 创建下载
     const pgmString = createPGMFromData(updatedPGM);
-
-    // 保存文件
     const blob = new Blob([pgmString], { type: "image/x-portable-graymap" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -911,7 +1136,6 @@ const PGMCanvasEditor: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
-
   return (
     <div
       ref={containerRef}
@@ -925,7 +1149,10 @@ const PGMCanvasEditor: React.FC = () => {
     >
       <DrawingToolbar
         drawing={drawing}
+        drawPoint={drawPoint}
+        onExportPoints={exportPoints}
         toggleDrawing={toggleDrawing}
+        toggleDrawPoint={toggleDrawPoint}
         savePGM={savePGM}
         onBrushColorChange={handleBrushColorChange}
         handleFileUpload={handleFileUpload}
@@ -936,6 +1163,7 @@ const PGMCanvasEditor: React.FC = () => {
         isLayerPanelOpen={isLayerDrawerOpen}
         brushSize={brushSize}
         onBrushSizeChange={handleBrushSizeChange}
+        handleYamlUpload={handleYamlUpload}
       />
 
       <div

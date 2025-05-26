@@ -4,10 +4,14 @@ import {
   ColorLine24Regular,
   DocumentArrowUpRegular,
   Layer24Regular,
+  BoxArrowUpRegular,
   ChevronUp24Regular,
   ChevronDown24Regular,
   Pin24Regular,
   LineHorizontal124Regular,
+  AddCircle24Filled,
+  SaveEditFilled,
+  SaveArrowRight24Filled,
 } from "@fluentui/react-icons";
 import {
   AppBar,
@@ -77,7 +81,10 @@ const HiddenFileInput = styled("input")({
 
 interface DrawingToolbarProps {
   drawing: boolean;
+  drawPoint: boolean;
   toggleDrawing: () => void;
+  toggleDrawPoint: () => void;
+  onExportPoints:  () => void;
   savePGM: () => void;
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   brushColor: number;
@@ -86,11 +93,15 @@ interface DrawingToolbarProps {
   onLayerDrawerToggle: () => void;
   isLayerPanelOpen: boolean;
   onBrushColorChange: (color: number) => void;
+  handleYamlUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
   drawing,
+  drawPoint,
+                                                                onExportPoints,
   toggleDrawing,
+  toggleDrawPoint,
   savePGM,
   handleFileUpload,
   brushColor,
@@ -99,11 +110,14 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
   brushSize,
   onBrushSizeChange,
    onBrushColorChange,
+  handleYamlUpload,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  // 在DrawingToolbar组件内添加：
+  const yamlInputRef = React.useRef<HTMLInputElement>(null);
   const handleFileButtonClick = () => {
     fileInputRef.current?.click();
   };
@@ -216,12 +230,22 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
                 <DrawImage24Regular />
               </ToolButton>
             </Tooltip>
+            <Tooltip title={`DrawMode: ${drawPoint ? "Point" : "Line"}`}>
+              <ToolButton selected={drawPoint} onClick={toggleDrawPoint}>
+                <AddCircle24Filled />
+              </ToolButton>
+            </Tooltip>
 
             <Divider orientation="vertical" flexItem />
 
             <Tooltip title="Save PGM">
               <ToolButton onClick={savePGM}>
                 <Save24Regular />
+              </ToolButton>
+            </Tooltip>
+            <Tooltip title="EXPORT Points">
+              <ToolButton onClick={onExportPoints}>
+                <SaveArrowRight24Filled />
               </ToolButton>
             </Tooltip>
 
@@ -285,11 +309,19 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
                 <Layer24Regular />
               </ToolButton>
             </Tooltip>
+
             <Tooltip title="Upload PGM File">
               <ToolButton onClick={handleFileButtonClick}>
                 <DocumentArrowUpRegular />
               </ToolButton>
-            </Tooltip>
+            </Tooltip
+            ><Tooltip title="Upload YAML File">
+            <ToolButton
+              onClick={() => yamlInputRef.current?.click()} // 触发隐藏的input
+            >
+              <BoxArrowUpRegular />
+            </ToolButton>
+          </Tooltip>
           </Box>
 
           {/* 右侧最小化按钮 */}
@@ -337,6 +369,14 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
 
       {/* 隐藏的文件输入 */}
       <HiddenFileInput ref={fileInputRef} type="file" accept=".pgm" onChange={handleFileUpload} />
+      // 在组件return的末尾添加隐藏的input
+      <HiddenFileInput
+        ref={yamlInputRef}
+        type="file"
+        accept=".yaml"
+        onChange={handleYamlUpload}
+        style={{ display: 'none' }}
+      />
     </StyledAppBar>
   );
 
