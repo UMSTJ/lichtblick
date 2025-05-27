@@ -231,12 +231,12 @@ export function DataSource(): React.JSX.Element {
               // eslint-disable-next-line react/forbid-component-props
               sx={{
                 borderRadius: "50%", // 设置圆形
-                minWidth: "30px", // 最小宽度
-                minHeight: "30px", // 最小高度
+                minWidth: "10px", // 最小宽度
+                minHeight: "10px", // 最小高度
                 padding: 0, // 去除默认内边距
-                width: "30px", // 固定宽度
-                height: "30px", // 固定高度
-                boxShadow: "0 0 20px rgba(0, 0, 0, 0.3)",
+                width: "20px", // 固定宽度
+                height: "20px", // 固定高度
+                boxShadow: "0 0 10px rgba(0, 0, 0, 0.3)",
               }}
             >
               <ICON />

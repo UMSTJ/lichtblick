@@ -1,6 +1,27 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
@@ -47,11 +68,13 @@ import {
   useMessagePipeline,
   useMessagePipelineGetter,
 } from "@lichtblick/suite-base/components/MessagePipeline";
+//import NewVehiclesStateList from "@lichtblick/suite-base/components/NewVehiclesStateList";
 import { PanelCatalog } from "@lichtblick/suite-base/components/PanelCatalog";
 import PanelLayout from "@lichtblick/suite-base/components/PanelLayout";
 import PanelSettings from "@lichtblick/suite-base/components/PanelSettings";
 import PlaybackControls from "@lichtblick/suite-base/components/PlaybackControls";
 import { ProblemsList } from "@lichtblick/suite-base/components/ProblemsList";
+//import ProcessSidebar from "@lichtblick/suite-base/components/ProcessSidebar";
 import RemountOnValueChange from "@lichtblick/suite-base/components/RemountOnValueChange";
 import { SidebarContent } from "@lichtblick/suite-base/components/SidebarContent";
 import Sidebars from "@lichtblick/suite-base/components/Sidebars";
@@ -64,7 +87,7 @@ import {
 import { SyncAdapters } from "@lichtblick/suite-base/components/SyncAdapters";
 import { TopicList } from "@lichtblick/suite-base/components/TopicList";
 import VariablesList from "@lichtblick/suite-base/components/VariablesList";
-import NewVehiclesStateList from "@lichtblick/suite-base/components/NewVehiclesStateList";
+//import VehiclesStateList from "@lichtblick/suite-base/components/VehiclesStateList";
 import { WorkspaceDialogs } from "@lichtblick/suite-base/components/WorkspaceDialogs";
 import { useAppContext } from "@lichtblick/suite-base/context/AppContext";
 import {
@@ -100,14 +123,12 @@ import isDesktopApp from "@lichtblick/suite-base/util/isDesktopApp";
 
 import VerticalAppBar from "./components/AppBar/VerticalAppBar";
 import { useWorkspaceActions } from "./context/Workspace/useWorkspaceActions";
-import VehiclesStateList from "@lichtblick/suite-base/components/VehiclesStateList";
-import ProcessSidebar from "@lichtblick/suite-base/components/ProcessSidebar";
 
 const log = Logger.getLogger(__filename);
 
 const useStyles = makeStyles()({
   container: {
-    width: "calc(100% - 60px)",
+    width: "calc(100%)",
     height: "100%",
     display: "flex",
     flexDirection: "column",
@@ -115,7 +136,7 @@ const useStyles = makeStyles()({
     flex: "1 1 100%",
     outline: "none",
     overflow: "hidden",
-    marginLeft: "60px",
+    //marginLeft: "60px",
     // marginRight: "60px",
   },
 });
@@ -464,27 +485,27 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
 
   const rightSidebarItems = useMemo(() => {
     const items = new Map<RightSidebarItemKey, SidebarItem>([
-      [
-        "variables",
-        {
-          title: t("workspace:systemState"),
-          component: VehiclesStateList,
-        },
-      ],
-      [
-        "vehiclesState",
-        {
-          title: t("workspace:vehiclesState"),
-          component: NewVehiclesStateList,
-        },
-      ],
-      [
-        "process",
-        {
-          title: t("workspace:process"),
-          component: ProcessSidebar,
-        },
-      ],
+      // [
+      //   "variables",
+      //   {
+      //     title: t("workspace:systemState"),
+      //     component: VehiclesStateList,
+      //   },
+      // ],
+      // [
+      //   "vehiclesState",
+      //   {
+      //     title: t("workspace:vehiclesState"),
+      //     component: NewVehiclesStateList,
+      //   },
+      // ],
+      // [
+      //   "process",
+      //   {
+      //     title: t("workspace:process"),
+      //     component: ProcessSidebar,
+      //   },
+      // ],
     ]);
     if (enableDebugMode) {
       if (PerformanceSidebarComponent) {
@@ -669,51 +690,51 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
           // algorithm: [theme.darkAlgorithm, theme.compactAlgorithm],
         }}
       >
-      {dataSourceDialog.open && <DataSourceDialog />}
-      <DocumentDropListener onDrop={dropHandler} allowedExtensions={allowedDropExtensions} />
-      <SyncAdapters />
-      <KeyListener global keyDownHandlers={keyDownHandlers} />
-      <div className={classes.container} ref={containerRef} tabIndex={0}>
-        <VerticalAppBar/>
-        {/* 直接在布局层渲染 */}
-        {appBar}
-        <Sidebars
-          selectedKey=""
-          onSelectKey={() => {}}
-          items={sidebarItems}
-          leftItems={leftSidebarItems}
-          bottomItems={sidebarBottomItems}
-          selectedLeftKey={leftSidebarOpen ? leftSidebarItem : undefined}
-          onSelectLeftKey={sidebarActions.left.selectItem}
-          leftSidebarSize={leftSidebarSize}
-          setLeftSidebarSize={sidebarActions.left.setSize}
-          rightItems={rightSidebarItems}
-          selectedRightKey={rightSidebarOpen ? rightSidebarItem : undefined}
-          onSelectRightKey={sidebarActions.right.selectItem}
-          rightSidebarSize={rightSidebarSize}
-          setRightSidebarSize={sidebarActions.right.setSize}
-        >
-          {/* To ensure no stale player state remains, we unmount all panels when players change */}
-          <RemountOnValueChange value={playerId}>
-            <Stack>
-              <PanelLayout />
-            </Stack>
-          </RemountOnValueChange>
-        </Sidebars>
-        {play && pause && seek && (
-          <div style={{ flexShrink: 0 }}>
-            <PlaybackControls
-              play={play}
-              pause={pause}
-              seek={seek}
-              playUntil={playUntil}
-              isPlaying={isPlaying}
-              getTimeInfo={getTimeInfo}
-            />
-          </div>
-        )}
-      </div>
-      <WorkspaceDialogs />
+        {dataSourceDialog.open && <DataSourceDialog />}
+        <DocumentDropListener onDrop={dropHandler} allowedExtensions={allowedDropExtensions} />
+        <SyncAdapters />
+        <KeyListener global keyDownHandlers={keyDownHandlers} />
+        <div className={classes.container} ref={containerRef} tabIndex={0}>
+          {/* <VerticalAppBar/> */}
+          {/* 直接在布局层渲染 */}
+          {appBar}
+          <Sidebars
+            selectedKey=""
+            onSelectKey={() => {}}
+            items={sidebarItems}
+            leftItems={leftSidebarItems}
+            bottomItems={sidebarBottomItems}
+            selectedLeftKey={leftSidebarOpen ? leftSidebarItem : undefined}
+            onSelectLeftKey={sidebarActions.left.selectItem}
+            leftSidebarSize={leftSidebarSize}
+            setLeftSidebarSize={sidebarActions.left.setSize}
+            rightItems={rightSidebarItems}
+            selectedRightKey={rightSidebarOpen ? rightSidebarItem : undefined}
+            onSelectRightKey={sidebarActions.right.selectItem}
+            rightSidebarSize={rightSidebarSize}
+            setRightSidebarSize={sidebarActions.right.setSize}
+          >
+            {/* To ensure no stale player state remains, we unmount all panels when players change */}
+            <RemountOnValueChange value={playerId}>
+              <Stack>
+                <PanelLayout />
+              </Stack>
+            </RemountOnValueChange>
+          </Sidebars>
+          {play && pause && seek && (
+            <div style={{ flexShrink: 0 }}>
+              <PlaybackControls
+                play={play}
+                pause={pause}
+                seek={seek}
+                playUntil={playUntil}
+                isPlaying={isPlaying}
+                getTimeInfo={getTimeInfo}
+              />
+            </div>
+          )}
+        </div>
+        <WorkspaceDialogs />
       </ConfigProvider>
     </PanelStateContextProvider>
   );

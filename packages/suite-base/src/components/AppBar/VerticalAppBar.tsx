@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
@@ -9,9 +15,12 @@ import {
   Code24Regular,
   AppsAddIn24Regular,
   ContentSettings24Regular,
-  NotebookQuestionMark24Regular
+  NotebookQuestionMark24Regular,
 } from "@fluentui/react-icons";
+import CloseIcon from "@mui/icons-material/Close";
+import { Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
 import { Layout } from "antd";
+import path from "path";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -25,10 +34,7 @@ import {
 } from "@lichtblick/suite-base/components/MessagePipeline";
 import { openCode } from "@lichtblick/suite-base/components/UdpMessage";
 import { useWorkspaceActions } from "@lichtblick/suite-base/context/Workspace/useWorkspaceActions";
-import React from "react";
-import { Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import path from "path";
+
 const { Sider } = Layout;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -66,17 +72,15 @@ const VerticalAppBar: React.FC = () => {
   const [openManual, setOpenManual] = React.useState(false);
   const [manualPath, setManualPath] = useState("");
 
-// 在 useEffect 中动态拼接绝对路径
+  // 在 useEffect 中动态拼接绝对路径
+  // useEffect(() => {
+  //   if (window?.electron?.process?.resourcesPath) {
+  //     const pdfPath = path.join(window.electron.process.resourcesPath, "usermanual.pdf");
+  //     const fileUrl = `file://${pdfPath.replace(/\\/g, "/")}`; // 👈 注意 Windows 路径分隔符
+  //     setManualPath(fileUrl);
+  //   }
+  // }, []);
   useEffect(() => {
-    if (window?.electron?.process?.resourcesPath) {
-      const pdfPath = path.join(window.electron.process.resourcesPath, "usermanual.pdf");
-      const fileUrl = `file://${pdfPath.replace(/\\/g, "/")}`; // 👈 注意 Windows 路径分隔符
-      setManualPath(fileUrl);
-    }
-  }, []);
-  useEffect(() => {
-    // eslint-disable-next-line no-restricted-syntax
-
     if (playerName != undefined) {
       const currentIp = getIpAddress(playerName);
       if (currentIp != undefined) {
@@ -119,13 +123,13 @@ const VerticalAppBar: React.FC = () => {
             transform: "translate(-50%, -50%)",
           }}
         >
-          <AppBarButton
+          {/* <AppBarButton
             icon={<AppsAddIn24Regular />}
             onClick={(event) => {
               setPanelAnchorEl(event.currentTarget);
             }}
             text={t("panels")}
-          ></AppBarButton>
+          ></AppBarButton> */}
 
           {/* <Button
             type="text"
@@ -174,7 +178,7 @@ const VerticalAppBar: React.FC = () => {
             transform: "translate(-50%, -50%)",
           }}
         >
-          <AppBarButton
+          {/* <AppBarButton
             icon={<Code24Regular />}
             disabled={!codeOnlineState}
             onClick={() => {
@@ -185,8 +189,7 @@ const VerticalAppBar: React.FC = () => {
               }
             }}
             text="Code"
-          ></AppBarButton>
-
+          ></AppBarButton> */}
         </div>
       </div>
 
@@ -198,29 +201,35 @@ const VerticalAppBar: React.FC = () => {
           transform: "translate(-50%, -50%)",
         }}
       >
-        <AppBarButton
+        {/* <AppBarButton
           icon={<ContentSettings24Regular />}
           onClick={() => {
             dialogActions.preferences.open("general");
           }}
           text={t("general")}
-        ></AppBarButton>
-        <AppBarButton
+        ></AppBarButton> */}
+        {/* <AppBarButton
           icon={<NotebookQuestionMark24Regular />}
-          onClick={() => setOpenManual(true)}
+          onClick={() => {
+            setOpenManual(true);
+          }}
           text={t("usermanual")}
-        ></AppBarButton>
-        <Dialog
+        ></AppBarButton> */}
+        {/* <Dialog
           fullWidth
           maxWidth="lg"
           open={openManual}
-          onClose={() => setOpenManual(false)}
+          onClose={() => {
+            setOpenManual(false);
+          }}
         >
           <DialogTitle sx={{ m: 0, p: 2 }}>
             {t("usermanual")}
             <IconButton
               aria-label="close"
-              onClick={() => setOpenManual(false)}
+              onClick={() => {
+                setOpenManual(false);
+              }}
               sx={{
                 position: "absolute",
                 right: 8,
@@ -240,7 +249,7 @@ const VerticalAppBar: React.FC = () => {
               style={{ border: "none" }}
             />
           </DialogContent>
-        </Dialog>
+        </Dialog> */}
         {/* <Button
           type="text"
           // type="primary"

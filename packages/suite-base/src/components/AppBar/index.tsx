@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
@@ -17,7 +21,7 @@ import tc from "tinycolor2";
 import { makeStyles } from "tss-react/mui";
 
 import { AppSetting } from "@lichtblick/suite-base/AppSetting";
-import { InfoContent } from "@lichtblick/suite-base/components/AppBar/DataSource";
+import { DataSource, InfoContent } from "@lichtblick/suite-base/components/AppBar/DataSource";
 import { isRunningInElectron } from "@lichtblick/suite-base/components/DataSourceDialog/Start";
 import { MemoryUseIndicator } from "@lichtblick/suite-base/components/MemoryUseIndicator";
 import Stack from "@lichtblick/suite-base/components/Stack";
@@ -182,15 +186,15 @@ export function AppBar(props: AppBarProps): React.JSX.Element {
   // const hasCurrentLayout = useCurrentLayoutSelector(selectHasCurrentLayout);
 
   const leftSidebarOpen = useWorkspaceStore(selectLeftSidebarOpen);
-  const rightSidebarOpen = useWorkspaceStore(selectRightSidebarOpen);
+  //const rightSidebarOpen = useWorkspaceStore(selectRightSidebarOpen);
 
   const { sidebarActions } = useWorkspaceActions();
 
-  const [appMenuEl, setAppMenuEl] = useState<undefined | HTMLElement>(undefined);
+  //const [appMenuEl, setAppMenuEl] = useState<undefined | HTMLElement>(undefined);
   const [userAnchorEl, setUserAnchorEl] = useState<undefined | HTMLElement>(undefined);
   const [panelAnchorEl, setPanelAnchorEl] = useState<undefined | HTMLElement>(undefined);
 
-  const appMenuOpen = Boolean(appMenuEl);
+  // const appMenuOpen = Boolean(appMenuEl);
   const userMenuOpen = Boolean(userAnchorEl);
   const panelMenuOpen = Boolean(panelAnchorEl);
 
@@ -200,6 +204,7 @@ export function AppBar(props: AppBarProps): React.JSX.Element {
         <div className={classes.toolbar}>
           <div className={classes.start}>
             <div className={classes.startInner}>
+              <DataSource />
               <Button
                 type="text"
                 style={{ marginTop: 5, marginLeft: 10, marginRight: 3, height: 22 }}
@@ -347,7 +352,7 @@ export function AppBar(props: AppBarProps): React.JSX.Element {
                   <Avatar className={classes.avatar} variant="rounded" />
                 </IconButton>
               </Tooltip> */}
-              <Button
+              {/* <Button
                 type="text"
                 style={{ marginTop: 5, marginLeft: 10, marginRight: 10, height: 22 }}
                 // type="primary"
@@ -361,8 +366,8 @@ export function AppBar(props: AppBarProps): React.JSX.Element {
                 onClick={() => {
                   sidebarActions.left.setOpen(!leftSidebarOpen);
                 }}
-              ></Button>
-              <Button
+              ></Button> */}
+              {/* <Button
                 type="text"
                 style={{
                   marginTop: 5,
@@ -381,7 +386,7 @@ export function AppBar(props: AppBarProps): React.JSX.Element {
                 onClick={() => {
                   sidebarActions.right.setOpen(!rightSidebarOpen);
                 }}
-              />
+              /> */}
               {showCustomWindowControls && (
                 <CustomWindowControls
                   onMinimizeWindow={onMinimizeWindow}

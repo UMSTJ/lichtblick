@@ -1,5 +1,23 @@
-import React from "react";
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 import { Button } from "antd";
+import React from "react";
 // import "./MyButton.css"; // 引入自定义样式
 type Prop = {
   onClick: (arg0?: any) => void;
@@ -13,8 +31,8 @@ const AppBarButton: React.FC<Prop> = (props: Prop) => {
       type="text"
       icon={props.icon}
       style={{
-        width: "50px",
-        height: "70px",
+        width: "30px",
+        height: "30px",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
@@ -23,7 +41,7 @@ const AppBarButton: React.FC<Prop> = (props: Prop) => {
       onClick={props.onClick}
       disabled={props.disabled}
     >
-      <span style={{ fontSize: "12px", marginTop: "0px" }}>{props.text}</span>
+      {/* <span style={{ fontSize: "5px", marginTop: "0px" }}>{props.text}</span> */}
     </Button>
   );
 };

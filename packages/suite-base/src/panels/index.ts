@@ -7,6 +7,18 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
@@ -40,9 +52,14 @@ import vehicleControlSummaryThumbnail from "./VehicleControl/thumbnail.png";
 // import diagnosticStatusThumbnail from "./diagnostics/thumbnails/diagnostic-status.png";
 // import diagnosticSummaryThumbnail from "./diagnostics/thumbnails/diagnostic-summary.png";
 
-// @ts-ignore
-// @ts-ignore
 export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
+  {
+    title: "wheel2status",
+    type: "wheel2status",
+    description: t("tabDescription"),
+    thumbnail: tabThumbnail,
+    module: async () => await import("./wheel2Status"),
+  },
   {
     title: t("hardwareInfo"),
     type: "hardwareInfo",
@@ -50,12 +67,12 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     // thumbnail: joystickSummaryThumbnail,
     module: async () => await import("./hardwareInfo"),
   },
-  {
-    title:t("SlamMapEditPanel"),
-    type: "SlamMapEditPanel",
-    description: t("SlamMapEditPanel"),
-    module: async () => await import("./SlamMapEdit"),
-  },
+  // {
+  //   title: t("SlamMapEditPanel"),
+  //   type: "SlamMapEditPanel",
+  //   description: t("SlamMapEditPanel"),
+  //   module: async () => await import("./SlamMapEdit"),
+  // },
   {
     title: t("motionState"),
     type: "MotionState",
