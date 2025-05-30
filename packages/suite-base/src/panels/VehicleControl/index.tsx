@@ -1,3 +1,9 @@
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 /* eslint-disable react/forbid-component-props */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
@@ -38,7 +44,6 @@ import Panel from "@lichtblick/suite-base/components/Panel";
 import PanelToolbar from "@lichtblick/suite-base/components/PanelToolbar";
 import useCallbackWithToast from "@lichtblick/suite-base/hooks/useCallbackWithToast";
 import usePublisher from "@lichtblick/suite-base/hooks/usePublisher";
-import BatteryIndicator from "@lichtblick/suite-base/panels/VehicleControl/components/BatteryIndicator";
 import FileUploadModal from "@lichtblick/suite-base/panels/VehicleControl/components/FileUploadModal";
 import MapFilesTab from "@lichtblick/suite-base/panels/VehicleControl/components/MapFilesTab";
 import TextCard from "@lichtblick/suite-base/panels/VehicleControl/components/TextCard";
@@ -616,7 +621,7 @@ const VehicleControlPanel: React.FC<Props> = ({ config, saveConfig }) => {
 
       // 读取文件，无论它是什么类型
       const result = await window.electron.fileRenderer.readFile("documents", fileName);
-      console.log("File read result:", result)
+      console.log("File read result:", result);
       if (!result.success || !result.data) {
         console.error("Failed to read file:", fileName);
         setMap({ map: demap, json: {} });
@@ -874,7 +879,7 @@ const VehicleControlPanel: React.FC<Props> = ({ config, saveConfig }) => {
                 top: "50px",
               }}
             >
-              <BatteryIndicator batteryLevel={(batteryPercentageRef.current ?? 0) * 100} />
+              {/* <BatteryIndicator batteryLevel={(batteryPercentageRef.current ?? 0) * 100} /> */}
               <TextCard
                 text={
                   interactionManagerRef.current?.getCurrentPositionRfidId()?.toString() ?? "无位置"
@@ -888,7 +893,9 @@ const VehicleControlPanel: React.FC<Props> = ({ config, saveConfig }) => {
   );
 };
 
-export default Panel(Object.assign(React.memo(VehicleControlPanel), {
-  panelType: "VehicleControl",
-  defaultConfig
-}));
+export default Panel(
+  Object.assign(React.memo(VehicleControlPanel), {
+    panelType: "VehicleControl",
+    defaultConfig,
+  }),
+);

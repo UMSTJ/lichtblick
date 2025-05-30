@@ -19,6 +19,12 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
@@ -29,7 +35,6 @@ import { PanelInfo } from "@lichtblick/suite-base/context/PanelCatalogContext";
 import { TAB_PANEL_TYPE } from "@lichtblick/suite-base/util/globalConstants";
 
 // import dataSourceInfoThumbnail from "./DataSourceInfo/thumbnail.png";
-import deviceSettingSummaryThumbnail from "./DeviceSetting/thumbnail.png";
 // import gaugeThumbnail from "./Gauge/thumbnail.png";
 import imageThumbnail from "./Image/thumbnail.png";
 // import indicatorThumbnail from "./Indicator/thumbnail.png";
@@ -73,22 +78,22 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
   //   description: t("SlamMapEditPanel"),
   //   module: async () => await import("./SlamMapEdit"),
   // },
-  {
-    title: t("motionState"),
-    type: "MotionState",
-    description: t("motionStateDescription"),
-    // thumbnail: motionStateThumbnail,
-    module: async () => await import("./MotionState"),
-    hasCustomToolbar: true,
-  },
-  {
-    title: t("pidPlot"),
-    type: "PIDPlot",
-    description: t("pidPlotDescription"),
-    // thumbnail: motionStateThumbnail,
-    module: async () => await import("./PIDPlot"),
-    hasCustomToolbar: true,
-  },
+  // {
+  //   title: t("motionState"),
+  //   type: "MotionState",
+  //   description: t("motionStateDescription"),
+  //   // thumbnail: motionStateThumbnail,
+  //   module: async () => await import("./MotionState"),
+  //   hasCustomToolbar: true,
+  // },
+  // {
+  //   title: t("pidPlot"),
+  //   type: "PIDPlot",
+  //   description: t("pidPlotDescription"),
+  //   // thumbnail: motionStateThumbnail,
+  //   module: async () => await import("./PIDPlot"),
+  //   hasCustomToolbar: true,
+  // },
   {
     title: t("LaunchMotion"),
     type: "LaunchMotion",
@@ -103,13 +108,13 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     thumbnail: joystickSummaryThumbnail,
     module: async () => await import("./Joystick"),
   },
-  {
-    title: t("deviceSetting"),
-    type: "DeviceSetting",
-    description: "配置沙盘设备",
-    thumbnail: deviceSettingSummaryThumbnail,
-    module: async () => await import("./DeviceSetting"),
-  },
+  // {
+  //   title: t("deviceSetting"),
+  //   type: "DeviceSetting",
+  //   description: "配置沙盘设备",
+  //   thumbnail: deviceSettingSummaryThumbnail,
+  //   module: async () => await import("./DeviceSetting"),
+  // },
   {
     title: t("VehicleControl"),
     type: "VehicleControl",

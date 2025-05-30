@@ -1,16 +1,58 @@
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import { Typography, List, Button } from "antd";
+import { Typography, List, Button, Input } from "antd";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 // 假设这些组件已经在你的项目中存在
 import TextMiddleTruncate from "@lichtblick/suite-base/components/TextMiddleTruncate";
 import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessage";
-import { usePlayerSelection } from "@lichtblick/suite-base/context/PlayerSelectionContext";
+import {
+  DataSourceArgs,
+  usePlayerSelection,
+} from "@lichtblick/suite-base/context/PlayerSelectionContext";
 
 const { Title } = Typography;
 
 const NewStart = () => {
   const { t } = useTranslation("openDialog");
+  const { selectSource } = usePlayerSelection();
+  const [inputIP, setInputIP] = useState("");
+
+  const createNewPlayer = async (ip: string) => {
+    const newSourceId = "foxglove-websocket"; // 替换为实际的数据源 ID
+    const connectionParams: DataSourceArgs = {
+      type: "connection",
+      params: {
+        url: "ws://" + ip + ":8765", // 替换为实际的 URL
+      },
+    };
+
+    selectSource(newSourceId, connectionParams);
+  };
 
   // 这个函数用于检测是否在Electron环境中运行
   const isRunningInElectron = () => {
@@ -32,7 +74,7 @@ const NewStart = () => {
       <Title level={5}>{t("recentDataSources")}</Title>
       <List
         itemLayout="horizontal"
-        dataSource={recentSources.slice(0, 5)}
+        dataSource={recentSources.slice(0, 3)}
         renderItem={(recent) => (
           <List.Item key={recent.id} id={recent.id} style={{ padding: 0 }}>
             <Button
@@ -70,6 +112,13 @@ const NewStart = () => {
           </List.Item>
         )}
       />
+      <Button
+        onClick={async () => {
+          await createNewPlayer("192.168.100.101");
+        }}
+      >
+        连接到轮椅
+      </Button>
       {isRunningInElectron() && (
         <>
           <Title level={5}>{t("activeClients")}</Title>
@@ -77,6 +126,24 @@ const NewStart = () => {
         </>
       )}
       {/* </Card> */}
+
+      <Title level={5}>手动连接</Title>
+      <Input
+        placeholder="输入IP地址"
+        onChange={(e) => {
+          setInputIP(e.target.value);
+        }}
+      />
+      <Button
+        type="primary"
+        disabled={inputIP === ""}
+        style={{ marginTop: "10px" }}
+        onClick={async () => {
+          await createNewPlayer(inputIP);
+        }}
+      >
+        连接
+      </Button>
     </div>
   );
 };

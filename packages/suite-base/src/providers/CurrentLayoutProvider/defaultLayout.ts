@@ -89,7 +89,7 @@ export const defaultLayout: LayoutData =
         layers: {},
         publish: {
           type: "point",
-          poseTopic: "/move_base_simple/goal",
+          poseTopic: "/goal_pose",
           pointTopic: "/clicked_point",
           poseEstimateTopic: "/initialpose",
           poseEstimateXDeviation: 0.5,

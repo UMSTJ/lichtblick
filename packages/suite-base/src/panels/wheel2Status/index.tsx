@@ -1,19 +1,16 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
-import { Stack, Typography, Card, LinearProgress, CardContent } from "@mui/material";
+import { Stack, Typography, Card, LinearProgress, CardContent, Button } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { use } from "cytoscape";
 import React, { useEffect, useState } from "react";
 
 // Assuming this path is correct for your project structure
-import { init } from "text-metrics";
 
 import { useMessageDataItem } from "@lichtblick/suite-base/components/MessagePathSyntax/useMessageDataItem";
 import Panel from "@lichtblick/suite-base/components/Panel";
@@ -72,6 +69,8 @@ const RootStack = styled(Stack)(({ theme }) => ({
 }));
 
 const SectionStack = styled(Stack)(({ theme }) => ({
+  color: theme.palette.text.primary,
+  backgroundColor: theme.palette.background.paper,
   width: "100%",
   justifyContent: "center",
   alignItems: "stretch", // Ensure children stretch
@@ -169,12 +168,12 @@ interface BatteryProgressBarProps {
 const BatteryProgressBar = styled(LinearProgress, {
   shouldForwardProp: (prop) => prop !== "batteryValue",
 })<BatteryProgressBarProps>(({ theme, batteryValue }) => ({
-  height: 14, // Thicker progress bar
-  borderRadius: 7,
+  height: 20, // Thicker progress bar
+  borderRadius: 0,
   width: "100%", // Ensure progress bar takes full width
   backgroundColor: theme.palette.grey[300], // Background of the track
   "& .MuiLinearProgress-bar": {
-    borderRadius: 7,
+    borderRadius: 0,
     backgroundColor: batteryValue > 20 ? theme.palette.success.main : theme.palette.error.main,
   },
 }));
@@ -217,16 +216,16 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
     useState<NavigationStatus>(initialNavigationStatus);
 
   const batteryMessages = useMessageDataItem(SubTopic.BATTERY);
-  const odomMessages = useMessageDataItem(SubTopic.ODODM);
+  // const odomMessages = useMessageDataItem(SubTopic.ODODM);
   const currentModeMessages = useMessageDataItem(SubTopic.CURRENT); // Renamed for clarity
   const navigationMessages = useMessageDataItem(SubTopic.NAVING);
 
   const latestBatteryMsg = getLatestMessage(batteryMessages) as
     | { queriedData?: { value?: { data?: number } }[] }
     | undefined;
-  const latestOdomMsg = getLatestMessage(odomMessages) as  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    | { queriedData?: { value?: { data?: any } }[] }
-    | undefined;
+  // const latestOdomMsg = getLatestMessage(odomMessages) as  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //   | { queriedData?: { value?: { data?: any } }[] }
+  //   | undefined;
   const latestCurrentModeMsg = getLatestMessage(currentModeMessages) as
     | { queriedData?: { value?: { data?: string } }[] }
     | undefined;
@@ -305,7 +304,7 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
           statusColorShade={currentControlStyle.colorShade}
         >
           <StyledCardContent>
-            <StatusCardText variant="h6">{currentControlStyle.label}</StatusCardText>
+            <StatusCardText variant="h3">{currentControlStyle.label}</StatusCardText>
           </StyledCardContent>
         </StatusDisplayCard>
       </TopSection>
@@ -351,9 +350,13 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
             statusColorShade={currentNavigationStyle.colorShade}
           >
             <StyledCardContent>
-              <StatusCardText variant="h6">{currentNavigationStyle.label}</StatusCardText>
+              <StatusCardText variant="h3">{currentNavigationStyle.label}</StatusCardText>
             </StyledCardContent>
           </StatusDisplayCard>
+        </Stack>
+        {/* Stop Navigation Button */}
+        <Stack direction="column" alignItems="stretch">
+          <Button style={{ marginTop: "8px", width: "100%", height: "50px" }}> 停止导航 </Button>
         </Stack>
       </BottomSection>
     </RootStack>

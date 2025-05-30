@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
@@ -12,8 +11,6 @@
 import {
   LayoutColumnOneThirdLeft24Regular,
   LayoutColumnOneThirdLeft24Filled,
-  LayoutColumnOneThirdRight24Filled,
-  LayoutColumnOneThirdRight24Regular,
 } from "@fluentui/react-icons";
 import { Button, Tag } from "antd";
 import { useState } from "react";
@@ -22,7 +19,6 @@ import { makeStyles } from "tss-react/mui";
 
 import { AppSetting } from "@lichtblick/suite-base/AppSetting";
 import { DataSource, InfoContent } from "@lichtblick/suite-base/components/AppBar/DataSource";
-import { isRunningInElectron } from "@lichtblick/suite-base/components/DataSourceDialog/Start";
 import { MemoryUseIndicator } from "@lichtblick/suite-base/components/MemoryUseIndicator";
 import Stack from "@lichtblick/suite-base/components/Stack";
 import { useAppContext } from "@lichtblick/suite-base/context/AppContext";
@@ -161,7 +157,6 @@ export type AppBarProps = CustomWindowControlsProps & {
 
 // const selectHasCurrentLayout = (state: LayoutState) => state.selectedLayout != undefined;
 const selectLeftSidebarOpen = (store: WorkspaceContextStore) => store.sidebars.left.open;
-const selectRightSidebarOpen = (store: WorkspaceContextStore) => store.sidebars.right.open;
 
 export function AppBar(props: AppBarProps): React.JSX.Element {
   const {
@@ -175,7 +170,7 @@ export function AppBar(props: AppBarProps): React.JSX.Element {
     onUnmaximizeWindow,
     showCustomWindowControls = false,
   } = props;
-  const { classes, cx, theme } = useStyles({ debugDragRegion });
+  const { classes } = useStyles({ debugDragRegion });
   // const { t } = useTranslation("appBar");
 
   const { appBarLayoutButton } = useAppContext();
