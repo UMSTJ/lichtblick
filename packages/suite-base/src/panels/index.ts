@@ -59,6 +59,14 @@ import vehicleControlSummaryThumbnail from "./VehicleControl/thumbnail.png";
 
 export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
   {
+    title: "autobase",
+    type: "autobase",
+    description: t("tabDescription"),
+    thumbnail: tabThumbnail,
+    module: async () => await import("./SlamMapSwitch"),
+  },
+
+  {
     title: "wheel2status",
     type: "wheel2status",
     description: t("tabDescription"),

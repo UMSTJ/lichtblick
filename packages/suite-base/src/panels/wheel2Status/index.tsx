@@ -253,7 +253,11 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
         setControlMode(ControlMode.AUTO_NAV);
       } else if (modeData === "manual") {
         setControlMode(ControlMode.MANUAL);
-      } else if (modeData === "emergency_stop") {
+      } else if (modeData === "tui") {
+        setControlMode(ControlMode.EMERGENCY_STOP);
+      } else if (modeData === "remote") {
+        setControlMode(ControlMode.AUTO_NAV);
+      } else if (modeData === "pause") {
         // Added hypothetical value for emergency stop
         setControlMode(ControlMode.EMERGENCY_STOP);
       } else {
