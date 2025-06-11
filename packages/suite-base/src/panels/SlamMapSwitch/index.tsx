@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import { Tab, Tabs } from "@mui/material";
-import { use } from "cytoscape";
 import React, { useEffect, useState } from "react";
 
-import { useMessageDataItem } from "@lichtblick/suite-base/components/MessagePathSyntax/useMessageDataItem";
 import {
   MessagePipelineContext,
   useMessagePipeline,
@@ -48,11 +46,9 @@ const AutoBase: React.FC = () => {
 
     // 现在 addressPart 类似于 "10.51.129.39:8765" 或 "10.51.129.39" 或 "[::1]:8000"
     // 我们需要提取主机部分
-    const lastColonIndex = addressPart.lastIndexOf(":");
     let host = addressPart; // 如果找不到端口或格式不符合预期，则默认为整个字符串
-    host = host.split(":")[0];
+    host = host.split(":")[0] ?? "";
     // 如果不是数字端口（例如，冒号是 IPv6 地址的一部分，如 "[::1]"），则 host 保持为 addressPart
-
     // 附加新的固定端口
     return `${host}:9000`;
   };

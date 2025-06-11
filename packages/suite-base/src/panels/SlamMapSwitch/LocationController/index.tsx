@@ -14,26 +14,38 @@ import {
   Alert,
   SelectChangeEvent,
 } from "@mui/material";
-import { styled, createTheme, ThemeProvider } from "@mui/material/styles";
+import { styled } from "@mui/material/styles";
 import React, { useState, useEffect, useCallback } from "react";
 
 // --- API Helper Function ---
 // A generic helper to handle fetch requests and errors.
 const apiFetch = async (url: string, options: RequestInit = {}) => {
+  // Implement timeout using AbortController
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, 5000);
+
   const response = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
     },
-    timeout: 5000,
+    signal: controller.signal,
   });
+
+  clearTimeout(timeoutId);
 
   if (!response.ok) {
     // Try to get error message from response body, otherwise use status text
     const errorData = await response.json().catch(() => null);
-    const errorMessage = errorData?.message || response.statusText;
-    throw new Error(errorMessage || `HTTP error! status: ${response.status}`);
+    const errorMessage = typeof errorData?.message === "string" ? errorData.message : null;
+
+    throw new Error(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      errorMessage ?? `HTTP error! status: ${response.status}`,
+    );
   }
 
   // Return JSON, or an empty object for responses with no content (like 204)
@@ -47,7 +59,7 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
  * Corresponds to: GET /mapServer/mapList
  */
 const fetchMapList = async (backendIp: string): Promise<string[]> => {
-  console.log(`Fetching map list from: ${backendIp}/mapServer/mapList`);
+  //console.log(`Fetching map list from: ${backendIp}/mapServer/mapList`);
   return await apiFetch(`http://${backendIp}/mapServer/mapList`);
 };
 
@@ -55,8 +67,8 @@ const fetchMapList = async (backendIp: string): Promise<string[]> => {
  * Sets the current map.
  * Corresponds to: POST /api/location/map/set
  */
-const setMap = async (backendIp: string, mapName: string): Promise<any> => {
-  console.log(`Setting map to: ${mapName} at ${backendIp}/api/location/map/set`);
+const setMap = async (backendIp: string, mapName: string): Promise<unknown> => {
+  //console.log(`Setting map to: ${mapName} at ${backendIp}/api/location/map/set`);
   return await apiFetch(`http://${backendIp}/api/location/map/set`, {
     method: "POST",
     body: JSON.stringify({ mapName }),
@@ -67,10 +79,8 @@ const setMap = async (backendIp: string, mapName: string): Promise<any> => {
  * Fetches the current location service status.
  * Corresponds to: GET /api/location/status
  */
-const fetchLocationStatus = async (
-  backendIp: string,
-): Promise<{ status: string; timestamp: number }> => {
-  console.log(`Fetching location status from: ${backendIp}/api/location/status`);
+const fetchLocationStatus = async (backendIp: string): Promise<LocationControllerState> => {
+  //console.log(`Fetching location status from: ${backendIp}/api/location/status`);
   return await apiFetch(`http://${backendIp}/api/location/status`);
 };
 
@@ -78,8 +88,8 @@ const fetchLocationStatus = async (
  * Signals that the robot is at the start point.
  * Corresponds to: POST /api/location/signal/at_start_point
  */
-const signalAtStartPoint = async (backendIp: string): Promise<any> => {
-  console.log(`Signaling: at start point to ${backendIp}/api/location/signal/at_start_point`);
+const signalAtStartPoint = async (backendIp: string): Promise<unknown> => {
+  //console.log(`Signaling: at start point to ${backendIp}/api/location/signal/at_start_point`);
   return await apiFetch(`http://${backendIp}/api/location/signal/at_start_point`, {
     method: "POST",
   });
@@ -89,8 +99,8 @@ const signalAtStartPoint = async (backendIp: string): Promise<any> => {
  * Signals that the robot has left the start point.
  * Corresponds to: POST /api/location/signal/left_start_point
  */
-const signalLeftStartPoint = async (backendIp: string): Promise<any> => {
-  console.log(`Signaling: left start point to ${backendIp}/api/location/signal/left_start_point`);
+const signalLeftStartPoint = async (backendIp: string): Promise<unknown> => {
+  //console.log(`Signaling: left start point to ${backendIp}/api/location/signal/left_start_point`);
   return await apiFetch(`http://${backendIp}/api/location/signal/left_start_point`, {
     method: "POST",
   });
@@ -149,12 +159,28 @@ const ButtonContainer = styled("div")(({ theme }) => ({
 interface LocationControllerProps {
   backendIp: string;
 }
-
+interface navigationState {
+  message: string;
+  processId: string;
+  serviceName: string;
+  status: "IDLE" | "RUNNING" | "ERROR";
+}
+interface postLocationState {
+  message: string;
+  serviceName: string;
+  status: "IDLE" | "RUNNING" | "ERROR";
+  isAtStartPoint: boolean;
+  currentMap: string;
+}
+interface LocationControllerState {
+  navigationService: navigationState;
+  positioningService: postLocationState;
+}
 const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) => {
   // State for data
   const [mapList, setMapList] = useState<string[]>([]);
   const [selectedMap, setSelectedMap] = useState<string>("");
-  const [locationStatus, setLocationStatus] = useState<string>("正在获取状态...");
+  const [locationStatus, setLocationStatus] = useState<LocationControllerState>();
 
   // State for UI control
   const [loading, setLoading] = useState({
@@ -187,16 +213,25 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) =>
         const maps = await fetchMapList(backendIp);
         setMapList(maps);
         if (maps.length > 0) {
-          setSelectedMap(maps[0]);
+          setSelectedMap(maps[0] ?? "");
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Failed to fetch map list:", error);
-        showSnackbar(`获取地图列表失败: ${error.message || "网络错误"}`);
+        let message = "网络错误";
+        if (
+          typeof error === "object" &&
+          error != null &&
+          "message" in error &&
+          typeof (error as { message?: unknown }).message === "string"
+        ) {
+          message = (error as { message: string }).message;
+        }
+        showSnackbar(`获取地图列表失败: ${message}`);
       } finally {
         setLoading((prev) => ({ ...prev, maps: false }));
       }
     };
-    getMapList();
+    void getMapList();
   }, [backendIp]);
 
   // Poll for location status every 2 seconds
@@ -206,11 +241,11 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) =>
     }
     const pollStatus = async () => {
       try {
-        const data = await fetchLocationStatus(backendIp);
-        setLocationStatus(data.status || "状态未知");
-      } catch (error: any) {
+        const data: LocationControllerState = await fetchLocationStatus(backendIp);
+        setLocationStatus(data);
+      } catch (error) {
         console.error("Failed to fetch status:", error);
-        setLocationStatus("获取状态失败");
+        //setLocationStatus(undefined);
       } finally {
         if (loading.status) {
           setLoading((prev) => ({ ...prev, status: false }));
@@ -218,7 +253,7 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) =>
       }
     };
 
-    pollStatus();
+    void pollStatus();
     const intervalId = setInterval(pollStatus, 2000);
     return () => {
       clearInterval(intervalId);
@@ -226,6 +261,7 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) =>
   }, [backendIp, loading.status]);
 
   const handleMapChange = (event: SelectChangeEvent) => {
+    //console.log("Selected map:", event.target.value);
     setSelectedMap(event.target.value);
   };
 
@@ -238,23 +274,41 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) =>
     try {
       await setMap(backendIp, selectedMap);
       showSnackbar(`地图 '${selectedMap}' 设置成功`, "success");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Failed to set map:", error);
-      showSnackbar(`设置地图失败: ${error.message || "网络错误"}`);
+      showSnackbar(
+        `设置地图失败: ${
+          typeof error === "object" &&
+          error != null &&
+          "message" in error &&
+          typeof (error as { message?: unknown }).message === "string"
+            ? (error as { message: string }).message
+            : "网络错误"
+        }`,
+      );
     } finally {
       setLoading((prev) => ({ ...prev, setMap: false }));
     }
   };
 
   const handleSignal = useCallback(
-    async (signalFn: (ip: string) => Promise<any>, successMessage: string) => {
+    async (signalFn: (ip: string) => Promise<unknown>, successMessage: string) => {
       setLoading((prev) => ({ ...prev, signal: true }));
       try {
         await signalFn(backendIp);
         showSnackbar(successMessage, "success");
-      } catch (error: any) {
+      } catch (error) {
         console.error(`Failed to send signal: ${successMessage}`, error);
-        showSnackbar(`发送信号失败: ${error.message || "网络错误"}`);
+        showSnackbar(
+          `发送信号失败: ${
+            typeof error === "object" &&
+            error != null &&
+            "message" in error &&
+            typeof (error as { message?: unknown }).message === "string"
+              ? (error as { message: string }).message
+              : "网络错误"
+          }`,
+        );
       } finally {
         setLoading((prev) => ({ ...prev, signal: false }));
       }
@@ -332,7 +386,22 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) =>
           <CircularProgress size={28} />
         ) : (
           <Typography variant="body1" style={{ fontStyle: "italic", color: "#333" }}>
-            {locationStatus}
+            {locationStatus ? (
+              <>
+                <strong>导航服务:</strong> {locationStatus.navigationService.status} -{" "}
+                {locationStatus.navigationService.message}
+                <br />
+                <strong>定位服务:</strong> {locationStatus.positioningService.status} -{" "}
+                {locationStatus.positioningService.message}
+                <br />
+                <strong>当前地图:</strong> {locationStatus.positioningService.currentMap || "无"}
+                <br />
+                <strong>是否在起始点:</strong>{" "}
+                {locationStatus.positioningService.isAtStartPoint ? "是" : "否"}
+              </>
+            ) : (
+              "正在获取状态..."
+            )}
           </Typography>
         )}
       </StatusDisplay>
@@ -350,7 +419,7 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) =>
             setSnackbar({ ...snackbar, open: false });
           }}
           severity={snackbar.severity}
-          sx={{ width: "100%" }}
+          style={{ width: "100%" }}
         >
           {snackbar.message}
         </Alert>
@@ -359,17 +428,4 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) =>
   );
 };
 
-
-// --- App Entry Point ---
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: "#1976d2",
-      light: "#42a5f5",
-    },
-    secondary: {
-      main: "#dc004e",
-    },
-  },
-});
 export default LocationController;

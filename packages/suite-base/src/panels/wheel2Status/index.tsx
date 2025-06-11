@@ -1,6 +1,15 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
@@ -207,7 +216,7 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
 }) => {
   // In a real app, these states might be managed by a global store or passed as props more dynamically
   const [controlMode, setControlMode] = useState<ControlMode>(initialControlMode);
-  const [currentSpeed] = useState<string>(initialSpeed);
+  const [currentSpeed, setCurrentSpeed] = useState<string>(initialSpeed);
   const [positioningMode] = useState<string>(initialPositioningMode);
   const [airbagValidity] = useState<string>(initialAirbagValidity);
   const [gpsPosition] = useState<string>(initialGpsPosition);
@@ -216,16 +225,16 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
     useState<NavigationStatus>(initialNavigationStatus);
 
   const batteryMessages = useMessageDataItem(SubTopic.BATTERY);
-  // const odomMessages = useMessageDataItem(SubTopic.ODODM);
+  const odomMessages = useMessageDataItem(SubTopic.ODODM);
   const currentModeMessages = useMessageDataItem(SubTopic.CURRENT); // Renamed for clarity
   const navigationMessages = useMessageDataItem(SubTopic.NAVING);
 
   const latestBatteryMsg = getLatestMessage(batteryMessages) as
     | { queriedData?: { value?: { data?: number } }[] }
     | undefined;
-  // const latestOdomMsg = getLatestMessage(odomMessages) as  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  //   | { queriedData?: { value?: { data?: any } }[] }
-  //   | undefined;
+  const latestOdomMsg = getLatestMessage(odomMessages) as  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    | { queriedData?: { value?: { twist?: any } }[] }
+    | undefined;
   const latestCurrentModeMsg = getLatestMessage(currentModeMessages) as
     | { queriedData?: { value?: { data?: string } }[] }
     | undefined;
@@ -268,18 +277,18 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
     }
   }, [latestCurrentModeMsg, initialControlMode, setControlMode]);
 
-  // useEffect(() => {
-  //   if (latestOdomMsg && latestOdomMsg.queriedData && latestOdomMsg.queriedData.length > 0) {
-  //     const speedData = latestOdomMsg.queriedData[0]?.value?.data;
-  //     if (typeof speedData === "number") {
-  //       setCurrentSpeed(`${speedData.toFixed(1)} km/h`); // Format to 1 decimal place
-  //     } else {
-  //       setCurrentSpeed(initialSpeed);
-  //     }
-  //   } else {
-  //     setCurrentSpeed(initialSpeed);
-  //   }
-  // }, [latestOdomMsg, initialSpeed, setCurrentSpeed]);
+  useEffect(() => {
+    if (latestOdomMsg?.queriedData && latestOdomMsg.queriedData.length > 0) {
+      const speedData = latestOdomMsg.queriedData[0]?.value?.twist.twist.linear.x * 3.6; // Convert m/s to km/h
+      if (typeof speedData === "number") {
+        setCurrentSpeed(`${speedData.toFixed(1)} km/h`); // Format to 1 decimal place
+      } else {
+        setCurrentSpeed(initialSpeed);
+      }
+    } else {
+      setCurrentSpeed(initialSpeed);
+    }
+  }, [latestOdomMsg, initialSpeed, setCurrentSpeed]);
 
   useEffect(() => {
     if (latestNavigationMsg?.queriedData && latestNavigationMsg.queriedData.length > 0) {

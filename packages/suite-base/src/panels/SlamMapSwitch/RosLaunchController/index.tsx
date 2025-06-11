@@ -6,16 +6,11 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Button,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Paper,
   Typography,
   CircularProgress,
   Snackbar,
   Alert,
-  SelectChangeEvent,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -25,7 +20,7 @@ import {
   FormControlLabel,
   IconButton,
 } from "@mui/material";
-import { styled, createTheme, ThemeProvider } from "@mui/material/styles";
+import { styled } from "@mui/material/styles";
 import React, { useState, useEffect, useCallback } from "react";
 // --- API Helper Function ---
 const apiFetch = async (url: string, options: RequestInit = {}) => {
@@ -44,11 +39,16 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
-    throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
+    const errorMessage =
+      typeof errorData?.message === "string"
+        ? errorData.message
+        : `HTTP error! status: ${response.status}`;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    throw new Error(errorMessage);
   }
 
   const contentType = response.headers.get("content-type");
-  if (contentType?.includes("application/json")) {
+  if (contentType?.includes("application/json") ?? false) {
     return await response.json().catch(() => ({}));
   }
   return {};
@@ -65,20 +65,25 @@ interface LaunchRequest {
 }
 interface RosProcess {
   id: string;
-  name: string;
-  status: "running" | "stopped" | "error" | "unknown";
-}
-interface RosProcessStatus extends RosProcess {
-  logs: string[];
+  rosPackageName: string;
+  launchFile: string;
+  paramters: string[];
+  workspaceSetupScript: string;
+  alive: boolean;
+  pid: number;
+  restartCount: number;
+  terminalSlotId: number;
+  state: "RUNNING" | "STOPPED" | "ERROR";
+  recentLogs?: string[];
 }
 
 // == ROS Launch Controller APIs ==
 const fetchRosLaunchList = async (backendIp: string): Promise<RosProcess[]> => {
   return await apiFetch(`http://${backendIp}/api/ros/launch/list`);
 };
-const fetchRosProcessStatus = async (backendIp: string, id: string): Promise<RosProcessStatus> => {
-  return await apiFetch(`http://${backendIp}/api/ros/launch/status/${id}`);
-};
+// const fetchRosProcessStatus = async (backendIp: string, id: string): Promise<RosProcessStatus> => {
+//   return await apiFetch(`http://${backendIp}/api/ros/launch/status/${id}`);
+// };
 const stopRosProcess = async (backendIp: string, id: string) =>
   await apiFetch(`http://${backendIp}/api/ros/launch/stop/${id}`, { method: "POST" });
 const startRosProcess = async (backendIp: string, data: LaunchRequest) =>
@@ -86,6 +91,13 @@ const startRosProcess = async (backendIp: string, data: LaunchRequest) =>
     method: "POST",
     body: JSON.stringify(data),
   });
+
+const getRosProcessLog = async (backendIp: string, id: string): Promise<RosProcess> => {
+  return await apiFetch(`http://${backendIp}/api/ros/launch/status/${id}`);
+};
+
+const restartRosProcess = async (backendIp: string, id: string) =>
+  await apiFetch(`http://${backendIp}/api/ros/launch/restart/${id}`, { method: "POST" });
 
 // --- Styled Components ---
 
@@ -197,6 +209,7 @@ const NewLaunchModal: React.FC<NewLaunchModalProps> = ({ open, onClose, onSubmit
       await onSubmit(formData);
       onClose(); // Close modal on success
     } catch (error) {
+      console.error("Error submitting form:", error);
       // Error is handled by the caller, which shows a snackbar.
       // We keep the modal open for the user to correct the data.
     } finally {
@@ -206,7 +219,7 @@ const NewLaunchModal: React.FC<NewLaunchModalProps> = ({ open, onClose, onSubmit
 
   return (
     <Modal open={open} onClose={onClose}>
-      <ModalPaper component="form" onSubmit={handleSubmit}>
+      <ModalPaper onSubmit={handleSubmit}>
         <Typography variant="h6">新建 Launch</Typography>
         <TextField
           name="rosPackageName"
@@ -281,9 +294,9 @@ const NewLaunchModal: React.FC<NewLaunchModalProps> = ({ open, onClose, onSubmit
 // --- RosLaunchController Component ---
 const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
   const [processes, setProcesses] = useState<RosProcess[]>([]);
-  const [logs, setLogs] = useState<Record<string, string[]>>({});
   const [expanded, setExpanded] = useState<string | false>(false);
   const [loading, setLoading] = useState({ list: true, log: false, stop: "" });
+  const [log, setLog] = useState<RosProcess | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -314,37 +327,38 @@ const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
   }, [backendIp, loading.list]);
 
   useEffect(() => {
-    refreshList();
+    void refreshList();
     const intervalId = setInterval(refreshList, 20000);
     return () => {
       clearInterval(intervalId);
     };
   }, [refreshList]);
 
-  const handleAccordionChange =
-    (panelId: string) => async (event: React.SyntheticEvent, isExpanded: boolean) => {
-      setExpanded(isExpanded ? panelId : false);
-      if (isExpanded) {
-        setLoading((p) => ({ ...p, log: true }));
-        try {
-          const processDetails = await fetchRosProcessStatus(backendIp, panelId);
-          setLogs((prev) => ({ ...prev, [panelId]: processDetails.logs }));
-        } catch (error: any) {
-          setLogs((prev) => ({ ...prev, [panelId]: [`获取日志失败: ${error.message}`] }));
-        } finally {
-          setLoading((p) => ({ ...p, log: false }));
-        }
-      }
-    };
+  type AccordionChangeDetails = { expanded: boolean };
 
+  const handleAccordionChange = (panelId: string) => async (details: AccordionChangeDetails) => {
+    setExpanded(details.expanded ? panelId : false);
+    if (details.expanded) {
+      setLoading((p) => ({ ...p, log: true }));
+      try {
+        const processDetails = await getRosProcessLog(backendIp, panelId);
+        setLog(processDetails);
+      } catch {
+        setLog(null);
+      } finally {
+        setLoading((p) => ({ ...p, log: false }));
+      }
+    }
+  };
   const handleStopProcess = async (id: string) => {
     setLoading((p) => ({ ...p, stop: id }));
     try {
       await stopRosProcess(backendIp, id);
       showSnackbar(`进程 ${id} 已成功发送停止命令。`, "success");
       await refreshList(); // Refresh list immediately after action
-    } catch (error: any) {
-      showSnackbar(`停止进程失败: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      showSnackbar(`停止进程失败: ${message}`);
     } finally {
       setLoading((p) => ({ ...p, stop: "" }));
     }
@@ -355,14 +369,26 @@ const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
       await startRosProcess(backendIp, data);
       showSnackbar(`成功创建新 Launch: ${data.launchFilePath}`, "success");
       await refreshList();
-    } catch (error: any) {
-      showSnackbar(`创建 Launch 失败: ${error.message}`);
+    } catch (error) {
+      showSnackbar(`创建 Launch 失败: ${error instanceof Error ? error.message : String(error)}`);
       throw error; // Re-throw to keep modal open on error
+    }
+  };
+  const handleRestartProcess = async (id: string) => {
+    setLoading((p) => ({ ...p, stop: id }));
+    try {
+      await restartRosProcess(backendIp, id);
+      showSnackbar(`进程 ${id} 已成功重启。`, "success");
+      await refreshList(); // Refresh list immediately after action
+    } catch (error) {
+      showSnackbar(`重启进程失败: ${error.message}`);
+    } finally {
+      setLoading((p) => ({ ...p, stop: "" }));
     }
   };
 
   return (
-    <ControllerCard elevation={3}>
+    <ControllerCard elevation={10}>
       <HeaderContainer>
         <HeaderTypography variant="h5">ROS 启动管理器</HeaderTypography>
         <Button
@@ -382,12 +408,14 @@ const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
           <Accordion
             key={proc.id}
             expanded={expanded === proc.id}
-            onChange={handleAccordionChange(proc.id)}
+            onChange={() => {
+              handleAccordionChange(proc.id);
+            }}
           >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "8px" }}>
                 <StatusIndicator status={proc.state} title={proc.state} />
-                <Typography sx={{ flexGrow: 1 }}>{proc.launchFile}</Typography>
+                <Typography>{proc.launchFile}</Typography>
                 <Button
                   variant="contained"
                   color="error"
@@ -395,7 +423,7 @@ const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
                   disabled={proc.state !== "RUNNING" || loading.stop === proc.id}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleStopProcess(proc.id);
+                    void handleStopProcess(proc.id);
                   }}
                 >
                   {loading.stop === proc.id ? (
@@ -404,15 +432,52 @@ const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
                     "结束"
                   )}
                 </Button>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  size="small"
+                  disabled={proc.state !== "RUNNING" || loading.stop === proc.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleRestartProcess(proc.id);
+                  }}
+                >
+                  {loading.stop === proc.id ? (
+                    <CircularProgress size={18} color="inherit" />
+                  ) : (
+                    "重启"
+                  )}
+                </Button>
               </div>
             </AccordionSummary>
             <AccordionDetails>
-              {loading.log && expanded === proc.id ? (
+              {loading.log && expanded === proc.id && log != null ? (
                 <CircularProgress />
               ) : (
-                <LogContainer>
-                  <code>{(proc.recentLogs || []).join("\n")}</code>
-                </LogContainer>
+                <>
+                  <Typography variant="body2">最近日志</Typography>
+                  {log ? (
+                    <>
+                      <Typography variant="subtitle1">启动包: {log.rosPackageName}</Typography>
+                      <Typography variant="subtitle1">Launch 文件: {log.launchFile}</Typography>
+                      <Typography variant="subtitle1">
+                        工作区 Setup 脚本: {log.workspaceSetupScript}
+                      </Typography>
+                      <Typography variant="subtitle1">启动参数: {log.paramters}</Typography>
+                      <Typography variant="subtitle1">进程 ID: {log.pid}</Typography>
+                      <Typography variant="subtitle1">重启次数: {log.restartCount}</Typography>
+                      <Typography variant="subtitle1">终端槽位 ID: {log.terminalSlotId}</Typography>
+                      <Typography variant="subtitle1">状态: {log.state}</Typography>
+                      <LogContainer>
+                        <code>{(log.recentLogs ?? []).join("\n")}</code>
+                      </LogContainer>
+                    </>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      暂无日志信息
+                    </Typography>
+                  )}
+                </>
               )}
             </AccordionDetails>
           </Accordion>
@@ -438,7 +503,7 @@ const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
             setSnackbar((p) => ({ ...p, open: false }));
           }}
           severity={snackbar.severity}
-          sx={{ width: "100%" }}
+          style={{ width: "100%" }}
         >
           {snackbar.message}
         </Alert>
@@ -446,15 +511,5 @@ const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
     </ControllerCard>
   );
 };
-
-// --- App Entry Point ---
-const theme = createTheme({
-  palette: {
-    primary: { main: "#1976d2", light: "#42a5f5" },
-    secondary: { main: "#dc004e" },
-    success: { main: "#2e7d32" },
-    error: { main: "#d32f2f" },
-  },
-});
 
 export default RosLaunchController;
