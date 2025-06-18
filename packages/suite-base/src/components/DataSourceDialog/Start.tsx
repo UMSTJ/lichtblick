@@ -15,7 +15,7 @@ import { DataSourceDialogItem } from "@lichtblick/suite-base/components/DataSour
 // import LichtblickLogoText from "@lichtblick/suite-base/components/LichtblickLogoText";
 import Stack from "@lichtblick/suite-base/components/Stack";
 import TextMiddleTruncate from "@lichtblick/suite-base/components/TextMiddleTruncate";
-import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessage";
+import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessageComponent";
 import { useAnalytics } from "@lichtblick/suite-base/context/AnalyticsContext";
 import { useCurrentUser } from "@lichtblick/suite-base/context/BaseUserContext";
 import { usePlayerSelection } from "@lichtblick/suite-base/context/PlayerSelectionContext";

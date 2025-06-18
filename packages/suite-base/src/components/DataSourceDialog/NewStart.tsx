@@ -23,44 +23,37 @@
 // SPDX-License-Identifier: MPL-2.0
 
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import { Typography, List, Button, Input } from "antd";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-
+import { Typography } from "antd";
 // 假设这些组件已经在你的项目中存在
-import TextMiddleTruncate from "@lichtblick/suite-base/components/TextMiddleTruncate";
-import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessage";
-import {
-  DataSourceArgs,
-  usePlayerSelection,
-} from "@lichtblick/suite-base/context/PlayerSelectionContext";
+
+import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessageComponent";
 
 const { Title } = Typography;
 
 const NewStart = () => {
-  const { t } = useTranslation("openDialog");
-  const { selectSource } = usePlayerSelection();
-  const [inputIP, setInputIP] = useState("");
+  // const { t } = useTranslation("openDialog");
+  // const { selectSource } = usePlayerSelection();
+  // const [inputIP, setInputIP] = useState("");
 
-  const createNewPlayer = async (ip: string) => {
-    const newSourceId = "foxglove-websocket"; // 替换为实际的数据源 ID
-    const connectionParams: DataSourceArgs = {
-      type: "connection",
-      params: {
-        url: "ws://" + ip + ":8765", // 替换为实际的 URL
-      },
-    };
+  // const createNewPlayer = async (ip: string) => {
+  //   const newSourceId = "foxglove-websocket"; // 替换为实际的数据源 ID
+  //   const connectionParams: DataSourceArgs = {
+  //     type: "connection",
+  //     params: {
+  //       url: "ws://" + ip + ":8765", // 替换为实际的 URL
+  //     },
+  //   };
 
-    selectSource(newSourceId, connectionParams);
-  };
+  //   selectSource(newSourceId, connectionParams);
+  // };
 
   // 这个函数用于检测是否在Electron环境中运行
   const isRunningInElectron = () => {
-    return window.electron !== undefined || (window.process && window.process.type === "renderer");
+    return typeof window !== "undefined" && (window as any).electron != null;
   };
 
   // 假设这些数据和函数在你的应用中已定义
-  const { recentSources, selectRecent } = usePlayerSelection();
+  // const { recentSources, selectRecent } = usePlayerSelection();
 
   //   const selectRecent = (id) => {
   //     console.log(`选择了ID为${id}的源`);
@@ -71,7 +64,7 @@ const NewStart = () => {
     <div style={{ padding: "40px" }}>
       <Title level={2}>开始</Title>
       {/* <Card title={t("recentDataSources")} style={{ marginBottom: "20px" }}> */}
-      <Title level={5}>{t("recentDataSources")}</Title>
+      {/* <Title level={5}>{t("recentDataSources")}</Title>
       <List
         itemLayout="horizontal"
         dataSource={recentSources.slice(0, 3)}
@@ -111,23 +104,17 @@ const NewStart = () => {
             </Button>
           </List.Item>
         )}
-      />
-      <Button
-        onClick={async () => {
-          await createNewPlayer("192.168.100.101");
-        }}
-      >
-        连接到轮椅
-      </Button>
+      /> */}
+
       {isRunningInElectron() && (
         <>
-          <Title level={5}>{t("activeClients")}</Title>
+          {/* <Title level={5}>{t("activeClients")}</Title> */}
           <UdpMessageComponent />
         </>
       )}
       {/* </Card> */}
 
-      <Title level={5}>手动连接</Title>
+      {/* <Title level={5}>手动连接</Title>
       <Input
         placeholder="输入IP地址"
         onChange={(e) => {
@@ -143,7 +130,7 @@ const NewStart = () => {
         }}
       >
         连接
-      </Button>
+      </Button> */}
     </div>
   );
 };

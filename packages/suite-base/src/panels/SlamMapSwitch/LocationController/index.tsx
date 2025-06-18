@@ -99,41 +99,42 @@ const signalAtStartPoint = async (backendIp: string): Promise<unknown> => {
  * Signals that the robot has left the start point.
  * Corresponds to: POST /api/location/signal/left_start_point
  */
-const signalLeftStartPoint = async (backendIp: string): Promise<unknown> => {
-  //console.log(`Signaling: left start point to ${backendIp}/api/location/signal/left_start_point`);
-  return await apiFetch(`http://${backendIp}/api/location/signal/left_start_point`, {
-    method: "POST",
-  });
-};
+// const signalLeftStartPoint = async (backendIp: string): Promise<unknown> => {
+//   //console.log(`Signaling: left start point to ${backendIp}/api/location/signal/left_start_point`);
+//   return await apiFetch(`http://${backendIp}/api/location/signal/left_start_point`, {
+//     method: "POST",
+//   });
+// };
 
 // --- Styled Components (Unchanged) ---
-const StyledContainer = styled("div")(({ theme }) => ({
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "flex-start",
-  padding: theme.spacing(4),
-  gap: theme.spacing(4),
-  fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-  flexWrap: "wrap",
-}));
+// const StyledContainer = styled("div")(({ theme }) => ({
+//   display: "flex",
+//   justifyContent: "center",
+//   alignItems: "flex-start",
+//   padding: theme.spacing(4),
+//   gap: theme.spacing(4),
+//   fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+//   flexWrap: "wrap",
+// }));
 
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
-  borderRadius: theme.shape.borderRadius * 2,
-  width: "100%",
-  maxWidth: "400px",
-  display: "flex",
-  flexDirection: "column",
-  gap: theme.spacing(2.5),
-}));
+// const StyledPaper = styled(Paper)(({ theme }) => ({
+//   padding: theme.spacing(1.5),
+//   // borderRadius: theme.shape.borderRadius * 2,
+//   width: "100%",
+//   height: "100%",
+//   maxWidth: "900px",
+//   display: "flex",
+//   flexDirection: "column",
+//   gap: theme.spacing(2),
+// }));
 
-const HeaderTypography = styled(Typography)(({ theme }) => ({
-  marginBottom: theme.spacing(1),
-  fontWeight: 500,
-  color: theme.palette.primary.main,
-  borderBottom: `2px solid ${theme.palette.primary.light}`,
-  paddingBottom: theme.spacing(1),
-}));
+// const HeaderTypography = styled(Typography)(({ theme }) => ({
+//   marginBottom: theme.spacing(1),
+//   fontWeight: 500,
+//   color: theme.palette.primary.main,
+//   borderBottom: `2px solid ${theme.palette.primary.light}`,
+//   paddingBottom: theme.spacing(1),
+// }));
 
 const StatusDisplay = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(2, 3),
@@ -158,6 +159,7 @@ const ButtonContainer = styled("div")(({ theme }) => ({
 
 interface LocationControllerProps {
   backendIp: string;
+  displayStatus: boolean;
 }
 interface navigationState {
   message: string;
@@ -169,14 +171,14 @@ interface postLocationState {
   message: string;
   serviceName: string;
   status: "IDLE" | "RUNNING" | "ERROR";
-  isAtStartPoint: boolean;
+  atStartPoint: boolean;
   currentMap: string;
 }
 interface LocationControllerState {
   navigationService: navigationState;
   positioningService: postLocationState;
 }
-const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) => {
+const LocationController: React.FC<LocationControllerProps> = ({ backendIp, displayStatus }) => {
   // State for data
   const [mapList, setMapList] = useState<string[]>([]);
   const [selectedMap, setSelectedMap] = useState<string>("");
@@ -242,6 +244,9 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) =>
     const pollStatus = async () => {
       try {
         const data: LocationControllerState = await fetchLocationStatus(backendIp);
+        if (data.positioningService.currentMap !== "N/A") {
+          setSelectedMap(data.positioningService.currentMap);
+        }
         setLocationStatus(data);
       } catch (error) {
         console.error("Failed to fetch status:", error);
@@ -317,51 +322,57 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) =>
   );
 
   return (
-    <StyledContainer>
-      <StyledPaper elevation={3}>
-        <HeaderTypography variant="h5">地图与定位</HeaderTypography>
+    <div>
+      {/* <HeaderTypography variant="h5">地图与定位</HeaderTypography> */}
 
-        <FormControl fullWidth disabled={loading.maps || !backendIp}>
-          <InputLabel id="map-select-label">选择地图</InputLabel>
-          <Select
-            labelId="map-select-label"
-            value={selectedMap}
-            label="选择地图"
-            onChange={handleMapChange}
-          >
-            {loading.maps ? (
-              <MenuItem disabled>
-                <em>加载中...</em>
+      <FormControl fullWidth disabled={loading.maps || !backendIp}>
+        <InputLabel id="map-select-label">选择地图</InputLabel>
+        <Select
+          labelId="map-select-label"
+          value={selectedMap}
+          label="选择地图"
+          onChange={handleMapChange}
+        >
+          {loading.maps ? (
+            <MenuItem disabled>
+              <em>加载中...</em>
+            </MenuItem>
+          ) : (
+            mapList.map((map) => (
+              <MenuItem key={map} value={map}>
+                {map}
               </MenuItem>
-            ) : (
-              mapList.map((map) => (
-                <MenuItem key={map} value={map}>
-                  {map}
-                </MenuItem>
-              ))
-            )}
-          </Select>
-        </FormControl>
+            ))
+          )}
+        </Select>
+      </FormControl>
+
+      <ButtonContainer>
         <Button
           variant="contained"
           onClick={handleSubmitMap}
-          disabled={loading.setMap || loading.maps || !selectedMap || !backendIp}
+          disabled={
+            loading.setMap ||
+            loading.maps ||
+            !selectedMap ||
+            !backendIp ||
+            selectedMap === locationStatus?.positioningService.currentMap
+          }
         >
           {loading.setMap ? <CircularProgress size={24} color="inherit" /> : "设置当前地图"}
         </Button>
 
-        <ButtonContainer>
-          <Button
-            variant="outlined"
-            fullWidth
-            onClick={async () => {
-              await handleSignal(signalAtStartPoint, "已发送“在起始点”信号");
-            }}
-            disabled={loading.signal || !backendIp}
-          >
-            在起始点
-          </Button>
-          <Button
+        <Button
+          variant="outlined"
+          fullWidth
+          onClick={async () => {
+            await handleSignal(signalAtStartPoint, "已发送“在起始点”信号");
+          }}
+          disabled={loading.signal || !backendIp || locationStatus?.positioningService.atStartPoint}
+        >
+          在起始点
+        </Button>
+        {/* <Button
             variant="outlined"
             color="secondary"
             fullWidth
@@ -371,40 +382,41 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) =>
             disabled={loading.signal || !backendIp}
           >
             离开起始点
-          </Button>
-        </ButtonContainer>
-        {loading.signal && (
-          <CircularProgress size={24} style={{ margin: "auto", marginTop: "8px" }} />
-        )}
-      </StyledPaper>
+          </Button> */}
+      </ButtonContainer>
+      {loading.signal && (
+        <CircularProgress size={24} style={{ margin: "auto", marginTop: "8px" }} />
+      )}
 
-      <StatusDisplay elevation={3}>
-        <Typography variant="h6" gutterBottom>
-          服务状态
-        </Typography>
-        {loading.status ? (
-          <CircularProgress size={28} />
-        ) : (
-          <Typography variant="body1" style={{ fontStyle: "italic", color: "#333" }}>
-            {locationStatus ? (
-              <>
-                <strong>导航服务:</strong> {locationStatus.navigationService.status} -{" "}
-                {locationStatus.navigationService.message}
-                <br />
-                <strong>定位服务:</strong> {locationStatus.positioningService.status} -{" "}
-                {locationStatus.positioningService.message}
-                <br />
-                <strong>当前地图:</strong> {locationStatus.positioningService.currentMap || "无"}
-                <br />
-                <strong>是否在起始点:</strong>{" "}
-                {locationStatus.positioningService.isAtStartPoint ? "是" : "否"}
-              </>
-            ) : (
-              "正在获取状态..."
-            )}
+      {displayStatus && (
+        <StatusDisplay elevation={3}>
+          <Typography variant="h6" gutterBottom>
+            服务状态
           </Typography>
-        )}
-      </StatusDisplay>
+          {loading.status ? (
+            <CircularProgress size={28} />
+          ) : (
+            <Typography variant="body1" style={{ fontStyle: "italic", color: "#333" }}>
+              {locationStatus ? (
+                <>
+                  <strong>导航服务:</strong> {locationStatus.navigationService.status} -{" "}
+                  {locationStatus.navigationService.message}
+                  <br />
+                  <strong>定位服务:</strong> {locationStatus.positioningService.status} -{" "}
+                  {locationStatus.positioningService.message}
+                  <br />
+                  <strong>当前地图:</strong> {locationStatus.positioningService.currentMap || "无"}
+                  <br />
+                  <strong>是否在起始点:</strong>{" "}
+                  {locationStatus.positioningService.atStartPoint ? "是" : "否"}
+                </>
+              ) : (
+                "正在获取状态..."
+              )}
+            </Typography>
+          )}
+        </StatusDisplay>
+      )}
 
       <Snackbar
         open={snackbar.open}
@@ -424,7 +436,7 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp }) =>
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </StyledContainer>
+    </div>
   );
 };
 

@@ -24,6 +24,7 @@ type Props = {
   selectedPanelType?: string;
   highlightedPanelIdx?: number;
   searchQuery?: string;
+  isMenu?: boolean;
 };
 
 function blurActiveElement() {
@@ -42,6 +43,7 @@ export function PanelList(props: Props): React.JSX.Element {
     onPanelSelect,
     selectedPanelType,
     searchQuery = "",
+    isMenu = false,
   } = props;
 
   const { dropPanel } = useCurrentLayoutActions();
@@ -58,9 +60,11 @@ export function PanelList(props: Props): React.JSX.Element {
         tabId,
         config,
       });
-      blurActiveElement();
+      if (isMenu) {
+        blurActiveElement();
+      }
     },
-    [dropPanel],
+    [dropPanel, isMenu],
   );
 
   const highlightedPanel = useMemo(() => {
@@ -79,7 +83,9 @@ export function PanelList(props: Props): React.JSX.Element {
           onDrop={onPanelMenuItemDrop}
           onClick={() => {
             onPanelSelect({ type, config });
-            blurActiveElement();
+            if (isMenu) {
+              blurActiveElement();
+            }
           }}
           checked={type === selectedPanelType}
           highlighted={highlightedPanel?.title === title}
@@ -95,6 +101,7 @@ export function PanelList(props: Props): React.JSX.Element {
       onPanelSelect,
       searchQuery,
       selectedPanelType,
+      isMenu,
     ],
   );
 

@@ -1,3 +1,8 @@
+import { Box, Button, Card, Divider, Typography } from "@mui/material";
+import * as _ from "lodash-es";
+import { useRef, ReactElement, useEffect, useState } from "react";
+import request from "umi-request";
+
 import { getIpAddress } from "@lichtblick/suite-base/components/AppBar/VerticalAppBar";
 import { isRunningInElectron } from "@lichtblick/suite-base/components/DataSourceDialog/Start";
 import {
@@ -5,11 +10,7 @@ import {
   useMessagePipeline,
 } from "@lichtblick/suite-base/components/MessagePipeline";
 import Stack from "@lichtblick/suite-base/components/Stack";
-import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessage";
-import { Box, Button, Card, Divider, Typography } from "@mui/material";
-import * as _ from "lodash-es";
-import { useRef, ReactElement, useEffect, useState } from "react";
-import request from "umi-request";
+import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessageComponent";
 
 const ANIMATION_RESET_DELAY_MS = 1500;
 
@@ -62,7 +63,7 @@ type DiskInfo = {
   used_gb: number;
   free_gb: number;
   pecent: number;
-}
+};
 export default function VehiclesStateList(): ReactElement {
   // Don't run the animation when the sidebar first renders
   const skipAnimation = useRef<boolean>(true);
@@ -73,7 +74,12 @@ export default function VehiclesStateList(): ReactElement {
   const nowIPAddrRef = useRef("");
   const [codeOnlineState, setCodeOnlineState] = useState<boolean>(false);
 
-  const [sysInfo, setSysInfo] = useState<SystemInfo>({ rosId: "", ip: "", version: "" , ubuntuVersion: ""});
+  const [sysInfo, setSysInfo] = useState<SystemInfo>({
+    rosId: "",
+    ip: "",
+    version: "",
+    ubuntuVersion: "",
+  });
   const [hardwareInfo, setHardwareInfo] = useState<HardwareInfo | null>(null);
 
   // 修改后的 useEffect 逻辑
@@ -89,8 +95,8 @@ export default function VehiclesStateList(): ReactElement {
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
-            timeout: 3000
-          }
+            timeout: 3000,
+          },
         );
         setHardwareInfo(response);
       } catch (error) {
@@ -143,71 +149,67 @@ export default function VehiclesStateList(): ReactElement {
     }
   };
   useEffect(() => {
-
-    if (nowIPAddr) getSystemInfo();
+    if (nowIPAddr) {
+      getSystemInfo();
+    }
   }, [nowIPAddr]);
   return (
     <Stack flex="auto" fullWidth overflowX="auto">
       {/*{isRunningInElectron() && (*/}
-      {(
-        <Card variant="outlined">
-          <Box sx={{ p: 2 }}>
-            <Stack direction="row">
-              <Typography gutterBottom variant="h6" component="div">
-                在线设备切换
-              </Typography>
-            </Stack>
-          </Box>
-          <Divider />
-          <Box sx={{ p: 2 }}>
-            <Typography gutterBottom variant="body2">
-              当前活跃
+      <Card variant="outlined">
+        <Box sx={{ p: 2 }}>
+          <Stack direction="row">
+            <Typography gutterBottom variant="h6" component="div">
+              在线设备切换
             </Typography>
+          </Stack>
+        </Box>
+        <Divider />
+        <Box sx={{ p: 2 }}>
+          <Typography gutterBottom variant="body2">
+            当前活跃
+          </Typography>
 
-            <>
-              <UdpMessageComponent />
-            </>
-          </Box>
-        </Card>
-      )}
+          <>
+            <UdpMessageComponent />
+          </>
+        </Box>
+      </Card>
       {/*{codeOnlineState && (*/}
-      {(
-        <Card variant="outlined">
-          <Box sx={{ p: 2 }}>
-            <Stack direction="row">
-              <Typography gutterBottom variant="h6" component="div">
-                当前设备状态
-              </Typography>
-            </Stack>
-          </Box>
-          <Divider />
-          <Box sx={{ p: 2 }}>
-            <Typography gutterBottom variant="body2">
-              软件版本：{sysInfo.version}
+      <Card variant="outlined">
+        <Box sx={{ p: 2 }}>
+          <Stack direction="row">
+            <Typography gutterBottom variant="h6" component="div">
+              当前设备状态
             </Typography>
-          </Box>
-          <Box sx={{ p: 2 }}>
-            <Typography gutterBottom variant="body2">
-              系统版本：{sysInfo.ubuntuVersion}
-            </Typography>
-          </Box>
-          <Box sx={{ p: 2 }}>
-            <Typography gutterBottom variant="body2">
-              ROSID: {sysInfo.rosId}
-            </Typography>
-          </Box>
-          <Box sx={{ p: 2 }}>
-            <Typography gutterBottom variant="body2">
-              IP地址：{sysInfo.ip}
-            </Typography>
-          </Box>
-          <Box sx={{ p: 2 }}>
-            软件更新
-            <Button
-            onClick={getSystemInfo}>检查更新</Button>
-          </Box>
-        </Card>
-      )}
+          </Stack>
+        </Box>
+        <Divider />
+        <Box sx={{ p: 2 }}>
+          <Typography gutterBottom variant="body2">
+            软件版本：{sysInfo.version}
+          </Typography>
+        </Box>
+        <Box sx={{ p: 2 }}>
+          <Typography gutterBottom variant="body2">
+            系统版本：{sysInfo.ubuntuVersion}
+          </Typography>
+        </Box>
+        <Box sx={{ p: 2 }}>
+          <Typography gutterBottom variant="body2">
+            ROSID: {sysInfo.rosId}
+          </Typography>
+        </Box>
+        <Box sx={{ p: 2 }}>
+          <Typography gutterBottom variant="body2">
+            IP地址：{sysInfo.ip}
+          </Typography>
+        </Box>
+        <Box sx={{ p: 2 }}>
+          软件更新
+          <Button onClick={getSystemInfo}>检查更新</Button>
+        </Box>
+      </Card>
 
       {/* 新增硬件信息展示 */}
       {hardwareInfo && (
@@ -222,46 +224,42 @@ export default function VehiclesStateList(): ReactElement {
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle1">CPU</Typography>
               <Typography variant="body2">
-                使用率: {hardwareInfo.cpu?.percent?.toFixed(1)}%
+                使用率: {hardwareInfo.cpu.percent.toFixed(1)}%
               </Typography>
-              <Typography variant="body2">
-                频率: {hardwareInfo.cpu?.freq_mhz} MHz
-              </Typography>
-              <Typography variant="body2">
-                温度: {hardwareInfo.cpu?.temp_c}°C
-              </Typography>
+              <Typography variant="body2">频率: {hardwareInfo.cpu.freq_mhz} MHz</Typography>
+              <Typography variant="body2">温度: {hardwareInfo.cpu.temp_c}°C</Typography>
             </Box>
 
             {/* 内存 & 交换空间 */}
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle1">内存</Typography>
               <Typography variant="body2">
-                总内存: {hardwareInfo.memory?.total_gb?.toFixed(2)} GB
+                总内存: {hardwareInfo.memory.total_gb.toFixed(2)} GB
               </Typography>
               <Typography variant="body2">
-                已用: {hardwareInfo.memory?.used_gb?.toFixed(2)} GB (
-                {hardwareInfo.memory?.percent?.toFixed(1)}%)
+                已用: {hardwareInfo.memory.used_gb.toFixed(2)} GB (
+                {hardwareInfo.memory.percent.toFixed(1)}%)
               </Typography>
 
               <Typography variant="subtitle1" sx={{ mt: 2 }}>
                 交换空间
               </Typography>
               <Typography variant="body2">
-                已用: {hardwareInfo.swap?.used_gb?.toFixed(2)} GB (
-                {hardwareInfo.swap?.percent?.toFixed(1)}%)
+                已用: {hardwareInfo.swap.used_gb.toFixed(2)} GB (
+                {hardwareInfo.swap.percent.toFixed(1)}%)
               </Typography>
             </Box>
 
             {/* 磁盘信息 */}
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle1">磁盘</Typography>
-              {hardwareInfo.disk?.map((disk, index) => (
+              {hardwareInfo.disk.map((disk, index) => (
                 <Box key={index} sx={{ mt: 1 }}>
                   <Typography variant="body2">
                     {disk.mountpoint} ({disk.device})
                   </Typography>
                   <Typography variant="body2">
-                    已用: {disk.used_gb?.toFixed(2)} GB / {disk.total_gb?.toFixed(2)} GB (
+                    已用: {disk.used_gb.toFixed(2)} GB / {disk.total_gb.toFixed(2)} GB (
                     {disk.percent?.toFixed(1)}%)
                   </Typography>
                 </Box>
@@ -272,23 +270,23 @@ export default function VehiclesStateList(): ReactElement {
             <Box>
               <Typography variant="subtitle1">网络</Typography>
               <Typography variant="body2">
-                上传: {hardwareInfo.network?.bytes_sent_mb?.toFixed(2)} MB
+                上传: {hardwareInfo.network.bytes_sent_mb.toFixed(2)} MB
               </Typography>
               <Typography variant="body2">
-                下载: {hardwareInfo.network?.bytes_recv_mb?.toFixed(2)} MB
+                下载: {hardwareInfo.network.bytes_recv_mb.toFixed(2)} MB
               </Typography>
 
               <Typography variant="subtitle1" sx={{ mt: 2 }}>
                 系统负载
               </Typography>
               <Typography variant="body2">
-                1分钟: {hardwareInfo.load_avg?.min1?.toFixed(2)}
+                1分钟: {hardwareInfo.load_avg.min1.toFixed(2)}
               </Typography>
               <Typography variant="body2">
-                5分钟: {hardwareInfo.load_avg?.min5?.toFixed(2)}
+                5分钟: {hardwareInfo.load_avg.min5.toFixed(2)}
               </Typography>
               <Typography variant="body2">
-                15分钟: {hardwareInfo.load_avg?.min15?.toFixed(2)}
+                15分钟: {hardwareInfo.load_avg.min15.toFixed(2)}
               </Typography>
             </Box>
           </Box>

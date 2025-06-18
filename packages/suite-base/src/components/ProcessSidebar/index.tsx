@@ -1,20 +1,25 @@
 import { ReactElement, useEffect, useRef, useState } from "react";
-import { MessagePipelineContext, useMessagePipeline } from "@lichtblick/suite-base/components/MessagePipeline";
+import {
+  MessagePipelineContext,
+  useMessagePipeline,
+} from "@lichtblick/suite-base/components/MessagePipeline";
 import request from "umi-request";
 import { getIpAddress } from "@lichtblick/suite-base/components/AppBar/VerticalAppBar";
 import Stack from "@lichtblick/suite-base/components/Stack";
 import {
   Box,
   Button,
-  Card, CircularProgress,
+  Card,
+  CircularProgress,
   Divider,
-  Table, TableBody,
+  Table,
+  TableBody,
   TableCell,
   TableHead,
   TableRow,
-  Typography
+  Typography,
 } from "@mui/material";
-import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessage";
+import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessageComponent";
 
 type ProcessInfo = {
   pid: number;
@@ -22,10 +27,9 @@ type ProcessInfo = {
   cpuUsage: number;
   memoryUsage: number;
   user: string;
-}
+};
 export default function ProcessSidebar(): ReactElement {
   // Don't run the animation when the sidebar first renders
-
 
   const [nowIPAddr, setIPAddr] = useState<string>("");
   const nowIPAddrRef = useRef("");
@@ -42,8 +46,8 @@ export default function ProcessSidebar(): ReactElement {
           "http://${nowIPAddrRef.current}:8080/api/processes",
           {
             method: "GET",
-            headers: { "Content-Type": "application/json" }
-          }
+            headers: { "Content-Type": "application/json" },
+          },
         );
         setProcessInfo(response);
       } catch (error) {
@@ -71,10 +75,10 @@ export default function ProcessSidebar(): ReactElement {
   const handleTerminate = async (pid: number) => {
     try {
       await request(`http://${nowIPAddrRef.current}:8080/api/terminate/${pid}`, {
-        method: "POST"
+        method: "POST",
       });
       // 操作成功后刷新列表
-      setProcessInfo(prev => prev.filter(p => p.pid !== pid));
+      setProcessInfo((prev) => prev.filter((p) => p.pid !== pid));
     } catch (error) {
       console.error(`终止进程 ${pid} 失败:`, error);
     }
@@ -84,15 +88,13 @@ export default function ProcessSidebar(): ReactElement {
   const handleKill = async (pid: number) => {
     try {
       await request(`http://${nowIPAddrRef.current}:8080/api/kill/${pid}`, {
-        method: "POST"
+        method: "POST",
       });
-      setProcessInfo(prev => prev.filter(p => p.pid !== pid));
+      setProcessInfo((prev) => prev.filter((p) => p.pid !== pid));
     } catch (error) {
       console.error(`杀死进程 ${pid} 失败:`, error);
     }
   };
-
-
 
   return (
     <Stack flex="auto" fullWidth overflowX="auto">
@@ -104,7 +106,7 @@ export default function ProcessSidebar(): ReactElement {
           <Divider />
 
           {loading ? (
-            <Box sx={{ p: 2, textAlign: 'center' }}>
+            <Box sx={{ p: 2, textAlign: "center" }}>
               <CircularProgress size={24} />
             </Box>
           ) : (
@@ -128,13 +130,13 @@ export default function ProcessSidebar(): ReactElement {
                     <TableCell align="right">{process.memoryUsage.toFixed(1)}%</TableCell>
                     <TableCell>{process.user}</TableCell>
                     <TableCell align="center">
-                      <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Box sx={{ display: "flex", gap: 1 }}>
                         <Button
                           variant="contained"
                           color="warning"
                           size="small"
                           onClick={() => handleTerminate(process.pid)}
-                          sx={{ textTransform: 'none' }}
+                          sx={{ textTransform: "none" }}
                         >
                           终止
                         </Button>
@@ -143,7 +145,7 @@ export default function ProcessSidebar(): ReactElement {
                           color="error"
                           size="small"
                           onClick={() => handleKill(process.pid)}
-                          sx={{ textTransform: 'none' }}
+                          sx={{ textTransform: "none" }}
                         >
                           杀死
                         </Button>

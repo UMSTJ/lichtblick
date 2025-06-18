@@ -72,6 +72,25 @@ const UdpMessageComponent: React.FC = () => {
 
   return (
     <div>
+      <Button
+        size="large"
+        // type="primary"
+        style={{
+          margin: "1rem",
+          justifyContent: "center",
+          display: "block",
+          width: "98%",
+          height: "150px",
+          textAlign: "center",
+          fontSize: "2.5rem",
+        }}
+        disabled={udpIp.length === 0}
+        onClick={async () => {
+          await createNewPlayer(udpIp[0] ?? "");
+        }}
+      >
+        连接到轮椅
+      </Button>
       <List disablePadding>
         {udpIp.map((message, index) => (
           <ListItem disablePadding key={index}>

@@ -1,9 +1,12 @@
+/* eslint-disable no-restricted-imports */
+
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable react/forbid-component-props */
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Button,
   Paper,
@@ -11,14 +14,17 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Modal,
   TextField,
   Checkbox,
   FormControlLabel,
   IconButton,
+  Box,
+  List,
+  Divider,
+  ListItem,
+  ListItemText,
+  Stack,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import React, { useState, useEffect, useCallback } from "react";
@@ -110,18 +116,18 @@ const ControllerCard = styled(Paper)(({ theme }) => ({
   flexDirection: "column",
   gap: theme.spacing(2.5),
 }));
-const HeaderTypography = styled(Typography)(({ theme }) => ({
-  flexGrow: 1,
-  fontWeight: 500,
-  color: theme.palette.primary.main,
-}));
-const HeaderContainer = styled("div")({
-  display: "flex",
-  alignItems: "center",
-  borderBottom: "2px solid #42a5f5",
-  paddingBottom: "8px",
-  marginBottom: "8px",
-});
+// const HeaderTypography = styled(Typography)(({ theme }) => ({
+//   flexGrow: 1,
+//   fontWeight: 500,
+//   color: theme.palette.primary.main,
+// }));
+// const HeaderContainer = styled("div")({
+//   display: "flex",
+//   alignItems: "center",
+//   borderBottom: "2px solid #42a5f5",
+//   paddingBottom: "8px",
+//   marginBottom: "8px",
+// });
 //const StatusDisplay = styled(Paper)(({ theme }) => ({ padding: theme.spacing(2, 3), backgroundColor: theme.palette.grey[100], borderLeft: `5px solid ${theme.palette.secondary.main}`, minHeight: '80px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }));
 const ButtonContainer = styled("div")(({ theme }) => ({
   display: "flex",
@@ -294,9 +300,9 @@ const NewLaunchModal: React.FC<NewLaunchModalProps> = ({ open, onClose, onSubmit
 // --- RosLaunchController Component ---
 const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
   const [processes, setProcesses] = useState<RosProcess[]>([]);
-  const [expanded, setExpanded] = useState<string | false>(false);
+  // const [expanded, setExpanded] = useState<string | false>(false);
   const [loading, setLoading] = useState({ list: true, log: false, stop: "" });
-  const [log, setLog] = useState<RosProcess | null>(null);
+  // const [log, setLog] = useState<RosProcess | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -334,22 +340,22 @@ const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
     };
   }, [refreshList]);
 
-  type AccordionChangeDetails = { expanded: boolean };
+  // type AccordionChangeDetails = { expanded: boolean };
 
-  const handleAccordionChange = (panelId: string) => async (details: AccordionChangeDetails) => {
-    setExpanded(details.expanded ? panelId : false);
-    if (details.expanded) {
-      setLoading((p) => ({ ...p, log: true }));
-      try {
-        const processDetails = await getRosProcessLog(backendIp, panelId);
-        setLog(processDetails);
-      } catch {
-        setLog(null);
-      } finally {
-        setLoading((p) => ({ ...p, log: false }));
-      }
-    }
-  };
+  // const handleAccordionChange = (panelId: string) => async (details: AccordionChangeDetails) => {
+  //   setExpanded(details.expanded ? panelId : false);
+  //   if (details.expanded) {
+  //     setLoading((p) => ({ ...p, log: true }));
+  //     try {
+  //       const processDetails = await getRosProcessLog(backendIp, panelId);
+  //       setLog(processDetails);
+  //     } catch {
+  //       setLog(null);
+  //     } finally {
+  //       setLoading((p) => ({ ...p, log: false }));
+  //     }
+  //   }
+  // };
   const handleStopProcess = async (id: string) => {
     setLoading((p) => ({ ...p, stop: id }));
     try {
@@ -386,11 +392,41 @@ const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
       setLoading((p) => ({ ...p, stop: "" }));
     }
   };
+  const [selectedProcess, setSelectedProcess] = useState<string | null>(null);
+  const [processDetails, setProcessDetails] = useState<RosProcess | null>(null);
+
+  // 修改获取日志的函数
+  const loadProcessDetails = async (id: string) => {
+    if (!backendIp) {
+      return;
+    }
+
+    try {
+      setLoading((p) => ({ ...p, log: true }));
+      const details = await getRosProcessLog(backendIp, id);
+      setProcessDetails(details);
+    } catch (error) {
+      console.error("Failed to fetch process details:", error);
+      setProcessDetails(null);
+    } finally {
+      setLoading((p) => ({ ...p, log: false }));
+    }
+  };
+
+  // 修改列表点击事件处理
+  const handleProcessClick = (id: string) => {
+    if (selectedProcess === id) {
+      setSelectedProcess(null);
+      setProcessDetails(null);
+    } else {
+      setSelectedProcess(id);
+      void loadProcessDetails(id);
+    }
+  };
 
   return (
     <ControllerCard elevation={10}>
-      <HeaderContainer>
-        <HeaderTypography variant="h5">ROS 启动管理器</HeaderTypography>
+      {/* <HeaderContainer>
         <Button
           variant="contained"
           size="small"
@@ -400,89 +436,164 @@ const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
         >
           新建
         </Button>
-      </HeaderContainer>
-      {loading.list && processes.length === 0 ? (
-        <CircularProgress />
-      ) : (
-        processes.map((proc) => (
-          <Accordion
-            key={proc.id}
-            expanded={expanded === proc.id}
-            onChange={() => {
-              handleAccordionChange(proc.id);
-            }}
-          >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "8px" }}>
-                <StatusIndicator status={proc.state} title={proc.state} />
-                <Typography>{proc.launchFile}</Typography>
-                <Button
-                  variant="contained"
-                  color="error"
-                  size="small"
-                  disabled={proc.state !== "RUNNING" || loading.stop === proc.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void handleStopProcess(proc.id);
-                  }}
-                >
-                  {loading.stop === proc.id ? (
-                    <CircularProgress size={18} color="inherit" />
-                  ) : (
-                    "结束"
-                  )}
-                </Button>
-                <Button
-                  variant="contained"
-                  color="warning"
-                  size="small"
-                  disabled={proc.state !== "RUNNING" || loading.stop === proc.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void handleRestartProcess(proc.id);
-                  }}
-                >
-                  {loading.stop === proc.id ? (
-                    <CircularProgress size={18} color="inherit" />
-                  ) : (
-                    "重启"
-                  )}
-                </Button>
-              </div>
-            </AccordionSummary>
-            <AccordionDetails>
-              {loading.log && expanded === proc.id && log != null ? (
-                <CircularProgress />
-              ) : (
-                <>
-                  <Typography variant="body2">最近日志</Typography>
-                  {log ? (
-                    <>
-                      <Typography variant="subtitle1">启动包: {log.rosPackageName}</Typography>
-                      <Typography variant="subtitle1">Launch 文件: {log.launchFile}</Typography>
-                      <Typography variant="subtitle1">
-                        工作区 Setup 脚本: {log.workspaceSetupScript}
-                      </Typography>
-                      <Typography variant="subtitle1">启动参数: {log.paramters}</Typography>
-                      <Typography variant="subtitle1">进程 ID: {log.pid}</Typography>
-                      <Typography variant="subtitle1">重启次数: {log.restartCount}</Typography>
-                      <Typography variant="subtitle1">终端槽位 ID: {log.terminalSlotId}</Typography>
-                      <Typography variant="subtitle1">状态: {log.state}</Typography>
-                      <LogContainer>
-                        <code>{(log.recentLogs ?? []).join("\n")}</code>
-                      </LogContainer>
-                    </>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      暂无日志信息
+      </HeaderContainer> */}
+
+      <Stack sx={{ display: "flex", height: "100%", flexDirection: "column" }}>
+        {loading.list && processes.length === 0 ? (
+          <Box sx={{ p: 2, textAlign: "center" }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            {/* 进程列表 */}
+            <List sx={{ maxHeight: "300px", overflowY: "auto" }}>
+              {processes.map((proc) => (
+                <React.Fragment key={proc.id}>
+                  <ListItem
+                    selected={selectedProcess === proc.id}
+                    onClick={() => {
+                      handleProcessClick(proc.id);
+                    }}
+                    sx={{
+                      borderLeft: 4,
+                      borderColor:
+                        proc.state === "RUNNING"
+                          ? "success.main"
+                          : proc.state === "ERROR"
+                            ? "error.main"
+                            : "grey.500",
+                      bgcolor: selectedProcess === proc.id ? "action.selected" : "inherit",
+                    }}
+                  >
+                    <ListItemText
+                      primary={
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <StatusIndicator status={proc.state} />
+                          <Typography>{proc.launchFile}</Typography>
+                          <Box sx={{ flexGrow: 1 }} />
+                          {proc.state === "RUNNING" && (
+                            <>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="error"
+                                disabled={loading.stop === proc.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleStopProcess(proc.id);
+                                }}
+                                startIcon={
+                                  loading.stop === proc.id ? <CircularProgress size={16} /> : null
+                                }
+                              >
+                                {loading.stop === proc.id ? "" : "结束"}
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="warning"
+                                disabled={loading.stop === proc.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleRestartProcess(proc.id);
+                                }}
+                                startIcon={
+                                  loading.stop === proc.id ? <CircularProgress size={16} /> : null
+                                }
+                              >
+                                {loading.stop === proc.id ? "" : "重启"}
+                              </Button>
+                            </>
+                          )}
+                        </Stack>
+                      }
+                      secondary={`PID: ${proc.pid} | 重启次数: ${proc.restartCount}`}
+                    />
+                  </ListItem>
+                  <Divider />
+                </React.Fragment>
+              ))}
+            </List>
+
+            {/* 日志展示区域 */}
+            <Box
+              sx={{
+                mt: 2,
+                flexGrow: 1,
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 1,
+                p: 2,
+                bgcolor: "grey.50",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              {selectedProcess ? (
+                loading.log ? (
+                  <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+                    <CircularProgress />
+                  </Box>
+                ) : processDetails ? (
+                  <Box sx={{ overflowY: "auto" }}>
+                    <Typography variant="h6" gutterBottom>
+                      进程详情 - {processDetails.launchFile}
                     </Typography>
-                  )}
-                </>
+                    <Box
+                      component="dl"
+                      sx={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 1 }}
+                    >
+                      <Typography component="dt" fontWeight="bold">
+                        启动包:
+                      </Typography>
+                      <Typography component="dd">{processDetails.rosPackageName}</Typography>
+
+                      <Typography component="dt" fontWeight="bold">
+                        工作区脚本:
+                      </Typography>
+                      <Typography component="dd">{processDetails.workspaceSetupScript}</Typography>
+
+                      <Typography component="dt" fontWeight="bold">
+                        启动参数:
+                      </Typography>
+                      <Typography component="dd">
+                        {processDetails.paramters != null
+                          ? processDetails.paramters.join(", ")
+                          : ""}
+                      </Typography>
+
+                      <Typography component="dt" fontWeight="bold">
+                        状态:
+                      </Typography>
+                      <Typography component="dd">{processDetails.state}</Typography>
+                    </Box>
+
+                    <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                      最近日志
+                    </Typography>
+                    <LogContainer>
+                      <code>
+                        {(processDetails.recentLogs ?? []).map((log, index) => (
+                          <div key={index}>{log}</div>
+                        ))}
+                      </code>
+                    </LogContainer>
+                  </Box>
+                ) : (
+                  <Typography color="text.secondary" align="center" sx={{ my: 4 }}>
+                    无法加载进程详情
+                  </Typography>
+                )
+              ) : (
+                <Typography color="text.secondary" align="center" sx={{ my: 4 }}>
+                  选择一个进程查看详细信息
+                </Typography>
               )}
-            </AccordionDetails>
-          </Accordion>
-        ))
-      )}
+            </Box>
+          </>
+        )}
+      </Stack>
+
       <NewLaunchModal
         open={isModalOpen}
         onClose={() => {
@@ -490,20 +601,21 @@ const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
         }}
         onSubmit={handleStartProcess}
       />
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={() => {
-          setSnackbar((p) => ({ ...p, open: false }));
+          setSnackbar({ ...snackbar, open: false });
         }}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert
           onClose={() => {
-            setSnackbar((p) => ({ ...p, open: false }));
+            setSnackbar({ ...snackbar, open: false });
           }}
           severity={snackbar.severity}
-          style={{ width: "100%" }}
+          sx={{ width: "100%" }}
         >
           {snackbar.message}
         </Alert>

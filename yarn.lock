@@ -5221,7 +5221,7 @@ __metadata:
     moment-timezone: 0.5.43
     monaco-editor: 0.52.2
     monaco-editor-webpack-plugin: 7.1.0
-    mqtt: 5.3.5
+    mqtt: 5.13.1
     nanoid: 5.0.9
     natsort: 2.0.3
     nearley: 2.20.1
@@ -8278,7 +8278,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/readable-stream@npm:^4.0.0, @types/readable-stream@npm:^4.0.5":
+"@types/readable-stream@npm:^4.0.0":
   version: 4.0.18
   resolution: "@types/readable-stream@npm:4.0.18"
   dependencies:
@@ -8554,15 +8554,6 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: f17023ce7b89c6124249c90211803a4aaa02886e12bc2d0d2cd47fa665eeb058db4d871ce4397d8e423f6beea97dd56835dd3fdbb921030fe4d887601e37d609
-  languageName: node
-  linkType: hard
-
-"@types/ws@npm:^8.5.9":
-  version: 8.5.14
-  resolution: "@types/ws@npm:8.5.14"
-  dependencies:
-    "@types/node": "*"
-  checksum: b63d25146a0d2ebb9cb35e4b68c5a01d81b8f4657d62b0a0d9470df6a357798349a44064b2f84b8f98a553ba84d9a5ee302d3053feef02c7771010c55d290ca6
   languageName: node
   linkType: hard
 
@@ -12021,6 +12012,18 @@ __metadata:
   dependencies:
     ms: ^2.1.1
   checksum: b3d8c5940799914d30314b7c3304a43305fd0715581a919dacb8b3176d024a782062368405b47491516d2091d6462d4d11f2f4974a405048094f8bfebfa3071c
+  languageName: node
+  linkType: hard
+
+"debug@npm:^4.4.0":
+  version: 4.4.1
+  resolution: "debug@npm:4.4.1"
+  dependencies:
+    ms: ^2.1.3
+  peerDependenciesMeta:
+    supports-color:
+      optional: true
+  checksum: a43826a01cda685ee4cec00fb2d3322eaa90ccadbef60d9287debc2a886be3e835d9199c80070ede75a409ee57828c4c6cd80e4b154f2843f0dc95a570dc0729
   languageName: node
   linkType: hard
 
@@ -17629,7 +17632,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lru-cache@npm:^10.0.1, lru-cache@npm:^10.2.0":
+"lru-cache@npm:^10.0.1, lru-cache@npm:^10.2.0, lru-cache@npm:^10.4.3":
   version: 10.4.3
   resolution: "lru-cache@npm:10.4.3"
   checksum: 6476138d2125387a6d20f100608c2583d415a4f64a0fecf30c9e2dda976614f09cad4baa0842447bd37dd459a7bd27f57d9d8f8ce558805abd487c583f3d774a
@@ -18761,71 +18764,40 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mqtt-packet@npm:^9.0.0, mqtt-packet@npm:^9.0.1":
-  version: 9.0.1
-  resolution: "mqtt-packet@npm:9.0.1"
+"mqtt-packet@npm:^9.0.2":
+  version: 9.0.2
+  resolution: "mqtt-packet@npm:9.0.2"
   dependencies:
     bl: ^6.0.8
     debug: ^4.3.4
     process-nextick-args: ^2.0.1
-  checksum: 211be65f6cb188ef46f157ada965068468f45b08ad5196ff59a48a925677ac43011cb0abb2e586caef0e35ed6ec13181c33bbc640eb77a9bbdc74b7db9c95c76
+  checksum: ea07da6f4a38f50ece80ff07514a2d5cdbd17820ab9547611208887520fff68a1d0ef37509fec80423e199588b919e80d37acbf4b4a61c27d14fa79f5a0766c5
   languageName: node
   linkType: hard
 
-"mqtt@npm:5.3.5":
-  version: 5.3.5
-  resolution: "mqtt@npm:5.3.5"
+"mqtt@npm:5.13.1":
+  version: 5.13.1
+  resolution: "mqtt@npm:5.13.1"
   dependencies:
-    "@types/readable-stream": ^4.0.5
-    "@types/ws": ^8.5.9
     commist: ^3.2.0
     concat-stream: ^2.0.0
-    debug: ^4.3.4
+    debug: ^4.4.0
     help-me: ^5.0.0
-    lru-cache: ^10.0.1
+    lru-cache: ^10.4.3
     minimist: ^1.2.8
-    mqtt: ^5.2.0
-    mqtt-packet: ^9.0.0
+    mqtt-packet: ^9.0.2
     number-allocator: ^1.0.14
-    readable-stream: ^4.4.2
-    reinterval: ^1.1.0
-    rfdc: ^1.3.0
+    readable-stream: ^4.7.0
+    rfdc: ^1.4.1
+    socks: ^2.8.3
     split2: ^4.2.0
-    worker-timers: ^7.0.78
-    ws: ^8.14.2
+    worker-timers: ^7.1.8
+    ws: ^8.18.0
   bin:
     mqtt: build/bin/mqtt.js
     mqtt_pub: build/bin/pub.js
     mqtt_sub: build/bin/sub.js
-  checksum: 8d2a5a923f304a27f47a663a45621005ab99fbfff37c01422090ebb6b1524b4460c1954adb72b97588b2dd157051a86e351aad70d2a1eb1ee9514eb84dc8e5e7
-  languageName: node
-  linkType: hard
-
-"mqtt@npm:^5.2.0":
-  version: 5.10.3
-  resolution: "mqtt@npm:5.10.3"
-  dependencies:
-    "@types/readable-stream": ^4.0.5
-    "@types/ws": ^8.5.9
-    commist: ^3.2.0
-    concat-stream: ^2.0.0
-    debug: ^4.3.4
-    help-me: ^5.0.0
-    lru-cache: ^10.0.1
-    minimist: ^1.2.8
-    mqtt-packet: ^9.0.1
-    number-allocator: ^1.0.14
-    readable-stream: ^4.4.2
-    reinterval: ^1.1.0
-    rfdc: ^1.3.0
-    split2: ^4.2.0
-    worker-timers: ^7.1.4
-    ws: ^8.17.1
-  bin:
-    mqtt: build/bin/mqtt.js
-    mqtt_pub: build/bin/pub.js
-    mqtt_sub: build/bin/sub.js
-  checksum: 74d345fd49fcaa95e752cc4a018d29c30ef909d68f322ece9a353b8aea1b1608d8b94b214e8d34da154aa6d2f299bc2c14c95b3a7f68cc2c15f6b397df63edb0
+  checksum: 0613f0d30b34e0b85033d4b18af69ac1e59682a5d63cae847dda83e092470ceb0969eac6a3147b20fb28277115ce9e2a1f5957e1271a6c408d7091fe5d2b1779
   languageName: node
   linkType: hard
 
@@ -21717,7 +21689,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"readable-stream@npm:^4.2.0, readable-stream@npm:^4.4.2":
+"readable-stream@npm:^4.2.0, readable-stream@npm:^4.7.0":
   version: 4.7.0
   resolution: "readable-stream@npm:4.7.0"
   dependencies:
@@ -21970,13 +21942,6 @@ __metadata:
     rehype-stringify: ^10.0.0
     unified: ^11.0.0
   checksum: d0a1b6df542174b7dbec40119c47b33411d9fde9c51a5e42fc75e40d45f80ab7a2825a122f3b5f6defc372077ea1547ca9097dcfaed718d4784022f25df20c9c
-  languageName: node
-  linkType: hard
-
-"reinterval@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "reinterval@npm:1.1.0"
-  checksum: 801ce2cc5f4096c593071c7c361acab5c5c3a0585fb660f7cee2d1a94b44dd185359d5c9b438391a9d3d32c53eb325de2d81268038e037b336e6d4c3897e6018
   languageName: node
   linkType: hard
 
@@ -22243,7 +22208,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rfdc@npm:^1.3.0":
+"rfdc@npm:^1.4.1":
   version: 1.4.1
   resolution: "rfdc@npm:1.4.1"
   checksum: 3b05bd55062c1d78aaabfcea43840cdf7e12099968f368e9a4c3936beb744adb41cbdb315eac6d4d8c6623005d6f87fdf16d8a10e1ff3722e84afea7281c8d13
@@ -25650,7 +25615,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"worker-timers@npm:^7.0.78, worker-timers@npm:^7.1.4":
+"worker-timers@npm:^7.1.8":
   version: 7.1.8
   resolution: "worker-timers@npm:7.1.8"
   dependencies:
@@ -25701,7 +25666,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:8.18.0, ws@npm:^8.11.0, ws@npm:^8.14.2, ws@npm:^8.17.1, ws@npm:^8.18.0, ws@npm:^8.2.3":
+"ws@npm:8.18.0, ws@npm:^8.11.0, ws@npm:^8.18.0, ws@npm:^8.2.3":
   version: 8.18.0
   resolution: "ws@npm:8.18.0"
   peerDependencies:

@@ -21,8 +21,16 @@ import React, { useEffect, useState } from "react";
 
 // Assuming this path is correct for your project structure
 
+import { useDataSourceInfo } from "@lichtblick/suite-base/PanelAPI";
 import { useMessageDataItem } from "@lichtblick/suite-base/components/MessagePathSyntax/useMessageDataItem";
+import {
+  MessagePipelineContext,
+  useMessagePipeline,
+} from "@lichtblick/suite-base/components/MessagePipeline";
 import Panel from "@lichtblick/suite-base/components/Panel";
+import useCallbackWithToast from "@lichtblick/suite-base/hooks/useCallbackWithToast";
+import usePublisher from "@lichtblick/suite-base/hooks/usePublisher";
+import LocationController from "@lichtblick/suite-base/panels/SlamMapSwitch/LocationController";
 
 // Enums and Types for statuses
 enum ControlMode {
@@ -30,6 +38,8 @@ enum ControlMode {
   AUTO_NAV = "AUTO_NAV",
   EMERGENCY_STOP = "EMERGENCY_STOP",
   NOT_OPERATED = "NOT_OPERATED",
+  REMOTE = "REMOTE",
+  PAUSE = "PAUSE",
 }
 
 interface ControlModeStyle {
@@ -41,13 +51,17 @@ interface ControlModeStyle {
 const controlModeStyles: Record<ControlMode, ControlModeStyle> = {
   [ControlMode.MANUAL]: { label: "手动模式", colorKey: "warning", colorShade: "main" },
   [ControlMode.AUTO_NAV]: { label: "自动导航", colorKey: "success", colorShade: "main" },
+  [ControlMode.NOT_OPERATED]: { label: "手推模式", colorKey: "warning", colorShade: "main" },
+  [ControlMode.REMOTE]: { label: "远程控制", colorKey: "success", colorShade: "main" },
+  [ControlMode.PAUSE]: { label: "暂停", colorKey: "warning", colorShade: "main" }, // Added hypothetical value for pause
   [ControlMode.EMERGENCY_STOP]: { label: "急停", colorKey: "error", colorShade: "main" },
-  [ControlMode.NOT_OPERATED]: { label: "未操作", colorKey: "grey", colorShade: 500 },
 };
 
 enum NavigationStatus {
   NOT_STARTED = "NOT_STARTED",
   STARTED = "STARTED",
+  CANCELLED = "CANCELLED",
+  FINISHED = "FINISHED",
 }
 
 enum SubTopic {
@@ -55,6 +69,11 @@ enum SubTopic {
   ODODM = "/odom",
   CURRENT = "/current_mode",
   NAVING = " /navigating",
+}
+
+enum NavTopic {
+  NAVDATA = "/nav2_data",
+  STOPNAV = "/stop_nav",
 }
 
 interface NavigationStatusStyle {
@@ -66,6 +85,8 @@ interface NavigationStatusStyle {
 const navigationStatusStyles: Record<NavigationStatus, NavigationStatusStyle> = {
   [NavigationStatus.NOT_STARTED]: { label: "未开始导航", colorKey: "grey", colorShade: 500 },
   [NavigationStatus.STARTED]: { label: "开始导航", colorKey: "success", colorShade: "main" },
+  [NavigationStatus.CANCELLED]: { label: "取消导航", colorKey: "warning", colorShade: "main" },
+  [NavigationStatus.FINISHED]: { label: "导航完成", colorKey: "success", colorShade: "main" },
 };
 
 // Styled Components
@@ -91,14 +112,19 @@ const TopSection = styled(SectionStack)({
 });
 
 const MiddleSection = styled(SectionStack)({
-  height: "30%",
-  marginBottom: "10px", // Spacing between sections
+  height: "5%",
+  marginBottom: "0px", // Spacing between sections
   overflowY: "auto", // In case content overflows
   padding: "5px 0", // Padding for internal content
 });
 
 const BottomSection = styled(SectionStack)({
   height: "45%",
+});
+
+const MapSection = styled(SectionStack)({
+  height: "25%",
+  marginBottom: "10px", // Spacing between sections
 });
 
 interface StatusDisplayCardProps {
@@ -205,29 +231,63 @@ interface WheelPanelProps {
   initialNavigationStatus?: NavigationStatus;
 }
 
+const selectPlayerName = (ctx: MessagePipelineContext) => ctx.playerState.name;
+
 const WheelPanel: React.FC<WheelPanelProps> = ({
   initialControlMode = ControlMode.MANUAL,
   initialSpeed = "0 km/h",
-  initialPositioningMode = "RTK 固定", // RTK Fixed in Chinese
-  initialAirbagValidity = "2025-12-31",
-  initialGpsPosition = "31.2304° N, 121.4737° E",
+  // initialPositioningMode = "RTK 固定", // RTK Fixed in Chinese
+  // initialAirbagValidity = "2025-12-31",
+  // initialGpsPosition = "31.2304° N, 121.4737° E",
   initialBatteryLevel = 75,
   initialNavigationStatus = NavigationStatus.NOT_STARTED,
 }) => {
   // In a real app, these states might be managed by a global store or passed as props more dynamically
   const [controlMode, setControlMode] = useState<ControlMode>(initialControlMode);
   const [currentSpeed, setCurrentSpeed] = useState<string>(initialSpeed);
-  const [positioningMode] = useState<string>(initialPositioningMode);
-  const [airbagValidity] = useState<string>(initialAirbagValidity);
-  const [gpsPosition] = useState<string>(initialGpsPosition);
+  // const [positioningMode] = useState<string>(initialPositioningMode);
+  // const [airbagValidity] = useState<string>(initialAirbagValidity);
+  // const [gpsPosition] = useState<string>(initialGpsPosition);
   const [batteryLevel, setBatteryLevel] = useState<number>(initialBatteryLevel);
   const [navigationStatus, setNavigationStatus] =
     useState<NavigationStatus>(initialNavigationStatus);
+  const playerName = useMessagePipeline(selectPlayerName);
+
+  const [ipAddr, setIpAddr] = useState("");
+  useEffect(() => {
+    if (playerName == undefined) {
+      return;
+    }
+    const currentIp = getIpAddress(playerName);
+    setIpAddr(currentIp);
+  }, [playerName, setIpAddr]);
+  const getIpAddress = (name: string): string => {
+    if (!name) {
+      return "";
+    }
+
+    // 移除 "ws://" 前缀（如果存在）
+    let addressPart = name.startsWith("ws://") ? name.substring(5) : name;
+
+    // 只取第一个空格之前的部分 (例如 "10.51.129.39:8765" 或 "10.51.129.39")
+    const firstSpaceIndex = addressPart.indexOf(" ");
+    if (firstSpaceIndex !== -1) {
+      addressPart = addressPart.substring(0, firstSpaceIndex);
+    }
+
+    // 现在 addressPart 类似于 "10.51.129.39:8765" 或 "10.51.129.39" 或 "[::1]:8000"
+    // 我们需要提取主机部分
+    let host = addressPart; // 如果找不到端口或格式不符合预期，则默认为整个字符串
+    host = host.split(":")[0] ?? "";
+    // 如果不是数字端口（例如，冒号是 IPv6 地址的一部分，如 "[::1]"），则 host 保持为 addressPart
+    // 附加新的固定端口
+    return `${host}:9000`;
+  };
 
   const batteryMessages = useMessageDataItem(SubTopic.BATTERY);
   const odomMessages = useMessageDataItem(SubTopic.ODODM);
   const currentModeMessages = useMessageDataItem(SubTopic.CURRENT); // Renamed for clarity
-  const navigationMessages = useMessageDataItem(SubTopic.NAVING);
+  const navigationMessages = useMessageDataItem(NavTopic.NAVDATA);
 
   const latestBatteryMsg = getLatestMessage(batteryMessages) as
     | { queriedData?: { value?: { data?: number } }[] }
@@ -239,7 +299,7 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
     | { queriedData?: { value?: { data?: string } }[] }
     | undefined;
   const latestNavigationMsg = getLatestMessage(navigationMessages) as
-    | { queriedData?: { value?: { data?: boolean } }[] }
+    | { queriedData?: { value?: { data?: string } }[] }
     | undefined;
 
   useEffect(() => {
@@ -263,12 +323,12 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
       } else if (modeData === "manual") {
         setControlMode(ControlMode.MANUAL);
       } else if (modeData === "tui") {
-        setControlMode(ControlMode.EMERGENCY_STOP);
+        setControlMode(ControlMode.NOT_OPERATED);
       } else if (modeData === "remote") {
-        setControlMode(ControlMode.AUTO_NAV);
+        setControlMode(ControlMode.REMOTE);
       } else if (modeData === "pause") {
         // Added hypothetical value for emergency stop
-        setControlMode(ControlMode.EMERGENCY_STOP);
+        setControlMode(ControlMode.PAUSE);
       } else {
         setControlMode(initialControlMode); // Fallback to initial or NOT_OPERATED
       }
@@ -293,15 +353,34 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
   useEffect(() => {
     if (latestNavigationMsg?.queriedData && latestNavigationMsg.queriedData.length > 0) {
       const navData = latestNavigationMsg.queriedData[0]?.value?.data;
-      if (typeof navData === "boolean") {
-        setNavigationStatus(navData ? NavigationStatus.STARTED : NavigationStatus.NOT_STARTED);
+      if (navData === "isNav") {
+        setNavigationStatus(NavigationStatus.STARTED);
+      } else if (navData === "finishNav") {
+        setNavigationStatus(NavigationStatus.FINISHED);
+      } else if (navData === "cancelNav") {
+        setNavigationStatus(NavigationStatus.CANCELLED);
       } else {
-        setNavigationStatus(initialNavigationStatus);
+        setNavigationStatus(NavigationStatus.NOT_STARTED); // Default to NOT_STARTED
       }
-    } else {
-      setNavigationStatus(initialNavigationStatus);
     }
   }, [latestNavigationMsg, initialNavigationStatus, setNavigationStatus]);
+
+  const { datatypes } = useDataSourceInfo();
+  const navStopPublish = usePublisher({
+    name: "Publish",
+    topic: "/stop_nav",
+    schemaName: "std_msgs/msg/String",
+    datatypes,
+  });
+
+  const setNavStop = useCallbackWithToast(() => {
+    navStopPublish({ data: "stop" } as Record<string, unknown>);
+  }, [navStopPublish]);
+
+  const handleCancelNavigation = () => {
+    setNavStop().catch(() => {}); // Handle any errors silently
+    // setNavigationStatus(NavigationStatus.CANCELLED);
+  };
   const currentControlStyle = controlModeStyles[controlMode];
   const currentNavigationStyle = navigationStatusStyles[navigationStatus];
 
@@ -327,16 +406,21 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
         <InfoText>
           速度: <strong>{currentSpeed}</strong>
         </InfoText>
-        <InfoText>
+        {/* <InfoText>
           定位模式: <strong>{positioningMode}</strong>
-        </InfoText>
-        <InfoText>
+        </InfoText> */}
+        {/* <InfoText>
           安全气囊有效期: <strong>{airbagValidity}</strong>
-        </InfoText>
-        <InfoText>
+        </InfoText> */}
+
+        {/* <InfoText>
           GPS位置: <strong>{gpsPosition}</strong>
-        </InfoText>
+        </InfoText> */}
       </MiddleSection>
+      <MapSection>
+        {" "}
+        <LocationController backendIp={ipAddr} displayStatus={false} />
+      </MapSection>
 
       {/* Bottom Section: Battery and Navigation Status */}
       <BottomSection direction="column" justifyContent="space-around">
@@ -369,7 +453,23 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
         </Stack>
         {/* Stop Navigation Button */}
         <Stack direction="column" alignItems="stretch">
-          <Button style={{ marginTop: "8px", width: "100%", height: "50px" }}> 停止导航 </Button>
+          {/* <Button
+            onClick={handleCancelNavigation}
+            style={{ marginTop: "8px", width: "100%", height: "50px" }}
+          >
+            {" "}
+            停止导航{" "}
+          </Button> */}
+          <Button
+            variant="contained"
+            color="error"
+            // disabled={!displayStatus.isNavigating}
+            onClick={handleCancelNavigation}
+            style={{ marginTop: "8px", width: "100%", height: "50px", fontSize: "1.8rem" }}
+          >
+            {" "}
+            SOS报警{" "}
+          </Button>
         </Stack>
       </BottomSection>
     </RootStack>

@@ -42,9 +42,9 @@ const useStyles = makeStyles()((theme) => {
         1.5,
       )}) !important`,
     },
-    toolbarGrid: {
-      padding: theme.spacing(2),
-    },
+    // toolbarGrid: {
+    //   padding: theme.spacing(2),
+    // },
   };
 });
 
@@ -208,47 +208,49 @@ export const PanelCatalog = forwardRef<HTMLDivElement, Props>(function PanelCata
 
   return (
     <Stack fullHeight ref={ref}>
-      <div
-        className={cx(classes.toolbar, {
-          [classes.toolbarMenu]: isMenu,
-          [classes.toolbarGrid]: mode === "grid",
-        })}
-      >
-        <TextField
-          fullWidth
-          variant="filled"
-          placeholder={t("searchPanels")}
-          value={searchQuery}
-          onChange={handleSearchChange}
-          onKeyDown={onKeyDown}
-          autoFocus
-          data-testid="panel-list-textfield"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
-            endAdornment: searchQuery && (
-              <IconButton
-                size="small"
-                edge="end"
-                onClick={() => {
-                  setSearchQuery("");
-                }}
-              >
-                <CancelIcon fontSize="small" />
-              </IconButton>
-            ),
-          }}
-        />
-      </div>
       {mode === "grid" ? (
-        <PanelGrid
-          searchQuery={searchQuery}
-          filteredPanels={allFilteredPanels}
-          onPanelSelect={onPanelSelect}
-        />
+        <>
+          <div
+            className={cx(classes.toolbar, {
+              [classes.toolbarMenu]: isMenu,
+              // [classes.toolbarGrid]: mode === "grid",
+            })}
+          >
+            <TextField
+              fullWidth
+              variant="filled"
+              placeholder={t("searchPanels")}
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onKeyDown={onKeyDown}
+              autoFocus
+              data-testid="panel-list-textfield"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+                endAdornment: searchQuery && (
+                  <IconButton
+                    size="small"
+                    edge="end"
+                    onClick={() => {
+                      setSearchQuery("");
+                    }}
+                  >
+                    <CancelIcon fontSize="small" />
+                  </IconButton>
+                ),
+              }}
+            />
+          </div>
+          <PanelGrid
+            searchQuery={searchQuery}
+            filteredPanels={allFilteredPanels}
+            onPanelSelect={onPanelSelect}
+          />
+        </>
       ) : (
         <PanelList
           searchQuery={searchQuery}

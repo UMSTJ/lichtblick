@@ -138,7 +138,7 @@
         "moment-timezone": "0.5.43",
         "monaco-editor": "0.52.2",
         "monaco-editor-webpack-plugin": "7.1.0",
-        "mqtt": "5.3.5",
+        "mqtt": "5.13.1",
         "nanoid": "5.0.9",
         "natsort": "2.0.3",
         "nearley": "2.20.1",

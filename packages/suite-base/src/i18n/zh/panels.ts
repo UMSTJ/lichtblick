@@ -4,9 +4,9 @@
 
 export const panels = {
   pidPlot: "PID 绘图",
-  pnumber:"p值",
-  inumber:"i值",
-  dnumber:"d值",
+  pnumber: "p值",
+  inumber: "i值",
+  dnumber: "d值",
   pidPlotDescription: "PID 绘图描述",
   motionStateDescription: "运动状态描述",
   SlamMapEditPanel: "Slam 地图编辑面板",
@@ -18,8 +18,8 @@ export const panels = {
   deviceSetting: "本地设备设置",
   VsCode: "VsCode",
   vscodeEditer: "远程链接到 VsCode 编辑器",
-  VehicleControl: "沙盘车辆控制/目标点选择",
-  VehicleControlDescription: "控制车辆前往沙盘对应目的地",
+  VehicleControl: "导航目标点选择",
+  VehicleControlDescription: "控制车辆前往对应目的地",
   "3D": "3D",
   "3DPanelDescription": "在3D场景中显示标记、相机图像、网格、URDF等。",
   callService: "服务调用",
