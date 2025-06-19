@@ -17,7 +17,6 @@ import { PanelInfo } from "@lichtblick/suite-base/context/PanelCatalogContext";
 import { TAB_PANEL_TYPE } from "@lichtblick/suite-base/util/globalConstants";
 
 // import dataSourceInfoThumbnail from "./DataSourceInfo/thumbnail.png";
-import deviceSettingSummaryThumbnail from "./DeviceSetting/thumbnail.png";
 // import gaugeThumbnail from "./Gauge/thumbnail.png";
 import imageThumbnail from "./Image/thumbnail.png";
 // import indicatorThumbnail from "./Indicator/thumbnail.png";
