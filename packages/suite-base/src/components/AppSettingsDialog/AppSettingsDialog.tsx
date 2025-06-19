@@ -5,14 +5,6 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { AppSetting } from "@lichtblick/suite-base/AppSetting";
-import CopyButton from "@lichtblick/suite-base/components/CopyButton";
-import { ExperimentalFeatureSettings } from "@lichtblick/suite-base/components/ExperimentalFeatureSettings";
-import ExtensionsSettings from "@lichtblick/suite-base/components/ExtensionsSettings";
-// import LichtblickLogoText from "@lichtblick/suite-base/components/LichtblickLogoText";
-import Stack from "@lichtblick/suite-base/components/Stack";
-import { useAppContext } from "@lichtblick/suite-base/context/AppContext";
-
 import CloseIcon from "@mui/icons-material/Close";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import {
@@ -35,6 +27,16 @@ import {
 import { MouseEvent, SyntheticEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { AppSetting } from "@lichtblick/suite-base/AppSetting";
+import { useStyles } from "@lichtblick/suite-base/components/AppSettingsDialog/AppSettingsDialog.style";
+import { APP_SETTINGS_ABOUT_ITEMS } from "@lichtblick/suite-base/components/AppSettingsDialog/constants";
+import { AppSettingsTab } from "@lichtblick/suite-base/components/AppSettingsDialog/types";
+import CopyButton from "@lichtblick/suite-base/components/CopyButton";
+import { ExperimentalFeatureSettings } from "@lichtblick/suite-base/components/ExperimentalFeatureSettings";
+import ExtensionsSettings from "@lichtblick/suite-base/components/ExtensionsSettings";
+import LichtblickLogoText from "@lichtblick/suite-base/components/LichtblickLogoText";
+import Stack from "@lichtblick/suite-base/components/Stack";
+import { useAppContext } from "@lichtblick/suite-base/context/AppContext";
 import {
   useWorkspaceStore,
   WorkspaceContextStore,
@@ -43,6 +45,7 @@ import { useAppConfigurationValue } from "@lichtblick/suite-base/hooks/useAppCon
 import isDesktopApp from "@lichtblick/suite-base/util/isDesktopApp";
 
 import {
+  AutoUpdate,
   ColorSchemeSettings,
   LanguageSettings,
   LaunchDefault,
@@ -51,9 +54,6 @@ import {
   TimeFormat,
   TimezoneSettings,
 } from "./settings";
-import { APP_SETTINGS_ABOUT_ITEMS } from "@lichtblick/suite-base/components/AppSettingsDialog/constants";
-import { AppSettingsTab } from "@lichtblick/suite-base/components/AppSettingsDialog/types";
-import { useStyles } from "tss-react/mui";
 
 const selectWorkspaceInitialActiveTab = (store: WorkspaceContextStore) =>
   store.dialogs.preferences.initialTab;
@@ -76,10 +76,7 @@ export function AppSettingsDialog(
   const { extensionSettings } = useAppContext();
 
   // automatic updates are a desktop-only setting
-  //
-  // electron-updater does not provide a way to detect if we are on a supported update platform
-  // so we hard-code linux as an _unsupported_ auto-update platform since we cannot auto-update
-  // with our .deb package install method on linux.
+  const supportsAppUpdates = isDesktopApp();
 
   const handleTabChange = (_event: SyntheticEvent, newValue: AppSettingsTab) => {
     setActiveTab(newValue);
@@ -109,12 +106,12 @@ export function AppSettingsDialog(
           onChange={handleTabChange}
         >
           <Tab className={classes.tab} label={t("general")} value="general" />
-          {/* <Tab className={classes.tab} label={t("extensions")} value="extensions" /> */}
-          {/* <Tab
+          <Tab className={classes.tab} label={t("extensions")} value="extensions" />
+          <Tab
             className={classes.tab}
             label={t("experimentalFeatures")}
             value="experimental-features"
-          /> */}
+          />
           <Tab className={classes.tab} label={t("about")} value="about" />
         </Tabs>
         <Stack direction="row" fullHeight overflowY="auto">
@@ -129,7 +126,7 @@ export function AppSettingsDialog(
               <TimeFormat orientation={smUp ? "horizontal" : "vertical"} />
               <MessageFramerate />
               <LanguageSettings />
-              {/* {supportsAppUpdates && <AutoUpdate />} */}
+              {supportsAppUpdates && <AutoUpdate />}
               {!isDesktopApp() && <LaunchDefault />}
               {isDesktopApp() && <RosPackagePath />}
               <Stack>
@@ -179,12 +176,11 @@ export function AppSettingsDialog(
           >
             <Stack gap={2} alignItems="flex-start">
               <header>
-                {/* <LichtblickLogoText color="primary" className={classes.logo} /> */}
-                Linctblick
+                <LichtblickLogoText color="primary" className={classes.logo} />
               </header>
               <Stack direction="row" alignItems="center" gap={1}>
                 <Typography variant="body2">
-                  Autotblick version {LICHTBLICK_SUITE_VERSION}
+                  Lichtblick version {LICHTBLICK_SUITE_VERSION}
                 </Typography>
                 <CopyButton
                   size="small"

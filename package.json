@@ -1,5 +1,4 @@
 {
-
   "name": "autoblick",
   "version": "1.16.0",
   "license": "MPL-2.0",
@@ -165,9 +164,10 @@
     "@tauri-apps/api": "1.6.0",
     "antd": "5.20.0",
     "lucide-react": "0.481.0",
+    "mqtt": "5.13.1",
     "react-use": "17.5.1",
-    "umi-request": "1.4.0",
     "rehype-raw": "7.0.0",
+    "umi-request": "1.4.0",
     "vm-browserify": "1.1.2"
   }
 }

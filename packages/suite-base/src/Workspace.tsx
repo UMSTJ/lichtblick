@@ -104,23 +104,23 @@ import isDesktopApp from "@lichtblick/suite-base/util/isDesktopApp";
 import VerticalAppBar from "./components/AppBar/VerticalAppBar";
 import { useWorkspaceActions } from "./context/Workspace/useWorkspaceActions";
 import { AlertsList } from "@lichtblick/suite-base/components/AlertsList";
-
+import { useStyles } from "@lichtblick/suite-base/Workspace.style";
 const log = Logger.getLogger(__filename);
 
-const useStyles = makeStyles()({
-  container: {
-    width: "calc(100% - 60px)",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    position: "relative",
-    flex: "1 1 100%",
-    outline: "none",
-    overflow: "hidden",
-    marginLeft: "60px",
-    // marginRight: "60px",
-  },
-});
+// const useStyles = makeStyles(theme)({
+//   container: {
+//     width: "calc(100% - 60px)",
+//     height: "100%",
+//     display: "flex",
+//     flexDirection: "column",
+//     position: "relative",
+//     flex: "1 1 100%",
+//     outline: "none",
+//     overflow: "hidden",
+//     marginLeft: "60px",
+//     // marginRight: "60px",
+//   },
+// });
 
 const selectedLayoutIdSelector = (state: LayoutState) => state.selectedLayout?.id;
 
@@ -158,6 +158,7 @@ const selectWorkspaceRightSidebarSize = (store: WorkspaceContextStore) => store.
 
 function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
   const { PerformanceSidebarComponent } = useAppContext();
+  // const { classes } = useStyles();
   const { classes } = useStyles();
   const containerRef = useRef<HTMLDivElement>(ReactNull);
   const { availableSources, selectSource } = usePlayerSelection();
@@ -399,7 +400,7 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
       [
         "alerts",
         {
-          title: t("workspace:problems"),
+          title: "Alerts",
           component: AlertsList,
           badge:
             playerAlerts && playerAlerts.length > 0

@@ -5,7 +5,7 @@ import { makeStyles } from "tss-react/mui";
 
 export const useStyles = makeStyles()({
   container: {
-    width: "100%",
+    width: "calc(100% - 60px)",
     height: "100%",
     display: "flex",
     flexDirection: "column",
@@ -13,5 +13,6 @@ export const useStyles = makeStyles()({
     flex: "1 1 100%",
     outline: "none",
     overflow: "hidden",
+    marginLeft: "60px",
   },
 });

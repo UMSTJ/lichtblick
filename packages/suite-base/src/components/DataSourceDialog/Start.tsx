@@ -18,102 +18,15 @@ import {
 import { ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { DataSourceDialogItem } from "@lichtblick/suite-base/components/DataSourceDialog/DataSourceDialog";
 // import LichtblickLogoText from "@lichtblick/suite-base/components/LichtblickLogoText";
 import Stack from "@lichtblick/suite-base/components/Stack";
 import TextMiddleTruncate from "@lichtblick/suite-base/components/TextMiddleTruncate";
-import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessage";
-import { useAnalytics } from "@lichtblick/suite-base/context/AnalyticsContext";
 import { usePlayerSelection } from "@lichtblick/suite-base/context/PlayerSelectionContext";
 import { useWorkspaceActions } from "@lichtblick/suite-base/context/Workspace/useWorkspaceActions";
 import { AppEvent } from "@lichtblick/suite-base/services/IAnalytics";
-import { useCurrentUser } from "@lichtblick/suite-base/context/CurrentUserContext";
-import tinycolor from "tinycolor2";
-
-const useStyles = makeStyles()((theme) => ({
-  grid: {
-    [theme.breakpoints.up("md")]: {
-      display: "grid",
-      gridTemplateAreas: `
-        "header spacer"
-        "content sidebar"
-      `,
-      gridTemplateRows: `content auto`,
-      gridTemplateColumns: `1fr 375px`,
-    },
-  },
-  header: {
-    padding: theme.spacing(6),
-    gridArea: "header",
-
-    [theme.breakpoints.down("md")]: {
-      padding: theme.spacing(4),
-    },
-    [`@media (max-height: ${theme.breakpoints.values.sm})`]: {
-      display: "none",
-    },
-  },
-  content: {
-    padding: theme.spacing(0, 6, 6),
-    overflow: "hidden",
-    gridArea: "content",
-
-    [theme.breakpoints.down("md")]: {
-      padding: theme.spacing(0, 4, 4),
-    },
-    [`@media (max-height: ${theme.breakpoints.values.sm})`]: {
-      paddingTop: theme.spacing(6),
-    },
-  },
-  spacer: {
-    gridArea: "spacer",
-    backgroundColor: tinycolor(theme.palette.text.primary).setAlpha(0.04).toRgbString(),
-
-    [`@media (max-height: ${theme.breakpoints.values.sm})`]: {
-      display: "none",
-    },
-  },
-  sidebar: {
-    gridArea: "sidebar",
-    backgroundColor: tinycolor(theme.palette.text.primary).setAlpha(0.04).toRgbString(),
-    padding: theme.spacing(0, 5, 5),
-
-    [theme.breakpoints.down("md")]: {
-      padding: theme.spacing(4),
-    },
-    [`@media (max-height: ${theme.breakpoints.values.sm})`]: {
-      paddingTop: theme.spacing(6),
-    },
-  },
-  button: {
-    whiteSpace: "nowrap",
-    textOverflow: "ellipsis",
-    overflow: "hidden",
-  },
-  connectionButton: {
-    textAlign: "left",
-    justifyContent: "flex-start",
-    padding: theme.spacing(2, 3),
-    gap: theme.spacing(1.5),
-    borderColor: theme.palette.divider,
-
-    ".MuiButton-startIcon .MuiSvgIcon-fontSizeLarge": {
-      fontSize: 28,
-    },
-  },
-  recentListItemButton: {
-    overflow: "hidden",
-    color: theme.palette.primary.main,
-
-    "&:hover": {
-      backgroundColor: "transparent",
-      color: theme.palette.primary[theme.palette.mode === "dark" ? "light" : "dark"],
-    },
-  },
-  recentSourceSecondary: {
-    color: "inherit",
-  },
-}));
+import { useStyles } from "@lichtblick/suite-base/components/DataSourceDialog/index.style";
+import LichtblickLogoText from "@lichtblick/suite-base/components/LichtblickLogoText";
+import { useAnalytics } from "@lichtblick/suite-base/context/AnalyticsContext";
 
 type DataSourceOptionProps = {
   text: string;
@@ -126,45 +39,6 @@ type DataSourceOptionProps = {
 export function isRunningInElectron() {
   return typeof window !== "undefined" && typeof window.electron !== "undefined";
 }
-
-function DataSourceOption(props: DataSourceOptionProps): React.JSX.Element {
-  const { icon, onClick, text, secondaryText, href, target } = props;
-  const { classes } = useStyles();
-  const button = (
-    <Button
-      className={classes.connectionButton}
-      fullWidth
-      color="inherit"
-      variant="outlined"
-      startIcon={icon}
-      onClick={onClick}
-    >
-      <Stack flex="auto" zeroMinWidth>
-        <Typography variant="subtitle1" color="text.primary">
-          {text}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" noWrap>
-          {secondaryText}
-        </Typography>
-      </Stack>
-    </Button>
-  );
-
-  return href ? (
-    <Link href={href} target={target} style={{ textDecoration: "none" }}>
-      {button}
-    </Link>
-  ) : (
-    button
-  );
-}
-
-type SidebarItem = {
-  id: string;
-  title: string;
-  text: ReactNode;
-  actions?: ReactNode;
-};
 
 // function SidebarItems(props: {
 //   onSelectView: (newValue: DataSourceDialogItem) => void;
@@ -294,7 +168,6 @@ type SidebarItem = {
 //     </>
 //   );
 // }
-
 export default function Start(): React.JSX.Element {
   const { recentSources, selectRecent } = usePlayerSelection();
   const { classes } = useStyles();
@@ -337,7 +210,9 @@ export default function Start(): React.JSX.Element {
 
   return (
     <Stack className={classes.grid}>
-      <header className={classes.header}>{/* <LichtblickLogoText color="primary" /> */}</header>
+      <header className={classes.header}>
+        <LichtblickLogoText color="primary" className={classes.logo} />
+      </header>
       <Stack className={classes.content}>
         <Stack gap={4}>
           <Stack gap={1}>
@@ -372,10 +247,6 @@ export default function Start(): React.JSX.Element {
                     >
                       <TextMiddleTruncate
                         className={classes.recentSourceSecondary}
-                        text={recent.label ?? ""}
-                      />
-                      <TextMiddleTruncate
-                        className={classes.recentSourceSecondary}
                         text={recent.title}
                       />
                     </ListItemButton>
@@ -388,17 +259,7 @@ export default function Start(): React.JSX.Element {
       </Stack>
       <div className={classes.spacer} />
       <Stack gap={4} className={classes.sidebar}>
-        {isRunningInElectron() && (
-          <>
-            {" "}
-            <Typography variant="h5" gutterBottom>
-              {t("activeClients")}
-            </Typography>{" "}
-            <UdpMessageComponent />
-          </>
-        )}
-
-        {/* <SidebarItems onSelectView={dialogActions.dataSource.open} /> */}
+        <SidebarItems onSelectView={dialogActions.dataSource.open} />
       </Stack>
     </Stack>
   );
