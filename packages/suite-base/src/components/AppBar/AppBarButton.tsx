@@ -13,8 +13,8 @@ const AppBarButton: React.FC<Prop> = (props: Prop) => {
       type="text"
       icon={props.icon}
       style={{
-        width: "50px",
-        height: "70px",
+        // width: "0px",
+        // height: "70px",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
@@ -23,7 +23,7 @@ const AppBarButton: React.FC<Prop> = (props: Prop) => {
       onClick={props.onClick}
       disabled={props.disabled}
     >
-      <span style={{ fontSize: "12px", marginTop: "0px" }}>{props.text}</span>
+      {/* <span style={{ fontSize: "12px", marginTop: "0px" }}>{props.text}</span> */}
     </Button>
   );
 };

@@ -40,20 +40,21 @@ import vehicleControlSummaryThumbnail from "./VehicleControl/thumbnail.png";
 // import diagnosticSummaryThumbnail from "./diagnostics/thumbnails/diagnostic-summary.png";
 
 export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
-  // {
-  //   title: t("hardwareInfo"),
-  //   type: "hardwareInfo",
-  //   description: t("hardwareInfo"),
-  //   // thumbnail: joystickSummaryThumbnail,
-  //   module: async () => await import("./hardwareInfo"),
-  // },
-  // {
-  //   title: t("LaunchMotion"),
-  //   type: "LaunchMotion",
-  //   description: t("LaunchMotionDescription"),
-  //   // thumbnail: joystickSummaryThumbnail,
-  //   module: async () => await import("./LaunchMotion"),
-  // },
+  {
+    title: "wheel2Status",
+    type: "wheel2Status",
+    description: t("hardwareInfo"),
+    // thumbnail: joystickSummaryThumbnail,
+    module: async () => await import("./wheel2Status"),
+  },
+  {
+    title: "autobase",
+    type: "autobase",
+    description: t("LaunchMotionDescription"),
+    // thumbnail: joystickSummaryThumbnail,
+    module: async () => await import("./SlamMapSwitch"),
+  },
+
   {
     title: t("joystick"),
     type: "Joystick",

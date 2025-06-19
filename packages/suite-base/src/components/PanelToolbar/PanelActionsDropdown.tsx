@@ -89,12 +89,12 @@ function PanelActionsDropdownComponent({ isUnknownPanel }: Props): React.JSX.Ele
     setMenuAnchorEl(undefined);
   };
 
-  const handleSubmenuClick = (event: MouseEvent<HTMLElement>) => {
-    if (subMenuAnchorEl !== event.currentTarget) {
-      setSubmenuAnchorEl(event.currentTarget);
-    }
-    setMenuAnchorEl(undefined);
-  };
+  // const handleSubmenuClick = (event: MouseEvent<HTMLElement>) => {
+  //   if (subMenuAnchorEl !== event.currentTarget) {
+  //     setSubmenuAnchorEl(event.currentTarget);
+  //   }
+  //   setMenuAnchorEl(undefined);
+  // };
 
   const handleSubmenuClose = useCallback(() => {
     setSubmenuAnchorEl(undefined);

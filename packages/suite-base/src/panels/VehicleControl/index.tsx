@@ -35,10 +35,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { useDataSourceInfo } from "@lichtblick/suite-base/PanelAPI";
 import { useMessageDataItem } from "@lichtblick/suite-base/components/MessagePathSyntax/useMessageDataItem";
 import Panel from "@lichtblick/suite-base/components/Panel";
-import PanelToolbar from "@lichtblick/suite-base/components/PanelToolbar";
 import useCallbackWithToast from "@lichtblick/suite-base/hooks/useCallbackWithToast";
 import usePublisher from "@lichtblick/suite-base/hooks/usePublisher";
-import BatteryIndicator from "@lichtblick/suite-base/panels/VehicleControl/components/BatteryIndicator";
 import FileUploadModal from "@lichtblick/suite-base/panels/VehicleControl/components/FileUploadModal";
 import MapFilesTab from "@lichtblick/suite-base/panels/VehicleControl/components/MapFilesTab";
 import TextCard from "@lichtblick/suite-base/panels/VehicleControl/components/TextCard";
@@ -789,7 +787,7 @@ const VehicleControlPanel: React.FC<Props> = ({ config, saveConfig }) => {
 
   return (
     <Stack>
-      <PanelToolbar />
+      {/* <PanelToolbar /> */}
       {/* <div
         style={{
           position: "absolute",
@@ -874,7 +872,7 @@ const VehicleControlPanel: React.FC<Props> = ({ config, saveConfig }) => {
                 top: "50px",
               }}
             >
-              <BatteryIndicator batteryLevel={(batteryPercentageRef.current ?? 0) * 100} />
+              {/* <BatteryIndicator batteryLevel={(batteryPercentageRef.current ?? 0) * 100} /> */}
               <TextCard
                 text={
                   interactionManagerRef.current?.getCurrentPositionRfidId()?.toString() ?? "无位置"

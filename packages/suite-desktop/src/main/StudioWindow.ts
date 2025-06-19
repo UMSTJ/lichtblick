@@ -9,6 +9,7 @@
 
 import {
   BrowserWindow,
+  screen,
   BrowserWindowConstructorOptions,
   Menu,
   MenuItem,
@@ -89,6 +90,7 @@ function createUdpServer() {
 function newStudioWindow(deepLinks: string[] = [], reloadMainWindow: () => void): BrowserWindow {
   const { crashReportingEnabled, telemetryEnabled } = getTelemetrySettings();
   const preloadPath = path.join(app.getAppPath(), "main", "preload.js");
+  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().size;
 
   const macTrafficLightInset =
     Math.floor((APP_BAR_HEIGHT - /*button size*/ 12) / 2) - /*for good measure*/ 1;
@@ -96,12 +98,20 @@ function newStudioWindow(deepLinks: string[] = [], reloadMainWindow: () => void)
   const windowOptions: BrowserWindowConstructorOptions = {
     show: !process.env.CI,
     backgroundColor: getWindowBackgroundColor(),
-    height: 768,
-    width: 1024,
-    minWidth: 800,
-    minHeight: 600,
+    // height: 768,
+    // width: 1024,
+    // minWidth: 800,
+    // minHeight: 600,
+    // height: 1080,
+    // width: 1920,
+    minWidth: screenWidth,
+    minHeight: screenHeight,
     autoHideMenuBar: true,
     title: LICHTBLICK_PRODUCT_NAME,
+    // fullscreenable: false, // 禁止通过按钮进入原生全屏
+    minimizable: false, // 禁止最小化
+    maximizable: false, // 禁止最大化
+    closable: false,
     frame: isLinux ? false : true,
     titleBarStyle: "hidden",
     trafficLightPosition: isMac
@@ -133,6 +143,18 @@ function newStudioWindow(deepLinks: string[] = [], reloadMainWindow: () => void)
   }
 
   const browserWindow = new BrowserWindow(windowOptions);
+
+  browserWindow.setMenuBarVisibility(false);
+  browserWindow.setMenu(null);
+
+  browserWindow.setFullScreenable(true);
+  browserWindow.setResizable(false); // 禁止调整窗口大小
+  browserWindow.setClosable(false); // 禁止关闭窗口
+  browserWindow.setAlwaysOnTop(true); // 设置窗口总是在最上面
+  browserWindow.setFullScreen(true);
+  // browserWindow.maximize();
+  browserWindow.setSize(screenWidth, screenHeight);
+
   nativeTheme.on("updated", () => {
     if (!isMac) {
       // Although the TS types say this function is always available, it is undefined on non-Windows platforms

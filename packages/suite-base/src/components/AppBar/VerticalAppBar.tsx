@@ -18,7 +18,7 @@ import {
   MessagePipelineContext,
   useMessagePipeline,
 } from "@lichtblick/suite-base/components/MessagePipeline";
-import { openCode } from "@lichtblick/suite-base/components/UdpMessage";
+import { openCode } from "@lichtblick/suite-base/components/UdpMessageComponent";
 import { useWorkspaceActions } from "@lichtblick/suite-base/context/Workspace/useWorkspaceActions";
 
 const { Sider } = Layout;

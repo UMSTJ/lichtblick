@@ -5,7 +5,7 @@ import {
   useMessagePipeline,
 } from "@lichtblick/suite-base/components/MessagePipeline";
 import Stack from "@lichtblick/suite-base/components/Stack";
-import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessage";
+import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessageComponent";
 import { Box, Button, Card, Divider, Typography } from "@mui/material";
 import * as _ from "lodash-es";
 import { useRef, ReactElement, useEffect, useState } from "react";

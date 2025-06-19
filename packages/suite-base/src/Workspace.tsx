@@ -13,7 +13,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { Link, makeStyles, Typography, useTheme } from "@mui/material";
+import { Link, Typography, useTheme } from "@mui/material";
 import { ConfigProvider, theme } from "antd";
 import { t } from "i18next";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -101,7 +101,6 @@ import { parseAppURLState } from "@lichtblick/suite-base/util/appURLState";
 import useBroadcast from "@lichtblick/suite-base/util/broadcast/useBroadcast";
 import isDesktopApp from "@lichtblick/suite-base/util/isDesktopApp";
 
-import VerticalAppBar from "./components/AppBar/VerticalAppBar";
 import { useWorkspaceActions } from "./context/Workspace/useWorkspaceActions";
 import { AlertsList } from "@lichtblick/suite-base/components/AlertsList";
 import { useStyles } from "@lichtblick/suite-base/Workspace.style";
@@ -617,7 +616,7 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
         <SyncAdapters />
         <KeyListener global keyDownHandlers={keyDownHandlers} />
         <div className={classes.container} ref={containerRef} tabIndex={0}>
-          <VerticalAppBar />
+          {/* <VerticalAppBar /> */}
           {appBar}
           <Sidebars
             selectedKey=""
