@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
 // This Source Code Form is subject to the terms of the Mozilla Public
@@ -13,26 +13,26 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { Link, Typography, useTheme } from "@mui/material";
+import { Link, makeStyles, Typography, useTheme } from "@mui/material";
 import { ConfigProvider, theme } from "antd";
 import { t } from "i18next";
-import { useSnackbar } from "notistack";
-import { extname } from "path";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { makeStyles } from "tss-react/mui";
 
 import Logger from "@lichtblick/log";
 import { AppSetting } from "@lichtblick/suite-base/AppSetting";
+// import { useStyles } from "@lichtblick/suite-base/Workspace.style";
 import AccountSettings from "@lichtblick/suite-base/components/AccountSettingsSidebar/AccountSettings";
-import { AppBar, AppBarProps } from "@lichtblick/suite-base/components/AppBar";
-import { CustomWindowControlsProps } from "@lichtblick/suite-base/components/AppBar/CustomWindowControls";
+import { AppBar } from "@lichtblick/suite-base/components/AppBar";
+//import { CustomWindowControlsProps } from "@lichtblick/suite-base/components/AppBar/CustomWindowControls";
 // import VerticalAppBar from "@lichtblick/studio-base/components/AppBar/VerticalAppBar";
 // import Logger from "@foxglove/log";
 // import { AppSetting } from "@foxglove/studio-base/AppSetting";
 // import AccountSettings from "@foxglove/studio-base/components/AccountSettingsSidebar/AccountSettings";
 // import { AppBar, AppBarProps } from "@foxglove/studio-base/components/AppBar";
 // import { CustomWindowControlsProps } from "@foxglove/studio-base/components/AppBar/CustomWindowControls";
+// import { AlertsList } from "@lichtblick/suite-base/components/AlertsList";
+// import { AppBar } from "@lichtblick/suite-base/components/AppBar";
 import {
   DataSourceDialog,
   DataSourceDialogItem,
@@ -52,7 +52,6 @@ import { PanelCatalog } from "@lichtblick/suite-base/components/PanelCatalog";
 import PanelLayout from "@lichtblick/suite-base/components/PanelLayout";
 import PanelSettings from "@lichtblick/suite-base/components/PanelSettings";
 import PlaybackControls from "@lichtblick/suite-base/components/PlaybackControls";
-import { ProblemsList } from "@lichtblick/suite-base/components/ProblemsList";
 import RemountOnValueChange from "@lichtblick/suite-base/components/RemountOnValueChange";
 import { SidebarContent } from "@lichtblick/suite-base/components/SidebarContent";
 import Sidebars from "@lichtblick/suite-base/components/Sidebars";
@@ -67,6 +66,7 @@ import { TopicList } from "@lichtblick/suite-base/components/TopicList";
 import VariablesList from "@lichtblick/suite-base/components/VariablesList";
 import VehiclesStateList from "@lichtblick/suite-base/components/VehiclesStateList";
 import { WorkspaceDialogs } from "@lichtblick/suite-base/components/WorkspaceDialogs";
+import { AllowedFileExtensions } from "@lichtblick/suite-base/constants/allowedFileExtensions";
 import { useAppContext } from "@lichtblick/suite-base/context/AppContext";
 import {
   LayoutState,
@@ -77,7 +77,6 @@ import {
   useCurrentUserType,
 } from "@lichtblick/suite-base/context/CurrentUserContext";
 import { EventsStore, useEvents } from "@lichtblick/suite-base/context/EventsContext";
-import { useExtensionCatalog } from "@lichtblick/suite-base/context/ExtensionCatalogContext";
 import { usePlayerSelection } from "@lichtblick/suite-base/context/PlayerSelectionContext";
 import {
   LeftSidebarItemKey,
@@ -91,16 +90,20 @@ import { useAppConfigurationValue } from "@lichtblick/suite-base/hooks";
 import useAddPanel from "@lichtblick/suite-base/hooks/useAddPanel";
 import { useDefaultWebLaunchPreference } from "@lichtblick/suite-base/hooks/useDefaultWebLaunchPreference";
 import useElectronFilesToOpen from "@lichtblick/suite-base/hooks/useElectronFilesToOpen";
+import { useHandleFiles } from "@lichtblick/suite-base/hooks/useHandleFiles";
 import useSeekTimeFromCLI from "@lichtblick/suite-base/hooks/useSeekTimeFromCLI";
 import { PlayerPresence } from "@lichtblick/suite-base/players/types";
 import { PanelStateContextProvider } from "@lichtblick/suite-base/providers/PanelStateContextProvider";
 import WorkspaceContextProvider from "@lichtblick/suite-base/providers/WorkspaceContextProvider";
 import ICONS from "@lichtblick/suite-base/theme/icons";
+import { InjectedSidebarItem, WorkspaceProps } from "@lichtblick/suite-base/types";
 import { parseAppURLState } from "@lichtblick/suite-base/util/appURLState";
+import useBroadcast from "@lichtblick/suite-base/util/broadcast/useBroadcast";
 import isDesktopApp from "@lichtblick/suite-base/util/isDesktopApp";
 
 import VerticalAppBar from "./components/AppBar/VerticalAppBar";
 import { useWorkspaceActions } from "./context/Workspace/useWorkspaceActions";
+import { AlertsList } from "@lichtblick/suite-base/components/AlertsList";
 
 const log = Logger.getLogger(__filename);
 
@@ -121,7 +124,6 @@ const useStyles = makeStyles()({
 
 const selectedLayoutIdSelector = (state: LayoutState) => state.selectedLayout?.id;
 
-type InjectedSidebarItem = [SidebarItemKey, SidebarItem];
 function isInjectedSidebarItem(
   item: [string, { iconName?: string; title: string }],
 ): item is InjectedSidebarItem {
@@ -132,19 +134,10 @@ function isInjectedSidebarItem(
   );
 }
 
-type WorkspaceProps = CustomWindowControlsProps & {
-  deepLinks?: readonly string[];
-  appBarLeftInset?: number;
-  onAppBarDoubleClick?: () => void;
-  // eslint-disable-next-line react/no-unused-prop-types
-  disablePersistenceForStorybook?: boolean;
-  AppBarComponent?: (props: AppBarProps) => React.JSX.Element;
-};
-
 const selectPlayerPresence = ({ playerState }: MessagePipelineContext) => playerState.presence;
 const selectPlayerIsPresent = ({ playerState }: MessagePipelineContext) =>
   playerState.presence !== PlayerPresence.NOT_PRESENT;
-const selectPlayerProblems = ({ playerState }: MessagePipelineContext) => playerState.problems;
+const selectPlayerAlerts = ({ playerState }: MessagePipelineContext) => playerState.alerts;
 const selectIsPlaying = (ctx: MessagePipelineContext) =>
   ctx.playerState.activeData?.isPlaying === true;
 const selectPause = (ctx: MessagePipelineContext) => ctx.pausePlayback;
@@ -169,7 +162,7 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(ReactNull);
   const { availableSources, selectSource } = usePlayerSelection();
   const playerPresence = useMessagePipeline(selectPlayerPresence);
-  const playerProblems = useMessagePipeline(selectPlayerProblems);
+  const playerAlerts = useMessagePipeline(selectPlayerAlerts);
 
   const dataSourceDialog = useWorkspaceStore(selectWorkspaceDataSourceDialog);
   const leftSidebarItem = useWorkspaceStore(selectWorkspaceLeftSidebarItem);
@@ -180,11 +173,34 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
   const rightSidebarSize = useWorkspaceStore(selectWorkspaceRightSidebarSize);
   const { AppBarComponent = AppBar } = props;
 
+  const play = useMessagePipeline(selectPlay);
+  const playUntil = useMessagePipeline(selectPlayUntil);
+  const pause = useMessagePipeline(selectPause);
+  const seek = useMessagePipeline(selectSeek);
+  const isPlaying = useMessagePipeline(selectIsPlaying);
+  const getMessagePipeline = useMessagePipelineGetter();
+  const getTimeInfo = useCallback(
+    () => getMessagePipeline().playerState.activeData ?? {},
+    [getMessagePipeline],
+  );
+
   const { dialogActions, sidebarActions } = useWorkspaceActions();
+  const { handleFiles } = useHandleFiles({
+    availableSources,
+    selectSource,
+    isPlaying,
+    playerEvents: { play, pause },
+  });
+
+  // Store stable reference to avoid re-running effects unnecessarily
+  const handleFilesRef = useRef<typeof handleFiles>(handleFiles);
+  useLayoutEffect(() => {
+    handleFilesRef.current = handleFiles;
+  }, [handleFiles]);
 
   // file types we support for drag/drop
   const allowedDropExtensions = useMemo(() => {
-    const extensions = [".foxe"];
+    const extensions: string[] = [AllowedFileExtensions.FOXE, AllowedFileExtensions.JSON];
     for (const source of availableSources) {
       if (source.type === "file" && source.supportedFileTypes) {
         extensions.push(...source.supportedFileTypes);
@@ -239,78 +255,18 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
     }
   }, []);
 
-  const { enqueueSnackbar } = useSnackbar();
-
-  const installExtensions = useExtensionCatalog((state) => state.installExtensions);
-
-  const handleFiles = useCallback(
-    async (files: File[]) => {
-      if (files.length === 0) {
-        return;
-      }
-
-      const otherFiles: File[] = [];
-      log.debug("open files", files);
-
-      const extensionsData: Uint8Array[] = [];
-      for (const file of files) {
-        try {
-          if (file.name.endsWith(".foxe")) {
-            const arrayBuffer = await file.arrayBuffer();
-            extensionsData.push(new Uint8Array(arrayBuffer));
-          } else {
-            otherFiles.push(file);
-          }
-        } catch (error) {
-          console.error(`Error loading foxe file ${file.name}`, error);
-        }
-      }
-
-      if (extensionsData.length > 0) {
-        try {
-          enqueueSnackbar(`Installing ${extensionsData.length} extensions`, { variant: "info" });
-          const result = await installExtensions("local", extensionsData);
-          const installed = result.filter(({ success }) => success);
-          const progressText = `${installed.length}/${result.length}`;
-
-          if (installed.length === result.length) {
-            enqueueSnackbar(`Installed all extensions (${progressText})`, { variant: "success" });
-          } else {
-            enqueueSnackbar(`Installed ${progressText} extensions.`, { variant: "warning" });
-          }
-        } catch (error) {
-          enqueueSnackbar(`An error occurred during extension installation: ${error.message}`, {
-            variant: "error",
-          });
-        }
-      }
-
-      if (otherFiles.length > 0) {
-        // Look for a source that supports the dragged file extensions
-        for (const source of availableSources) {
-          const filteredFiles = otherFiles.filter((file) => {
-            const ext = extname(file.name);
-            return source.supportedFileTypes?.includes(ext);
-          });
-
-          // select the first source that has files that match the supported extensions
-          if (filteredFiles.length > 0) {
-            selectSource(source.id, { type: "file", files: otherFiles });
-            break;
-          }
-        }
-      }
-    },
-    [availableSources, enqueueSnackbar, installExtensions, selectSource],
-  );
-
   // files the main thread told us to open
   const filesToOpen = useElectronFilesToOpen();
+
   useEffect(() => {
-    if (filesToOpen) {
-      void handleFiles(Array.from(filesToOpen));
+    handleFilesRef.current = handleFiles;
+  }, [handleFiles]);
+
+  useEffect(() => {
+    if (filesToOpen && filesToOpen.length > 0) {
+      void handleFilesRef.current(Array.from(filesToOpen));
     }
-  }, [filesToOpen, handleFiles]);
+  }, [filesToOpen]);
 
   const dropHandler = useCallback(
     async ({ files, handles }: { files?: File[]; handles?: FileSystemFileHandle[] }) => {
@@ -356,9 +312,7 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
           title: "Data source",
           component: DataSourceSidebarItem,
           badge:
-            playerProblems && playerProblems.length > 0
-              ? { count: playerProblems.length }
-              : undefined,
+            playerAlerts && playerAlerts.length > 0 ? { count: playerAlerts.length } : undefined,
         },
       ],
     ]);
@@ -426,7 +380,7 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
     return [topItems, bottomItems];
   }, [
     DataSourceSidebarItem,
-    playerProblems,
+    playerAlerts,
     enableNewTopNav,
     enableStudioLogsSidebar,
     AppContextLayoutBrowser,
@@ -443,14 +397,14 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
       ["panel-settings", { title: t("workspace:panel"), component: PanelSettingsSidebar }],
       ["topics", { title: t("workspace:topics"), component: TopicList }],
       [
-        "problems",
+        "alerts",
         {
           title: t("workspace:problems"),
-          component: ProblemsList,
+          component: AlertsList,
           badge:
-            playerProblems && playerProblems.length > 0
+            playerAlerts && playerAlerts.length > 0
               ? {
-                  count: playerProblems.length,
+                  count: playerAlerts.length,
                   color: "error",
                 }
               : undefined,
@@ -459,7 +413,7 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
       ["layouts", { title: t("workspace:layouts"), component: LayoutBrowser }],
     ]);
     return items;
-  }, [PanelSettingsSidebar, playerProblems]);
+  }, [PanelSettingsSidebar, playerAlerts]);
 
   const rightSidebarItems = useMemo(() => {
     const items = new Map<RightSidebarItemKey, SidebarItem>([
@@ -559,17 +513,6 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
     };
   }, [dialogActions.dataSource, dialogActions.openFile, sidebarActions.left, sidebarActions.right]);
 
-  const play = useMessagePipeline(selectPlay);
-  const playUntil = useMessagePipeline(selectPlayUntil);
-  const pause = useMessagePipeline(selectPause);
-  const seek = useMessagePipeline(selectSeek);
-  const isPlaying = useMessagePipeline(selectIsPlaying);
-  const getMessagePipeline = useMessagePipelineGetter();
-  const getTimeInfo = useCallback(
-    () => getMessagePipeline().playerState.activeData ?? {},
-    [getMessagePipeline],
-  );
-
   const targetUrlState = useMemo(() => {
     const deepLinks = props.deepLinks ?? [];
     return deepLinks[0] ? parseAppURLState(new URL(deepLinks[0])) : undefined;
@@ -650,6 +593,13 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
     ],
   );
 
+  useBroadcast({
+    play,
+    pause,
+    seek,
+    playUntil,
+  });
+
   return (
     <PanelStateContextProvider>
       <ConfigProvider
@@ -661,50 +611,50 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
           // algorithm: [theme.darkAlgorithm, theme.compactAlgorithm],
         }}
       >
-      {dataSourceDialog.open && <DataSourceDialog />}
-      <DocumentDropListener onDrop={dropHandler} allowedExtensions={allowedDropExtensions} />
-      <SyncAdapters />
-      <KeyListener global keyDownHandlers={keyDownHandlers} />
-      <div className={classes.container} ref={containerRef} tabIndex={0}>
-        <VerticalAppBar/>
-        {appBar}
-        <Sidebars
-          selectedKey=""
-          onSelectKey={() => {}}
-          items={sidebarItems}
-          leftItems={leftSidebarItems}
-          bottomItems={sidebarBottomItems}
-          selectedLeftKey={leftSidebarOpen ? leftSidebarItem : undefined}
-          onSelectLeftKey={sidebarActions.left.selectItem}
-          leftSidebarSize={leftSidebarSize}
-          setLeftSidebarSize={sidebarActions.left.setSize}
-          rightItems={rightSidebarItems}
-          selectedRightKey={rightSidebarOpen ? rightSidebarItem : undefined}
-          onSelectRightKey={sidebarActions.right.selectItem}
-          rightSidebarSize={rightSidebarSize}
-          setRightSidebarSize={sidebarActions.right.setSize}
-        >
-          {/* To ensure no stale player state remains, we unmount all panels when players change */}
-          <RemountOnValueChange value={playerId}>
-            <Stack>
-              <PanelLayout />
-            </Stack>
-          </RemountOnValueChange>
-        </Sidebars>
-        {play && pause && seek && (
-          <div style={{ flexShrink: 0 }}>
-            <PlaybackControls
-              play={play}
-              pause={pause}
-              seek={seek}
-              playUntil={playUntil}
-              isPlaying={isPlaying}
-              getTimeInfo={getTimeInfo}
-            />
-          </div>
-        )}
-      </div>
-      <WorkspaceDialogs />
+        {dataSourceDialog.open && <DataSourceDialog />}
+        <DocumentDropListener onDrop={dropHandler} allowedExtensions={allowedDropExtensions} />
+        <SyncAdapters />
+        <KeyListener global keyDownHandlers={keyDownHandlers} />
+        <div className={classes.container} ref={containerRef} tabIndex={0}>
+          <VerticalAppBar />
+          {appBar}
+          <Sidebars
+            selectedKey=""
+            onSelectKey={() => {}}
+            items={sidebarItems}
+            leftItems={leftSidebarItems}
+            bottomItems={sidebarBottomItems}
+            selectedLeftKey={leftSidebarOpen ? leftSidebarItem : undefined}
+            onSelectLeftKey={sidebarActions.left.selectItem}
+            leftSidebarSize={leftSidebarSize}
+            setLeftSidebarSize={sidebarActions.left.setSize}
+            rightItems={rightSidebarItems}
+            selectedRightKey={rightSidebarOpen ? rightSidebarItem : undefined}
+            onSelectRightKey={sidebarActions.right.selectItem}
+            rightSidebarSize={rightSidebarSize}
+            setRightSidebarSize={sidebarActions.right.setSize}
+          >
+            {/* To ensure no stale player state remains, we unmount all panels when players change */}
+            <RemountOnValueChange value={playerId}>
+              <Stack>
+                <PanelLayout />
+              </Stack>
+            </RemountOnValueChange>
+          </Sidebars>
+          {play && pause && seek && (
+            <div style={{ flexShrink: 0 }}>
+              <PlaybackControls
+                play={play}
+                pause={pause}
+                seek={seek}
+                playUntil={playUntil}
+                isPlaying={isPlaying}
+                getTimeInfo={getTimeInfo}
+              />
+            </div>
+          )}
+        </div>
+        <WorkspaceDialogs />
       </ConfigProvider>
     </PanelStateContextProvider>
   );

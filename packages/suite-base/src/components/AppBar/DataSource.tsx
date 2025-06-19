@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
 // This Source Code Form is subject to the terms of the Mozilla Public
@@ -90,7 +90,7 @@ import { EndTimestamp } from "./EndTimestamp";
 
 const selectPlayerName = (ctx: MessagePipelineContext) => ctx.playerState.name;
 const selectPlayerPresence = (ctx: MessagePipelineContext) => ctx.playerState.presence;
-const selectPlayerProblems = (ctx: MessagePipelineContext) => ctx.playerState.problems;
+const selectPlayerAlerts = (ctx: MessagePipelineContext) => ctx.playerState.alerts;
 const selectSeek = (ctx: MessagePipelineContext) => ctx.seekPlayback;
 export const InfoContent = () => {
   const { t } = useTranslation("appBar");
@@ -120,7 +120,7 @@ export function DataSource(): React.JSX.Element {
   // const { classes, cx } = useStyles();
 
   const playerPresence = useMessagePipeline(selectPlayerPresence);
-  const playerProblems = useMessagePipeline(selectPlayerProblems) ?? [];
+  const playerAlerts = useMessagePipeline(selectPlayerAlerts) ?? [];
   const seek = useMessagePipeline(selectSeek);
   const { dialogActions } = useWorkspaceActions();
   const { t } = useTranslation("appBar");
@@ -134,7 +134,7 @@ export function DataSource(): React.JSX.Element {
   const initializing = playerPresence === PlayerPresence.INITIALIZING;
   const error =
     playerPresence === PlayerPresence.ERROR ||
-    playerProblems.some((problem) => problem.severity === "error");
+    playerAlerts.some((alert) => alert.severity === "error");
   const loading = reconnecting || initializing;
 
   const [hovered, setHovered] = useState(false);

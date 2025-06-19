@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
 import { useLayoutBrowserReducer } from "@lichtblick/suite-base/components/LayoutBrowser/reducer";
@@ -44,9 +44,10 @@ export function useLayoutActions(): UseLayoutActions {
   const onRenameLayout = useCallbackWithToast(
     async (item: Layout, newName: string) => {
       await layoutManager.updateLayout({ id: item.id, name: newName });
+      setSelectedLayoutId(item.id);
       void analytics.logEvent(AppEvent.LAYOUT_RENAME, { permission: item.permission });
     },
-    [analytics, layoutManager],
+    [analytics, layoutManager, setSelectedLayoutId],
   );
 
   const onDuplicateLayout = useCallbackWithToast(

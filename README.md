@@ -21,11 +21,22 @@ Autotblick is an integrated visualization and diagnosis tool for robotics, avail
 **Dependencies:**
 
 - [Node.js](https://nodejs.org/en/) v16.10+
-- [Git LFS](https://git-lfs.github.com/)
 
 <hr/>
 
 ## :rocket: Getting started
+
+### :whale: From Docker
+
+To run lichtblick via docker you can run:
+
+```sh
+docker run --rm -p 8080:8080 ghcr.io/lichtblick-suite/lichtblick:latest
+```
+
+And open in your browser: <http://localhost:8080/>
+
+### 📑 From source code
 
 Clone the repository:
 

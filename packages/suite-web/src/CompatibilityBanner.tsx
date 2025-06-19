@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
 // This Source Code Form is subject to the terms of the Mozilla Public
@@ -131,15 +131,15 @@ function CompatibilityBannerBase({
           <Typography variant="subtitle2">{prompt}</Typography>
           {browserType === "other" && (
             <Typography variant="body2">
-              Check out our cross-browser support progress in GitHub discussion{" "}
+              Check out our{" "}
               <Link
                 color="inherit"
-                href="https://github.com/orgs/foxglove/discussions/174"
+                href="https://lichtblick-suite.github.io/docs/browser-support"
                 target="_blank"
               >
-                #174
-              </Link>
-              .
+                Browser Support documentation
+              </Link>{" "}
+              for more information.
             </Typography>
           )}
         </div>

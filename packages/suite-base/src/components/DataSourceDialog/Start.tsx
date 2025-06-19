@@ -1,15 +1,22 @@
-// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Button, Link, List, ListItem, ListItemButton, SvgIcon, Typography } from "@mui/material";
+import {
+  Button,
+  Link,
+  List,
+  ListItem,
+  ListItemButton,
+  makeStyles,
+  SvgIcon,
+  Typography,
+} from "@mui/material";
 import { ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import tinycolor from "tinycolor2";
-import { makeStyles } from "tss-react/mui";
 
 import { DataSourceDialogItem } from "@lichtblick/suite-base/components/DataSourceDialog/DataSourceDialog";
 // import LichtblickLogoText from "@lichtblick/suite-base/components/LichtblickLogoText";
@@ -17,10 +24,11 @@ import Stack from "@lichtblick/suite-base/components/Stack";
 import TextMiddleTruncate from "@lichtblick/suite-base/components/TextMiddleTruncate";
 import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessage";
 import { useAnalytics } from "@lichtblick/suite-base/context/AnalyticsContext";
-import { useCurrentUser } from "@lichtblick/suite-base/context/BaseUserContext";
 import { usePlayerSelection } from "@lichtblick/suite-base/context/PlayerSelectionContext";
 import { useWorkspaceActions } from "@lichtblick/suite-base/context/Workspace/useWorkspaceActions";
 import { AppEvent } from "@lichtblick/suite-base/services/IAnalytics";
+import { useCurrentUser } from "@lichtblick/suite-base/context/CurrentUserContext";
+import tinycolor from "tinycolor2";
 
 const useStyles = makeStyles()((theme) => ({
   grid: {
@@ -158,134 +166,134 @@ type SidebarItem = {
   actions?: ReactNode;
 };
 
-function SidebarItems(props: {
-  onSelectView: (newValue: DataSourceDialogItem) => void;
-}): React.JSX.Element {
-  const { onSelectView } = props;
-  const { currentUserType } = useCurrentUser();
-  const analytics = useAnalytics();
-  const { classes } = useStyles();
-  const { t } = useTranslation("openDialog");
+// function SidebarItems(props: {
+//   onSelectView: (newValue: DataSourceDialogItem) => void;
+// }): React.JSX.Element {
+//   const { onSelectView } = props;
+//   const { currentUser } = useCurrentUser();
+//   const analytics = useAnalytics();
+//   const { classes } = useStyles();
+//   const { t } = useTranslation("openDialog");
 
-  const { freeUser, teamOrEnterpriseUser } = useMemo(() => {
-    const demoItem = {
-      id: "new",
-      title: t("newToFoxgloveStudio"),
-      text: t("newToFoxgloveStudioDescription"),
-      actions: (
-        <>
-          <Button
-            onClick={() => {
-              onSelectView("demo");
-              void analytics.logEvent(AppEvent.DIALOG_SELECT_VIEW, { type: "demo" });
-              void analytics.logEvent(AppEvent.DIALOG_CLICK_CTA, {
-                user: currentUserType,
-                cta: "demo",
-              });
-            }}
-            className={classes.button}
-            variant="outlined"
-          >
-            {t("exploreSampleData")}
-          </Button>
-        </>
-      ),
-    };
-    return {
-      freeUser: [demoItem],
-      teamOrEnterpriseUser: [
-        demoItem,
-        {
-          id: "need-help",
-          title: t("needHelp"),
-          text: t("needHelpDescription"),
-          actions: (
-            <>
-              <Button
-                href="https://foxglove.dev/tutorials"
-                target="_blank"
-                className={classes.button}
-                onClick={() => {
-                  void analytics.logEvent(AppEvent.DIALOG_CLICK_CTA, {
-                    user: currentUserType,
-                    cta: "tutorials",
-                  });
-                }}
-              >
-                {t("seeTutorials")}
-              </Button>
-            </>
-          ),
-        },
-      ],
-    };
-  }, [analytics, classes.button, currentUserType, onSelectView, t]);
+//   const { freeUser, teamOrEnterpriseUser } = useMemo(() => {
+//     const demoItem = {
+//       id: "new",
+//       title: t("newToFoxgloveStudio"),
+//       text: t("newToFoxgloveStudioDescription"),
+//       actions: (
+//         <>
+//           <Button
+//             onClick={() => {
+//               onSelectView("demo");
+//               void analytics.logEvent(AppEvent.DIALOG_SELECT_VIEW, { type: "demo" });
+//               void analytics.logEvent(AppEvent.DIALOG_CLICK_CTA, {
+//                 user: currentUser,
+//                 cta: "demo",
+//               });
+//             }}
+//             className={classes.button}
+//             variant="outlined"
+//           >
+//             {t("exploreSampleData")}
+//           </Button>
+//         </>
+//       ),
+//     };
+//     return {
+//       freeUser: [demoItem],
+//       teamOrEnterpriseUser: [
+//         demoItem,
+//         {
+//           id: "need-help",
+//           title: t("needHelp"),
+//           text: t("needHelpDescription"),
+//           actions: (
+//             <>
+//               <Button
+//                 href="https://foxglove.dev/tutorials"
+//                 target="_blank"
+//                 className={classes.button}
+//                 onClick={() => {
+//                   void analytics.logEvent(AppEvent.DIALOG_CLICK_CTA, {
+//                     user: currentUser,
+//                     cta: "tutorials",
+//                   });
+//                 }}
+//               >
+//                 {t("seeTutorials")}
+//               </Button>
+//             </>
+//           ),
+//         },
+//       ],
+//     };
+//   }, [analytics, classes.button, currentUser, onSelectView, t]);
 
-  const sidebarItems: SidebarItem[] = useMemo(() => {
-    switch (currentUserType) {
-      case "unauthenticated":
-        return [];
-      case "authenticated-free":
-        return [
-          {
-            id: "start-collaborating",
-            title: t("startCollaborating"),
-            text: t("startCollaboratingDescription"),
-            actions: (
-              <>
-                <Button
-                  href="https://console.foxglove.dev/recordings"
-                  target="_blank"
-                  variant="outlined"
-                  className={classes.button}
-                  onClick={() => {
-                    void analytics.logEvent(AppEvent.DIALOG_CLICK_CTA, {
-                      user: currentUserType,
-                      cta: "upload-to-dp",
-                    });
-                  }}
-                >
-                  {t("uploadToDataPlatform")}
-                </Button>
-                <Button
-                  href="https://docs.foxglove.dev/docs/visualization/layouts#team-layouts"
-                  target="_blank"
-                  className={classes.button}
-                >
-                  {t("shareLayouts")}
-                </Button>
-              </>
-            ),
-          },
-          ...freeUser,
-        ];
-      case "authenticated-team":
-        return teamOrEnterpriseUser;
-      case "authenticated-enterprise":
-        return teamOrEnterpriseUser;
-    }
-  }, [analytics, classes.button, currentUserType, freeUser, teamOrEnterpriseUser, t]);
+//   const sidebarItems: SidebarItem[] = useMemo(() => {
+//     switch (currentUser) {
+//       case "unauthenticated":
+//         return [];
+//       case "authenticated-free":
+//         return [
+//           {
+//             id: "start-collaborating",
+//             title: t("startCollaborating"),
+//             text: t("startCollaboratingDescription"),
+//             actions: (
+//               <>
+//                 <Button
+//                   href="https://console.foxglove.dev/recordings"
+//                   target="_blank"
+//                   variant="outlined"
+//                   className={classes.button}
+//                   onClick={() => {
+//                     void analytics.logEvent(AppEvent.DIALOG_CLICK_CTA, {
+//                       user: currentUserType,
+//                       cta: "upload-to-dp",
+//                     });
+//                   }}
+//                 >
+//                   {t("uploadToDataPlatform")}
+//                 </Button>
+//                 <Button
+//                   href="https://docs.foxglove.dev/docs/visualization/layouts#team-layouts"
+//                   target="_blank"
+//                   className={classes.button}
+//                 >
+//                   {t("shareLayouts")}
+//                 </Button>
+//               </>
+//             ),
+//           },
+//           ...freeUser,
+//         ];
+//       case "authenticated-team":
+//         return teamOrEnterpriseUser;
+//       case "authenticated-enterprise":
+//         return teamOrEnterpriseUser;
+//     }
+//   }, [analytics, classes.button, currentUserType, freeUser, teamOrEnterpriseUser, t]);
 
-  return (
-    <>
-      {sidebarItems.map((item) => (
-        <Stack key={item.id}>
-          <Typography variant="h5" gutterBottom>
-            {item.title}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {item.text}
-          </Typography>
-          {item.actions != undefined && (
-            <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1} paddingTop={1.5}>
-              {item.actions}
-            </Stack>
-          )}
-        </Stack>
-      ))}
-    </>
-  );
-}
+//   return (
+//     <>
+//       {sidebarItems.map((item) => (
+//         <Stack key={item.id}>
+//           <Typography variant="h5" gutterBottom>
+//             {item.title}
+//           </Typography>
+//           <Typography variant="body2" color="text.secondary">
+//             {item.text}
+//           </Typography>
+//           {item.actions != undefined && (
+//             <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1} paddingTop={1.5}>
+//               {item.actions}
+//             </Stack>
+//           )}
+//         </Stack>
+//       ))}
+//     </>
+//   );
+// }
 
 export default function Start(): React.JSX.Element {
   const { recentSources, selectRecent } = usePlayerSelection();
@@ -390,7 +398,7 @@ export default function Start(): React.JSX.Element {
           </>
         )}
 
-        <SidebarItems onSelectView={dialogActions.dataSource.open} />
+        {/* <SidebarItems onSelectView={dialogActions.dataSource.open} /> */}
       </Stack>
     </Stack>
   );
