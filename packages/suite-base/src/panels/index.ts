@@ -41,20 +41,20 @@ import vehicleControlSummaryThumbnail from "./VehicleControl/thumbnail.png";
 // import diagnosticSummaryThumbnail from "./diagnostics/thumbnails/diagnostic-summary.png";
 
 export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
-  {
-    title: t("hardwareInfo"),
-    type: "hardwareInfo",
-    description: t("hardwareInfo"),
-    // thumbnail: joystickSummaryThumbnail,
-    module: async () => await import("./hardwareInfo"),
-  },
-  {
-    title: t("LaunchMotion"),
-    type: "LaunchMotion",
-    description: t("LaunchMotionDescription"),
-    // thumbnail: joystickSummaryThumbnail,
-    module: async () => await import("./LaunchMotion"),
-  },
+  // {
+  //   title: t("hardwareInfo"),
+  //   type: "hardwareInfo",
+  //   description: t("hardwareInfo"),
+  //   // thumbnail: joystickSummaryThumbnail,
+  //   module: async () => await import("./hardwareInfo"),
+  // },
+  // {
+  //   title: t("LaunchMotion"),
+  //   type: "LaunchMotion",
+  //   description: t("LaunchMotionDescription"),
+  //   // thumbnail: joystickSummaryThumbnail,
+  //   module: async () => await import("./LaunchMotion"),
+  // },
   {
     title: t("joystick"),
     type: "Joystick",
@@ -62,13 +62,13 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     thumbnail: joystickSummaryThumbnail,
     module: async () => await import("./Joystick"),
   },
-  {
-    title: t("deviceSetting"),
-    type: "DeviceSetting",
-    description: "配置沙盘设备",
-    thumbnail: deviceSettingSummaryThumbnail,
-    module: async () => await import("./DeviceSetting"),
-  },
+  // {
+  //   title: t("deviceSetting"),
+  //   type: "DeviceSetting",
+  //   description: "配置沙盘设备",
+  //   thumbnail: deviceSettingSummaryThumbnail,
+  //   module: async () => await import("./DeviceSetting"),
+  // },
   {
     title: t("VehicleControl"),
     type: "VehicleControl",

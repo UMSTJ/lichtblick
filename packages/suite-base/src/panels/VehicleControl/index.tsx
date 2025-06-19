@@ -772,9 +772,9 @@ const VehicleControlPanel: React.FC<Props> = ({ config, saveConfig }) => {
     const loadMapFiles = async () => {
       try {
         const result = await window.electron.fileRenderer.listFiles("documents");
-        if (result.success && result.data) {
+        if (result.success && result.files) {
           // 只过滤 .json 文件
-          const jsonFiles = result.data.filter((file: string) => file.endsWith(".json"));
+          const jsonFiles = result.files.filter((file: string) => file.endsWith(".json"));
           setMapFiles(jsonFiles);
           setMapName(jsonFiles[0]);
         }

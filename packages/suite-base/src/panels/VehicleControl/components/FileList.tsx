@@ -57,21 +57,23 @@ const FileList: React.FC<FileListProps> = ({ directory = "documents" }) => {
       const result = await window.electron.fileRenderer.listFiles(directory);
 
       //result.data.push(await window.electron.fileRenderer.listFiles("mapsimage"));
-      if (result.success && result.data) {
+      if (result.success && result.files) {
         const fileInfos = await Promise.all(
-          result.data.map(async (filename: { match: (arg0: RegExp) => null }) => {
-            const stats = await window.electron.fileRenderer.getFileStats(directory, filename);
+          result.files.map(async (filename: { match: (arg0: RegExp) => null }) => {
+            const stat = await window.electron.fileRenderer.getFileStats(directory, filename);
+            console.log("here's file stat", stat);
             return {
               name: filename,
               path: `${directory}/${filename}`,
               isImage: filename.match(/\.(jpg|jpeg|png|gif|bmp)$/i) !== null,
-              size: stats.data?.size || 0,
-              lastModified: new Date(stats.data?.mtime || Date.now()),
+              size: stat.stats?.size || 0,
+              lastModified: new Date(stat.stats?.mtime || Date.now()),
             };
           }),
         );
         setFiles(fileInfos);
       } else {
+        console.error("加载文件列表失败:", result.error);
         setError(result.error || "加载文件列表失败");
       }
     } catch (err) {
