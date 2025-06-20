@@ -216,13 +216,36 @@ const PGMCanvasEditor: React.FC = () => {
   const playerName = useMessagePipeline(selectPlayerName);
   const [ipAddr, setIpAddr] = useState("");
   useEffect(() => {
-    // if (playerName == undefined) {
-    //   return;
-    // }
-    // const currentIp = getIpAddress(playerName);
-    // setIpAddr(currentIp);
-    setIpAddr("192.243.117.147:9000")
+    if (playerName == undefined) {
+      return;
+    }
+    const currentIp = getIpAddress(playerName);
+    setIpAddr(currentIp);
+    // setIpAddr("192.243.117.147:9000")
   }, [playerName, setIpAddr]);
+
+  const getIpAddress = (name: string): string => {
+    if (!name) {
+      return "";
+    }
+
+    // 移除 "ws://" 前缀（如果存在）
+    let addressPart = name.startsWith("ws://") ? name.substring(5) : name;
+
+    // 只取第一个空格之前的部分 (例如 "10.51.129.39:8765" 或 "10.51.129.39")
+    const firstSpaceIndex = addressPart.indexOf(" ");
+    if (firstSpaceIndex !== -1) {
+      addressPart = addressPart.substring(0, firstSpaceIndex);
+    }
+
+    // 现在 addressPart 类似于 "10.51.129.39:8765" 或 "10.51.129.39" 或 "[::1]:8000"
+    // 我们需要提取主机部分
+    let host = addressPart; // 如果找不到端口或格式不符合预期，则默认为整个字符串
+    host = host.split(":")[0] ?? "";
+    // 如果不是数字端口（例如，冒号是 IPv6 地址的一部分，如 "[::1]"），则 host 保持为 addressPart
+    // 附加新的固定端口
+    return `${host}:9000`;
+  };
 
   // 在现有 state 中新增：
   const [mapConfig, setMapConfig] = useState<ROSMapConfig>({
