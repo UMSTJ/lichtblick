@@ -1,33 +1,37 @@
 import { ReactElement, useEffect, useRef, useState } from "react";
-import { MessagePipelineContext, useMessagePipeline } from "@lichtblick/suite-base/components/MessagePipeline";
 import request from "umi-request";
-import { getIpAddress } from "@lichtblick/suite-base/components/AppBar/VerticalAppBar";
 import Stack from "@lichtblick/suite-base/components/Stack";
 import {
   Box,
-  Button,
-  Card, CircularProgress,
+  Card,
+  // CardContent,
+  Chip,
+  CircularProgress,
   Divider,
-  Table, TableBody,
+  IconButton,
+  // List,
+  // ListItem,
+  // ListItemText,
+  // Paper,
+  Table,
+  TableBody,
   TableCell,
+  // TableContainer,
   TableHead,
   TableRow,
   Typography
 } from "@mui/material";
-import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessage";
 
 type ProcessInfo = {
   pid: number;
-  command: string;
-  cpuUsage: number;
-  memoryUsage: number;
-  user: string;
-}
+  name: string;
+  cpu: number;
+  memory: number;
+  status: string;
+};
+
 export default function ProcessSidebar(): ReactElement {
-  // Don't run the animation when the sidebar first renders
-
-
-  const [nowIPAddr, setIPAddr] = useState<string>("");
+  const [nowIPAddr] = useState<string>("");
   const nowIPAddrRef = useRef("");
   const [processInfo, setProcessInfo] = useState<ProcessInfo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -92,8 +96,6 @@ export default function ProcessSidebar(): ReactElement {
     }
   };
 
-
-
   return (
     <Stack flex="auto" fullWidth overflowX="auto">
       <Card variant="outlined" sx={{ m: 2 }}>
@@ -123,30 +125,26 @@ export default function ProcessSidebar(): ReactElement {
                 {processInfo.map((process) => (
                   <TableRow key={process.pid}>
                     <TableCell>{process.pid}</TableCell>
-                    <TableCell sx={{ maxWidth: 200 }}>{process.command}</TableCell>
-                    <TableCell align="right">{process.cpuUsage.toFixed(1)}%</TableCell>
-                    <TableCell align="right">{process.memoryUsage.toFixed(1)}%</TableCell>
-                    <TableCell>{process.user}</TableCell>
+                    <TableCell sx={{ maxWidth: 200 }}>{process.name}</TableCell>
+                    <TableCell align="right">{process.cpu.toFixed(1)}%</TableCell>
+                    <TableCell align="right">{process.memory.toFixed(1)}%</TableCell>
+                    <TableCell>{process.status}</TableCell>
                     <TableCell align="center">
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                          variant="contained"
+                        <IconButton
                           color="warning"
                           size="small"
                           onClick={() => handleTerminate(process.pid)}
-                          sx={{ textTransform: 'none' }}
                         >
-                          终止
-                        </Button>
-                        <Button
-                          variant="contained"
+                          <Chip label="终止" />
+                        </IconButton>
+                        <IconButton
                           color="error"
                           size="small"
                           onClick={() => handleKill(process.pid)}
-                          sx={{ textTransform: 'none' }}
                         >
-                          杀死
-                        </Button>
+                          <Chip label="杀死" />
+                        </IconButton>
                       </Box>
                     </TableCell>
                   </TableRow>

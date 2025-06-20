@@ -13,8 +13,10 @@
 //   This source code is licensed under the Apache License, Version 2.0,
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
-
-import { CloseOutlined } from "@ant-design/icons";
+import * as React from "react";
+const CloseOutlined = React.lazy(() => import('@ant-design/icons').then(module => ({
+  default: module.CloseOutlined
+})));
 import SettingsIcon from "@mui/icons-material/Settings";
 import { forwardRef, useCallback, useContext, useMemo } from "react";
 import { MosaicContext, MosaicWindowContext, MosaicNode } from "react-mosaic-component";
@@ -92,7 +94,9 @@ const PanelToolbarControlsComponent = forwardRef<HTMLDivElement, PanelToolbarCon
         )}
         <PanelActionsDropdown isUnknownPanel={isUnknownPanel} />
         <ToolbarIconButton title="Close" onClick={close}>
-          <CloseOutlined onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined} />
+          <React.Suspense fallback={<div>Loading...</div>}>
+            <CloseOutlined onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined} />
+          </React.Suspense>
         </ToolbarIconButton>
       </Stack>
     );

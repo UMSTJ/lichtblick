@@ -1,6 +1,7 @@
+import * as React from "react";
 import { Button, List, ListItem } from "@mui/material";
 import { IpcRendererEvent } from "electron"; // 导入正确的类型定义
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import TextMiddleTruncate from "@lichtblick/suite-base/components/TextMiddleTruncate";

@@ -8,7 +8,7 @@
 import { alpha } from "@mui/material";
 import * as _ from "lodash-es";
 import { makeStyles } from "tss-react/mui";
-
+import * as React from "react";
 import {
   EventsStore,
   TimelinePositionedEvent,

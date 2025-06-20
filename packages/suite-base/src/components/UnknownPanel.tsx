@@ -10,7 +10,7 @@ import withPanel from "@lichtblick/suite-base/components/Panel";
 import PanelToolbar from "@lichtblick/suite-base/components/PanelToolbar";
 import Stack from "@lichtblick/suite-base/components/Stack";
 import { SaveConfig } from "@lichtblick/suite-base/types/panels";
-
+import * as React from "react";
 // Since the unknown panel never saves its config, the config fields here are used with `overrideConfig`
 // to the connected Panel component (returned from withPanel).
 //

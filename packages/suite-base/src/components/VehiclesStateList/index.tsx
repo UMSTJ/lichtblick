@@ -1,5 +1,5 @@
 import { getIpAddress } from "@lichtblick/suite-base/components/AppBar/VerticalAppBar";
-import { isRunningInElectron } from "@lichtblick/suite-base/components/DataSourceDialog/Start";
+// import { isRunningInElectron } from "@lichtblick/suite-base/components/DataSourceDialog/Start";
 import {
   MessagePipelineContext,
   useMessagePipeline,
@@ -71,7 +71,7 @@ export default function VehiclesStateList(): ReactElement {
   const playerName = useMessagePipeline(selectPlayerName);
   const [nowIPAddr, setIPAddr] = useState<string>("");
   const nowIPAddrRef = useRef("");
-  const [codeOnlineState, setCodeOnlineState] = useState<boolean>(false);
+  // const [codeOnlineState, setCodeOnlineState] = useState<boolean>(false);
 
   const [sysInfo, setSysInfo] = useState<SystemInfo>({ rosId: "", ip: "", version: "" , ubuntuVersion: ""});
   const [hardwareInfo, setHardwareInfo] = useState<HardwareInfo | null>(null);
@@ -114,7 +114,7 @@ export default function VehiclesStateList(): ReactElement {
       const currentIp = getIpAddress(playerName);
       if (currentIp != undefined) {
         setIPAddr(currentIp + "");
-        setCodeOnlineState(true);
+        // setCodeOnlineState(true);
       }
     }
   }, [playerName]);
@@ -262,7 +262,7 @@ export default function VehiclesStateList(): ReactElement {
                   </Typography>
                   <Typography variant="body2">
                     已用: {disk.used_gb?.toFixed(2)} GB / {disk.total_gb?.toFixed(2)} GB (
-                    {disk.percent?.toFixed(1)}%)
+                    {disk.pecent?.toFixed(1)}%)
                   </Typography>
                 </Box>
               ))}

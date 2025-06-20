@@ -1,4 +1,4 @@
-image: saved_map_edit.pgm
+image: tjyx_indoor.pgm
 mode: trinary
 resolution: 0.05
 origin: [-22.3, -27.1, 0]

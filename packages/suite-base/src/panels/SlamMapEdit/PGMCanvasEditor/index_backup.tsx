@@ -5,16 +5,15 @@ import Stats from "three/examples/jsm/libs/stats.module";
 
 import { DrawingToolbar } from "@lichtblick/suite-base/panels/SlamMapEdit/PGMCanvasEditor/components/DrawingToolbar";
 import {
-  LayerDrawer,
   Layer,
+  LayerDrawer,
 } from "@lichtblick/suite-base/panels/SlamMapEdit/PGMCanvasEditor/components/LayerDrawer";
-import {
-  PointsDrawer,
-} from "@lichtblick/suite-base/panels/SlamMapEdit/PGMCanvasEditor/components/PointsDrawer";
-// @ts-ignore
 import * as yaml from 'js-yaml';
 import { MessagePipelineContext, useMessagePipeline } from "@lichtblick/suite-base/components/MessagePipeline";
-import sendNotification from "@lichtblick/suite-base/util/sendNotification";
+
+
+
+import React, { useEffect, useState } from "react";
 
 // PGM 格式定义
 export interface PGMImage {
@@ -57,21 +56,14 @@ export function parsePGMBuffer(buffer: ArrayBuffer): PGMImage | undefined {
       return undefined;
     }
 
-    // @ts-ignore
     const [width, height] = lines[1].split(/\s+/).map(Number);
-    // @ts-ignore
     const maxVal = parseInt(lines[2], 10);
 
-    // @ts-ignore
     if (
-      // @ts-ignore
       isNaN(width) ||
-      // @ts-ignore
       isNaN(height) ||
       isNaN(maxVal) ||
-      // @ts-ignore
       width <= 0 ||
-      // @ts-ignore
       height <= 0 ||
       maxVal <= 0
     ) {
@@ -80,19 +72,15 @@ export function parsePGMBuffer(buffer: ArrayBuffer): PGMImage | undefined {
     }
 
     // 剩下的是像素数据
-    // @ts-ignore
     const pixelData = bytes.slice(i, i + width * height);
 
-    // @ts-ignore
     if (pixelData.length !== width * height) {
       console.error("Pixel data size mismatch.");
       return undefined;
     }
 
     return {
-      // @ts-ignore
       width,
-      // @ts-ignore
       height,
       maxVal,
       data: pixelData,
@@ -112,7 +100,6 @@ export function parsePGM(data: string): PGMImage | undefined {
     }
 
     // 使用更高效的方式解析头部信息
-    // @ts-ignore
     const dimensions = lines[1].split(/\s+/).map(Number);
     if (dimensions.length !== 2) {
       console.log("Invalid PGM formatlength.")
@@ -120,30 +107,24 @@ export function parsePGM(data: string): PGMImage | undefined {
     }
 
     const [width, height] = dimensions;
-    // @ts-ignore
     const maxVal = parseInt(lines[2], 10);
 
-    // @ts-ignore
     if (isNaN(width) || isNaN(height) || isNaN(maxVal)) {
       console.error("Invalid PGM format3.")
       return undefined;
     }
 
     // 一次性处理像素数据
-    // @ts-ignore
     const pixelData = new Uint8Array(width * height);
     let pixelIndex = 0;
 
     // 从第4行开始处理像素数据
-    // @ts-ignore
     for (let i = 3; i < lines.length && pixelIndex < width * height; i++) {
-      // @ts-ignore
       const values = lines[i]
         .trim()
         .split(/\s+/)
         .map((v) => parseInt(v, 10));
       for (const val of values) {
-        // @ts-ignore
         if (pixelIndex >= width * height) {
           break;
         }
@@ -151,13 +132,11 @@ export function parsePGM(data: string): PGMImage | undefined {
       }
     }
 
-    // @ts-ignore
     if (pixelIndex !== width * height) {
       console.error("Invalid PGM format4.")
       return undefined;
     }
 
-    // @ts-ignore
     return { width, height, maxVal, data: pixelData };
   } catch (error) {
     console.error("PGM parsing error:", error);
@@ -179,6 +158,7 @@ const PGMCanvasEditor: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement | undefined>(undefined);
   const canvasRef = useRef<HTMLCanvasElement | undefined>(undefined);
+  const thumbnailCanvasRef = useRef<HTMLCanvasElement | undefined>(undefined);
   const rendererRef = useRef<THREE.WebGLRenderer | undefined>(undefined);
   const cameraRef = useRef<THREE.OrthographicCamera | undefined>(undefined);
   const sceneRef = useRef<THREE.Scene | undefined>(undefined);
@@ -195,7 +175,7 @@ const PGMCanvasEditor: React.FC = () => {
   const [pgmData, setPGMData] = useState<PGMImage | undefined>(undefined);
   const [drawing, setDrawing] = useState(false);
   const [drawPoint,setDrawPoint] = useState(false);
-  const [points, setPoints] = useState<Array<{ id: number; x: number; y: number; worldX: number; worldY: number ;name:string; visible: boolean}>>([]);
+  const [points, setPoints] = useState<Array<{ id: number; x: number; y: number; worldX: number; worldY: number ;name:string}>>([]);
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isMouseDown, setIsMouseDown] = useState(false);
@@ -209,9 +189,10 @@ const PGMCanvasEditor: React.FC = () => {
   const [mapList, setMapList] = useState<string[]>([]);
   const [selectedMap, setSelectedMap] = useState<string>("");
 
-  // PointsDrawer相关状态
-  const [isPointsDrawerOpen, setIsPointsDrawerOpen] = useState(false);
-  const [selectedPointId, setSelectedPointId] = useState<number | undefined>();
+
+
+
+
 
   const playerName = useMessagePipeline(selectPlayerName);
   const [ipAddr, setIpAddr] = useState("");
@@ -223,6 +204,28 @@ const PGMCanvasEditor: React.FC = () => {
     // setIpAddr(currentIp);
     setIpAddr("192.243.117.147:9000")
   }, [playerName, setIpAddr]);
+  const getIpAddress = (name: string): string => {
+    if (!name) {
+      return "";
+    }
+
+    // 移除 "ws://" 前缀（如果存在）
+    let addressPart = name.startsWith("ws://") ? name.substring(5) : name;
+
+    // 只取第一个空格之前的部分 (例如 "10.51.129.39:8765" 或 "10.51.129.39")
+    const firstSpaceIndex = addressPart.indexOf(" ");
+    if (firstSpaceIndex !== -1) {
+      addressPart = addressPart.substring(0, firstSpaceIndex);
+    }
+
+    // 现在 addressPart 类似于 "10.51.129.39:8765" 或 "10.51.129.39" 或 "[::1]:8000"
+    // 我们需要提取主机部分
+    let host = addressPart; // 如果找不到端口或格式不符合预期，则默认为整个字符串
+    host = host.split(":")[0] ?? "";
+    // 如果不是数字端口（例如，冒号是 IPv6 地址的一部分，如 "[::1]"），则 host 保持为 addressPart
+    // 附加新的固定端口
+    return `${host}:9000`;
+  };
 
   // 在现有 state 中新增：
   const [mapConfig, setMapConfig] = useState<ROSMapConfig>({
@@ -234,6 +237,9 @@ const PGMCanvasEditor: React.FC = () => {
     free_thresh: 0.25
   });
 
+
+  // 统一文件处理状态
+  const [configFile, setConfigFile] = useState<File | undefined>(undefined);
   // 获取地图列表
   useEffect(() => {
     if (!ipAddr) return;
@@ -313,7 +319,6 @@ const PGMCanvasEditor: React.FC = () => {
 
     if (!selectedMap || !pgmData || !mapConfig) {
       console.error(selectedMap, pgmData, mapConfig)
-      sendNotification("下载失败：缺少必要的地图数据或配置", "", "user", "error");
       return;
 
     }
@@ -335,9 +340,7 @@ const PGMCanvasEditor: React.FC = () => {
         }
 
         // 计算出像素坐标
-        // @ts-ignore
         const pixelX = (point.x - origin[0]) / resolution - 0.5;
-        // @ts-ignore
         const pixelY = pgmData.height - (point.y - origin[1]) / resolution - 0.5;
 
         console.log("像素坐标:", pixelX, pixelY)
@@ -372,10 +375,8 @@ const PGMCanvasEditor: React.FC = () => {
       }).filter(Boolean); // 过滤掉 mesh 不存在的情况
       console.log(formattedPoints)
       setPoints(formattedPoints);
-      sendNotification(`点位下载成功！共下载 ${formattedPoints.length} 个点位`, "", "user", "info");
     } catch (error) {
       console.error('点位下载错误:', error);
-      sendNotification(`点位下载失败：${error instanceof Error ? error.message : '未知错误'}`, "", "user", "error");
     }
   };
 // 选中地图后加载 YAML
@@ -394,14 +395,42 @@ const PGMCanvasEditor: React.FC = () => {
       }
     };
     fetchYaml();
-  }, [selectedMap, setMapConfig]);
+  }, [selectedMap, setConfigFile]);
+
+  // // 独立YAML解析逻辑
+  // const parseYAMLConfig = useCallback(async (file: File) => {
+  //   try {
+  //     const text = await file.text();
+  //     const config = yaml.load(text) as ROSMapConfig;
+  //
+  //     // 验证必要字段
+  //     if (!config.image || !config.resolution) {
+  //       throw new Error("Missing required fields in YAML");
+  //     }
+  //
+  //     // 类型转换和默认值处理
+  //     const processedConfig: ROSMapConfig = {
+  //       image: config.image,
+  //       resolution: Number(config.resolution),
+  //       origin: config.origin?.map(Number) || [0, 0, 0],
+  //       negate: config.negate ? 1 : 0,
+  //       occupied_thresh: Number(config.occupied_thresh || 0.65),
+  //       free_thresh: Number(config.free_thresh || 0.25)
+  //     };
+  //
+  //     setMapConfig(processedConfig);
+  //
+  //     return processedConfig;
+  //   } catch (error) {
+  //     console.error("YAML解析失败:", error);
+  //     alert("YAML文件格式错误，请检查配置");
+  //     return null;
+  //   }
+  // }, []);
 
   // 添加导出点位函数
   const exportPoints = useCallback(async () => {
-    if (!mapConfig || points.length === 0) {
-      sendNotification("导出失败：没有可导出的点位数据", "", "user", "error");
-      return;
-    }
+    if (!mapConfig || points.length === 0) return;
 
     // 提取地图名称
     const mapName = selectedMap;
@@ -434,10 +463,8 @@ const PGMCanvasEditor: React.FC = () => {
       }
 
       console.log("保存成功");
-      sendNotification(`点位导出成功！共导出 ${points.length} 个点位`, "", "user", "info");
     } catch (error) {
       console.error("保存点位失败:", error);
-      sendNotification(`点位导出失败：${error instanceof Error ? error.message : '未知错误'}`, "", "user", "error");
     }
   }, [mapConfig, points]);
 
@@ -459,37 +486,31 @@ const PGMCanvasEditor: React.FC = () => {
       const base = prev[0];
 
       // 创建完全独立且初始透明的纹理
-      // @ts-ignore
       const rgbaData = new Uint8Array(base.texture.image.data.length);
-      // @ts-ignore
       rgbaData.set(base.texture.image.data); // 拷贝原始数据
-      // @ts-ignore
       rgbaData.fill(0, 3, -1, 4); // 将alpha通道设为0（完全透明）
 
       const newTex = new THREE.DataTexture(
         rgbaData,
-        // @ts-ignore
         base.texture.image.width,
-        // @ts-ignore
         base.texture.image.height,
         THREE.RGBAFormat,
         THREE.UnsignedByteType
       );
-      newTex.generateMipmaps = false;
       newTex.flipY = false;
       newTex.needsUpdate = true;
 
+      // 修改材质设置
       const mat = new THREE.MeshBasicMaterial({
         map: newTex,
         transparent: true,
-        opacity: 1,
-        toneMapped: false,
-        depthTest: true,
-        depthWrite: true,
-        side: THREE.DoubleSide,
+        opacity: 1, // 必须保持1以保证颜色不衰减
+        // premultipliedAlpha: false, // 禁用预乘alpha
+        depthWrite: false,
+        blending: THREE.NormalBlending, // 使用标准混合模式
+        side: THREE.DoubleSide
       });
 
-      // @ts-ignore
       const geo = base.mesh.geometry.clone();
       const newMesh = new THREE.Mesh(geo, mat);
 
@@ -570,7 +591,6 @@ const PGMCanvasEditor: React.FC = () => {
       const newIdx = direction === 'up' ? idx - 1 : idx + 1;
       if (idx < 0 || newIdx < 0 || newIdx >= prev.length) return prev;
       const arr = [...prev];
-      // @ts-ignore
       [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
       // 重置渲染顺序和 z
       // 修改为指数级递增z位置
@@ -588,14 +608,13 @@ const PGMCanvasEditor: React.FC = () => {
     canvas: HTMLCanvasElement,
   ) {
     const rect = canvas.getBoundingClientRect();
+    const pixelRatio = window.devicePixelRatio || 1;
 
     // 设备像素坐标
     // const x = (e.clientX - rect.left) * pixelRatio;
     // const y = (e.clientY - rect.top) * pixelRatio;
-
-    // 使用 CSS 像素坐标（更简单且足够精确）
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = (e.clientX - rect.left);
+    const y = (e.clientY - rect.top);
 
     return { x, y };
   }
@@ -612,13 +631,11 @@ const PGMCanvasEditor: React.FC = () => {
     const imageAspect = pgmData.width / pgmData.height;
     const meshAspect = meshWidth / meshHeight;
 
-    // @ts-ignore
     let textureX, textureY;
     if (meshAspect > imageAspect) {
       // 网格更宽：以高度为基准
       const effectiveWidth = imageAspect * meshHeight;
       const offset = (meshWidth - effectiveWidth) / 2;
-      // @ts-ignore
       textureX = Math.floor(
         ((localPoint.x + meshWidth / 2 - offset) / effectiveWidth) * pgmData.width,
       );
@@ -626,7 +643,6 @@ const PGMCanvasEditor: React.FC = () => {
       // 网格更高：以宽度为基准
       const effectiveHeight = meshWidth / imageAspect;
       const offset = (meshHeight - effectiveHeight) / 2;
-      // @ts-ignore
       textureY = Math.floor(
         ((localPoint.y + meshHeight / 2 - offset) / effectiveHeight) * pgmData.height,
       );
@@ -843,7 +859,6 @@ const PGMCanvasEditor: React.FC = () => {
       // 创建 RGBA 格式的数据
       const rgbaData = new Uint8Array(pgm.width * pgm.height * 4);
       for (let i = 0; i < pgm.data.length; i++) {
-        // @ts-ignore
         const value = Math.floor((pgm.data[i] / pgm.maxVal) * 255);
         rgbaData[i * 4] = value; // R
         rgbaData[i * 4 + 1] = value; // G
@@ -991,9 +1006,7 @@ const PGMCanvasEditor: React.FC = () => {
     // 转换为实际坐标（使用YAML参数）
     const { origin, resolution } = mapConfig;
     // 米制坐标计算（包含像素中心偏移）
-    // @ts-ignore
     const worldX = origin[0] + (pixelX + 0.5) * resolution;
-    // @ts-ignore
     const worldY = origin[1] + (pgmData.height - pixelY - 0.5) * resolution;
     console.log("添加点 原始像素坐标:", pixelX, pixelY);
     console.log("添加点 实际坐标:", worldX, worldY);
@@ -1001,7 +1014,7 @@ const PGMCanvasEditor: React.FC = () => {
     // 添加点到状态
     setPoints(prev => {
       const newId = prev.length > 0 ? Math.max(...prev.map(p => p.id)) + 1 : 1;
-      return [...prev, { id: newId, x: intersection.x, y: intersection.y, worldX: worldX, worldY: worldY ,name: `点${newId}`, visible: true }];
+      return [...prev, { id: newId, x: intersection.x, y: intersection.y, worldX: worldX, worldY: worldY ,name: `点${newId}`}];
     });
 
 
@@ -1090,13 +1103,10 @@ const PGMCanvasEditor: React.FC = () => {
 
     // 3.2 使用修改后的函数创建新标记
     points.forEach(p => {
-      // 只渲染可见的点（visible !== false）
-      if (p.visible !== false) {
-        const pos = new THREE.Vector3(p.x, p.y, 0.5);
-        const marker = createNumberedMarker(p.id, pos);
-        scene.add(marker);
-        markersRef.current[p.id] = marker;
-      }
+      const pos = new THREE.Vector3(p.x, p.y, 0.5);
+      const marker = createNumberedMarker(p.id, pos);
+      scene.add(marker);
+      markersRef.current[p.id] = marker;
     });
   }, [points]);
 
@@ -1162,9 +1172,7 @@ const PGMCanvasEditor: React.FC = () => {
 
       // 最终得到地图中的 world 坐标
       const { origin, resolution } = mapConfig;
-      // @ts-ignore
       const worldX = origin[0] + (pixelX + 0.5) * resolution;
-      // @ts-ignore
       const worldY = origin[1] + (pgmData.height - pixelY - 0.5) * resolution;
 
       // ✅ 判断是否是右键
@@ -1201,22 +1209,17 @@ const PGMCanvasEditor: React.FC = () => {
         ray.setFromCamera(mouse, cameraRef.current);
         const intersects = ray.intersectObjects(Object.values(markersRef.current), true);
         if (intersects.length) {
-          // @ts-ignore
           const group = intersects[0].object.parent;
-          // @ts-ignore
           const id = group.children[0].userData.id;
           setDraggingId(id);
           // compute offset
-          // @ts-ignore
           const hitPoint = intersects[0].point;
-          // @ts-ignore
           const markerPos = group.position;
           dragOffset.current = { x: markerPos.x - hitPoint.x, y: markerPos.y - hitPoint.y };
         }
       }
     };
     const onPointerUp = () => setDraggingId(null);
-    // @ts-ignore
     const onContextMenu = (e) => {
       e.preventDefault();
       const ray = new THREE.Raycaster();
@@ -1224,16 +1227,13 @@ const PGMCanvasEditor: React.FC = () => {
         (e.offsetX / canvas.clientWidth) * 2 - 1,
         -(e.offsetY / canvas.clientHeight) * 2 + 1
       );
-      // @ts-ignore
       ray.setFromCamera(mouse, cameraRef.current);
       const intersects = ray.intersectObjects(Object.values(markersRef.current), true);
       if (intersects.length) {
-        // @ts-ignore
         const group = intersects[0].object.parent;
-        // @ts-ignore
         const id = group.children[0].userData.id;
         // remove
-        setPoints(prev => prev.filter(p => p.id !== id).map((p, idx) => ({ id: idx+1, x: p.x, y: p.y,  worldX: p.worldX, worldY: p.worldY ,name: p.name, visible: p.visible})));
+        setPoints(prev => prev.filter(p => p.id !== id).map((p, idx) => ({ id: idx+1, x: p.x, y: p.y,  worldX: p.worldX, worldY: p.worldY ,name: p.name})));
       }
     };
 
@@ -1348,11 +1348,8 @@ const PGMCanvasEditor: React.FC = () => {
       top: camera.top,
       bottom: camera.bottom,
     });
-    // @ts-ignore
     console.log("Mesh Geometry:", {
-      // @ts-ignore
       width: mesh.geometry.parameters.width,
-      // @ts-ignore
       height: mesh.geometry.parameters.height,
     });
 
@@ -1397,14 +1394,12 @@ const PGMCanvasEditor: React.FC = () => {
       const textureData = new Uint8Array(layer.texture.image.data.buffer);
 
       for (let i = 0; i < textureData.length; i += 4) {
-        // @ts-ignore
         if (textureData[i + 3] < 1) continue;
 
         const x = (i / 4) % pgmData.width;
         const y = Math.floor((i / 4) / pgmData.width);
         const pgmIndex = (pgmData.height - 1 - y) * pgmData.width + x;
 
-        // @ts-ignore
         const gray = Math.round((textureData[i] / 255) * pgmData.maxVal);
         mergedData[pgmIndex] = gray;
       }
@@ -1440,49 +1435,8 @@ const PGMCanvasEditor: React.FC = () => {
     }
   };
 
-  // PointsDrawer相关处理函数
-  const handlePointSelect = useCallback((id: number) => {
-    setSelectedPointId(id);
-  }, []);
-
-  const handlePointVisibilityChange = useCallback((id: number) => {
-    setPoints(prev => prev.map(point =>
-      point.id === id
-        ? { ...point, visible: point.visible === false ? true : false }
-        : point
-    ));
-  }, []);
-
-  const handlePointNameChange = useCallback((id: number, newName: string) => {
-    setPoints(prev => prev.map(point =>
-      point.id === id
-        ? { ...point, name: newName }
-        : point
-    ));
-  }, []);
-
-  const handleAddPointFromDrawer = useCallback(() => {
-    // 这里可以添加一个默认点或者提示用户在地图上点击
-    const newId = points.length > 0 ? Math.max(...points.map(p => p.id)) + 1 : 1;
-    const newPoint = {
-      id: newId,
-      name: `新点位${newId}`,
-      x: 0,
-      y: 0,
-      worldX: 0,
-      worldY: 0,
-      visible: true
-    };
-    setPoints(prev => [...prev, newPoint]);
-  }, [points]);
-
-  const handleRefreshPoints = useCallback(() => {
-    downloadPoints();
-  }, []);
-
   return (
     <div
-      // @ts-ignore
       ref={containerRef}
       style={{
         width: "100%",
@@ -1508,10 +1462,6 @@ const PGMCanvasEditor: React.FC = () => {
         brushSize={brushSize}
         onBrushSizeChange={handleBrushSizeChange}
         loadPoints={downloadPoints}
-        onPointsDrawerToggle={() => {
-          setIsPointsDrawerOpen(!isPointsDrawerOpen);
-        }}
-        isPointsPanelOpen={isPointsDrawerOpen}
       />
       <div>
         <label htmlFor="map-select">选择地图：</label>
@@ -1539,9 +1489,7 @@ const PGMCanvasEditor: React.FC = () => {
           alignItems: "center", // 垂直居中
         }}
       >
-
         <canvas
-          //@ts-ignore
           ref={canvasRef}
           onMouseDown={(e) => {
             // 只处理左键点击（button === 0），并且当前是 drawPoint 模式
@@ -1582,20 +1530,6 @@ const PGMCanvasEditor: React.FC = () => {
           onLayerSelect={handleLayerSelect}
           onLayerMove={handleLayerMove}
         />
-        <PointsDrawer
-          open={isPointsDrawerOpen}
-          points={points}
-          selectedPoint={selectedPointId}
-          onClose={() => {
-            setIsPointsDrawerOpen(false);
-          }}
-          onAddPoint={handleAddPointFromDrawer}
-          onDeletePoint={handleDeletePoint}
-          onPointVisibilityChange={handlePointVisibilityChange}
-          onPointSelect={handlePointSelect}
-          onPointNameChange={handlePointNameChange}
-          onRefreshPoints={handleRefreshPoints}
-        />
       </div>
     </div>
 
@@ -1603,3 +1537,6 @@ const PGMCanvasEditor: React.FC = () => {
 };
 
 export default PGMCanvasEditor;
+
+
+

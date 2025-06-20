@@ -9,10 +9,20 @@
 // import { CircularProgress, IconButton } from "@mui/material";
 // import { useTranslation } from "react-i18next";
 // import { makeStyles } from "tss-react/mui";
-import { CheckOutlined, DisconnectOutlined, LoadingOutlined } from "@ant-design/icons";
+// import { DisconnectOutlined, LoadingOutlined } from "@ant-design/icons";
+// 修改后 - 使用动态导入
+const CheckOutlined = React.lazy(() => import('@ant-design/icons').then(module => ({
+  default: module.CheckOutlined
+})));
+const DisconnectOutlined = React.lazy(() => import('@ant-design/icons').then(module => ({
+  default: module.DisconnectOutlined
+})));
+const LoadingOutlined = React.lazy(() => import('@ant-design/icons').then(module => ({
+  default: module.LoadingOutlined
+})));
 // eslint-disable-next-line import/order
 import { DocumentAdd24Regular, ErrorCircle20Filled } from "@fluentui/react-icons";
-
+import * as React from "react";
 // import { ErrorCircle16Filled } from "@fluentui/react-icons";
 import { Button } from "@mui/material";
 import { Popover, Row } from "antd";
@@ -148,31 +158,39 @@ export function DataSource(): React.JSX.Element {
     console.log(playerPresence);
     if (isLiveConnection) {
       // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-      <CheckOutlined
-        rev={undefined}
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
-      />;
+      return (
+        <React.Suspense fallback={<div>Loading...</div>}>
+          <CheckOutlined
+            rev={undefined}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
+          />
+        </React.Suspense>
+      );
     }
     if (playerPresence === PlayerPresence.PRESENT && !isLiveConnection) {
       return <DocumentAdd24Regular />;
     }
     if (playerPresence === PlayerPresence.NOT_PRESENT) {
       return (
-        <DisconnectOutlined
-          rev={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
-        />
+        <React.Suspense fallback={<div>Loading...</div>}>
+          <DisconnectOutlined
+            rev={undefined}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
+          />
+        </React.Suspense>
       );
     }
     if (loading || playerPresence === PlayerPresence.BUFFERING) {
       return (
-        <LoadingOutlined
-          rev={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
-        />
+        <React.Suspense fallback={<div>Loading...</div>}>
+          <LoadingOutlined
+            rev={undefined}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
+          />
+        </React.Suspense>
       );
     }
     if (error) {
@@ -183,11 +201,13 @@ export function DataSource(): React.JSX.Element {
       <>
         {isLiveConnection && (
           <>
-            <CheckOutlined
-              rev={undefined}
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
-            />
+            <React.Suspense fallback={<div>Loading...</div>}>
+              <CheckOutlined
+                rev={undefined}
+                onPointerEnterCapture={undefined}
+                onPointerLeaveCapture={undefined}
+              />
+            </React.Suspense>
             {/* <EndTimestamp /> */}
           </>
         )}

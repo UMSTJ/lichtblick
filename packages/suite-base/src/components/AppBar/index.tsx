@@ -1,10 +1,12 @@
+
+
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
-
+import * as React from "react";
 import {
   LayoutColumnOneThirdLeft24Regular,
   LayoutColumnOneThirdLeft24Filled,
@@ -171,7 +173,7 @@ export function AppBar(props: AppBarProps): React.JSX.Element {
     onUnmaximizeWindow,
     showCustomWindowControls = false,
   } = props;
-  const { classes, cx, theme } = useStyles({ debugDragRegion });
+  const { classes } = useStyles({ debugDragRegion });
   // const { t } = useTranslation("appBar");
 
   const { appBarLayoutButton } = useAppContext();
@@ -186,11 +188,10 @@ export function AppBar(props: AppBarProps): React.JSX.Element {
 
   const { sidebarActions } = useWorkspaceActions();
 
-  const [appMenuEl, setAppMenuEl] = useState<undefined | HTMLElement>(undefined);
+  // const [appMenuEl] = useState<undefined | HTMLElement>(undefined);
   const [userAnchorEl, setUserAnchorEl] = useState<undefined | HTMLElement>(undefined);
   const [panelAnchorEl, setPanelAnchorEl] = useState<undefined | HTMLElement>(undefined);
 
-  const appMenuOpen = Boolean(appMenuEl);
   const userMenuOpen = Boolean(userAnchorEl);
   const panelMenuOpen = Boolean(panelAnchorEl);
 

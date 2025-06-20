@@ -1,4 +1,5 @@
 // src/components/SinglePlot.tsx
+import * as React from "react";
 import { Button, Tooltip, Fade, useTheme } from "@mui/material";
 import { useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -544,4 +545,3 @@ const SinglePlot = ({ config, saveConfig,configPath,onSelect}: SinglePlotProps) 
   };
 
   export default SinglePlot;
-

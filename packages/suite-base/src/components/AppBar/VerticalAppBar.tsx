@@ -9,10 +9,12 @@ import {
   Code24Regular,
   AppsAddIn24Regular,
   ContentSettings24Regular,
-  NotebookQuestionMark24Regular
+  NotebookQuestionMark24Regular,
+  // Add20Regular,
+  // Add24Regular,
 } from "@fluentui/react-icons";
 import { Layout } from "antd";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AddPanelMenu } from "@lichtblick/suite-base/components/AppBar/AddPanelMenu";
@@ -25,7 +27,6 @@ import {
 } from "@lichtblick/suite-base/components/MessagePipeline";
 import { openCode } from "@lichtblick/suite-base/components/UdpMessage";
 import { useWorkspaceActions } from "@lichtblick/suite-base/context/Workspace/useWorkspaceActions";
-import React from "react";
 import { Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import path from "path";

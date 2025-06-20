@@ -1,24 +1,27 @@
 import { getIpAddress } from "@lichtblick/suite-base/components/AppBar/VerticalAppBar";
-import { isRunningInElectron } from "@lichtblick/suite-base/components/DataSourceDialog/Start";
+// import { isRunningInElectron } from "@lichtblick/suite-base/components/DataSourceDialog/Start";
 import {
   MessagePipelineContext,
-  useMessagePipeline, useMessagePipelineSubscribe
+  useMessagePipeline,
+  // useMessagePipelineSubscribe
 } from "@lichtblick/suite-base/components/MessagePipeline";
 import Stack from "@lichtblick/suite-base/components/Stack";
 
-import { Box, Button, Card, Divider, Typography } from "@mui/material";
+import { Box,
+  // Button,
+  Card, Divider, Typography } from "@mui/material";
 import * as _ from "lodash-es";
 import { useRef, ReactElement, useEffect, useState } from "react";
-import request from "umi-request";
+// import request from "umi-request";
 import { useMessageDataItem } from "../MessagePathSyntax/useMessageDataItem";
 
 const ANIMATION_RESET_DELAY_MS = 1500;
 
-type SystemInfo = {
-  rosId: string;
-  ip: string;
-  version: string;
-};
+// type SystemInfo = {
+//   rosId: string;
+//   ip: string;
+//   version: string;
+// };
 type driveStatus = {
   power: number;
   speed: number;
@@ -28,8 +31,10 @@ export default function NewVehiclesStateList(): ReactElement {
   // Don't run the animation when the sidebar first renders
   const skipAnimation = useRef<boolean>(true);
   const selectPlayerName = (ctx: MessagePipelineContext) => ctx.playerState?.name ?? "192.168.31.1";
+// @ts-ignore
   const [codeOnlineState, setCodeOnlineState] = useState<boolean>(false);
   const playerName = useMessagePipeline(selectPlayerName);
+  // @ts-ignore
   const [nowIPAddr, setIPAddr] = useState<string>("");
 
   const [ driveStatus, setDriveStatus] = useState<driveStatus>({ power: 0, speed: 0, angle: 0});
@@ -178,9 +183,9 @@ export default function NewVehiclesStateList(): ReactElement {
       const latestOdom = odomData[odomData.length - 1];
 
       setDriveStatus({
-        power: latestBattery?.queriedData[0]?.value.percentage ?? 0,
-        angle: latestOdom?.queriedData[0]?.value.twist.twist.angular.z ?? 0,
-        speed: latestOdom?.queriedData[0]?.value.twist.twist.linear.x ?? 0,
+        power: (latestBattery?.queriedData[0]?.value as any)?.percentage ?? 0,
+        angle: (latestOdom?.queriedData[0]?.value as any)?.twist?.twist?.angular?.z ?? 0,
+        speed: (latestOdom?.queriedData[0]?.value as any)?.twist?.twist?.linear?.x ?? 0,
       });
     }, 500);
     return () => clearInterval(interval);

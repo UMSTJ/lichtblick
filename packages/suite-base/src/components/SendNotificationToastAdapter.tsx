@@ -63,7 +63,7 @@ export default function SendNotificationToastAdapter(): React.JSX.Element {
           </div>,
           {
             variant: severityToToastAppearance(severity),
-            persist: severity === "error",
+            autoHideDuration: 2000,
           },
         );
       },

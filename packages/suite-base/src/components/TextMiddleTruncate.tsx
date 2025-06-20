@@ -14,6 +14,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
+import * as React from "react";
 import { CSSProperties, ClipboardEvent, useCallback } from "react";
 import { makeStyles } from "tss-react/mui";
 

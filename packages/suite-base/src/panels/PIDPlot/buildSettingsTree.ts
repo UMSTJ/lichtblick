@@ -7,9 +7,6 @@ import memoizeWeak from "memoize-weak";
 
 import { SettingsTreeNode, SettingsTreeNodes } from "@lichtblick/suite";
 import {
-  DEFAULT_PIDLINEPLOT_PATH,
-} from "@lichtblick/suite-base/panels/Plot/constants";
-import {
   PIDLinePlotPath,
   PIDPlotConfig,
   plotPathDisplayName

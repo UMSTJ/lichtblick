@@ -6,7 +6,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 module.exports = {
-  process(sourceText) {
-    return `module.exports = ${JSON.stringify(sourceText)};`;
-  },
+  // process(sourceText) {
+  //   return `module.exports = ${JSON.stringify(sourceText)};`;
+  // },
 };

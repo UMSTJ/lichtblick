@@ -132,6 +132,7 @@ export default function StudioToastProvider({ children }: PropsWithChildren): Re
       preventDuplicate
       TransitionComponent={Grow}
       classes={containerClasses}
+      autoHideDuration={2000}
     >
       {children}
     </SnackbarProvider>

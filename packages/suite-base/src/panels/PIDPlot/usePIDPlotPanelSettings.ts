@@ -13,7 +13,7 @@ import * as _ from "lodash-es";
 import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ParameterValue, SettingsTreeAction, SettingsTreeActionUpdatePayload } from "@lichtblick/suite";
-import { DEFAULT_PIDLINEPLOT_PATH, DEFAULT_PIDPLOT_PATH } from "@lichtblick/suite-base/panels/Plot/constants";
+import { DEFAULT_PIDPLOT_PATH } from "@lichtblick/suite-base/panels/Plot/constants";
 import { buildSettingsTree } from "@lichtblick/suite-base/panels/PIDPlot/buildSettingsTree";
 import { usePanelSettingsTreeUpdate } from "@lichtblick/suite-base/providers/PanelStateContextProvider";
 import { SaveConfig } from "@lichtblick/suite-base/types/panels";

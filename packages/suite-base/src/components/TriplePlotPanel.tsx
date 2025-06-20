@@ -1,4 +1,5 @@
 // C:\Users\18032\Desktop\lichtblick\packages\suite-base\src\components\TriplePlotPanel.tsx
+import * as React from "react";
 import SinglePlot from "./SinglePlot";
 import PanelToolbar from "@lichtblick/suite-base/components/PanelToolbar";
 //@ts-ignore

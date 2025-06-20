@@ -6,7 +6,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 /* eslint-disable @lichtblick/no-restricted-imports */
-
+import * as React from "react";
 import AddIcon from "@mui/icons-material/Add";
 import {
   CircularProgress,

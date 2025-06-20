@@ -56,6 +56,7 @@ export function makeConfig(
 
         // TypeScript tries to use this when running in node
         perf_hooks: false,
+
         // Yarn patches these imports into TypeScript for PnP support
         // https://github.com/microsoft/TypeScript/pull/35206
         // https://github.com/yarnpkg/berry/pull/2889#issuecomment-849905154

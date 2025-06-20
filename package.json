@@ -160,12 +160,14 @@
     "@react-pdf/renderer": "4.3.0",
     "@tauri-apps/api": "1.6.0",
     "antd": "5.20.0",
+    "buffer": "6.0.3",
     "lucide-react": "0.481.0",
     "pdfjs-dist": "5.2.133",
     "react-pdf": "9.2.1",
     "react-use": "17.5.1",
     "rehype-raw": "6.1.1",
     "umi-request": "1.4.0",
+    "util": "0.12.5",
     "vm-browserify": "1.1.2"
   }
 }
