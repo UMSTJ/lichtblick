@@ -661,6 +661,40 @@ const PGMCanvasEditor: React.FC = () => {
     };
   }
 
+  // 1. 提取 handleResize
+  const handleResize = React.useCallback(() => {
+    if (!containerRef.current || !cameraRef.current || !rendererRef.current || !pgmData) {
+      return;
+    }
+    const container = containerRef.current;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    rendererRef.current.setSize(width, height, false);
+    rendererRef.current.setPixelRatio(window.devicePixelRatio || 1);
+
+    const imageAspect = pgmData.width / pgmData.height;
+    const containerAspect = width / height;
+
+    let cameraWidth, cameraHeight;
+    if (containerAspect > imageAspect) {
+      cameraHeight = 2;
+      cameraWidth = cameraHeight * containerAspect;
+    } else {
+      cameraWidth = 2;
+      cameraHeight = cameraWidth / containerAspect;
+    }
+
+    const camera = cameraRef.current;
+    camera.left = -cameraWidth / 2;
+    camera.right = cameraWidth / 2;
+    camera.top = cameraHeight / 2;
+    camera.bottom = -cameraHeight / 2;
+    camera.updateProjectionMatrix();
+
+    rendererRef.current.render(sceneRef.current!, camera);
+  }, [pgmData]);
+
   const initThree = useCallback((lpgmData: PGMImage) => {
     if (!containerRef.current || !canvasRef.current) {
       console.error("Invalid canvas or container");
@@ -809,7 +843,9 @@ const PGMCanvasEditor: React.FC = () => {
     };
 
     animate();
-  }, []);
+    // 关键：初始化后主动触发一次handleResize，保证比例正确
+    handleResize();
+  }, [handleResize]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -849,7 +885,6 @@ const PGMCanvasEditor: React.FC = () => {
       // 强制重绘
       rendererRef.current.render(sceneRef.current!, camera);
     };
-
     window.addEventListener("resize", handleResize);
     return () => {
       window.removeEventListener("resize", handleResize);
