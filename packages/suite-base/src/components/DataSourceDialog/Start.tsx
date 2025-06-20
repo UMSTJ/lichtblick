@@ -5,37 +5,29 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import {
-  Button,
-  Link,
-  List,
-  ListItem,
-  ListItemButton,
-  makeStyles,
-  SvgIcon,
-  Typography,
-} from "@mui/material";
-import { ReactNode, useMemo } from "react";
+import { List, ListItem, ListItemButton, Typography } from "@mui/material";
+// import { ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 // import LichtblickLogoText from "@lichtblick/suite-base/components/LichtblickLogoText";
+import { useStyles } from "@lichtblick/suite-base/components/DataSourceDialog/index.style";
+import LichtblickLogoText from "@lichtblick/suite-base/components/LichtblickLogoText";
 import Stack from "@lichtblick/suite-base/components/Stack";
 import TextMiddleTruncate from "@lichtblick/suite-base/components/TextMiddleTruncate";
 import { usePlayerSelection } from "@lichtblick/suite-base/context/PlayerSelectionContext";
-import { useWorkspaceActions } from "@lichtblick/suite-base/context/Workspace/useWorkspaceActions";
-import { AppEvent } from "@lichtblick/suite-base/services/IAnalytics";
-import { useStyles } from "@lichtblick/suite-base/components/DataSourceDialog/index.style";
-import LichtblickLogoText from "@lichtblick/suite-base/components/LichtblickLogoText";
-import { useAnalytics } from "@lichtblick/suite-base/context/AnalyticsContext";
+// import { useWorkspaceActions } from "@lichtblick/suite-base/context/Workspace/useWorkspaceActions";
+// import { AppEvent } from "@lichtblick/suite-base/services/IAnalytics";
+// import LichtblickLogoText from "@lichtblick/suite-base/components/LichtblickLogoText";
+// import { useAnalytics } from "@lichtblick/suite-base/context/AnalyticsContext";
 
-type DataSourceOptionProps = {
-  text: string;
-  secondaryText: string;
-  icon: React.JSX.Element;
-  onClick: () => void;
-  href?: string;
-  target: "_blank";
-};
+// type DataSourceOptionProps = {
+//   text: string;
+//   secondaryText: string;
+//   icon: React.JSX.Element;
+//   onClick: () => void;
+//   href?: string;
+//   target: "_blank";
+// };
 export function isRunningInElectron() {
   return typeof window !== "undefined" && typeof window.electron !== "undefined";
 }
@@ -171,9 +163,9 @@ export function isRunningInElectron() {
 export default function Start(): React.JSX.Element {
   const { recentSources, selectRecent } = usePlayerSelection();
   const { classes } = useStyles();
-  const analytics = useAnalytics();
+  // const analytics = useAnalytics();
   const { t } = useTranslation("openDialog");
-  const { dialogActions } = useWorkspaceActions();
+  // const { dialogActions } = useWorkspaceActions();
 
   return (
     <Stack className={classes.grid}>

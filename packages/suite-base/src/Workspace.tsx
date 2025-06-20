@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
@@ -13,7 +19,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { Link, makeStyles, Typography, useTheme } from "@mui/material";
+import { Link, Typography, useTheme } from "@mui/material";
 import { ConfigProvider, theme } from "antd";
 import { t } from "i18next";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -22,7 +28,9 @@ import { Trans, useTranslation } from "react-i18next";
 import Logger from "@lichtblick/log";
 import { AppSetting } from "@lichtblick/suite-base/AppSetting";
 // import { useStyles } from "@lichtblick/suite-base/Workspace.style";
+import { useStyles } from "@lichtblick/suite-base/Workspace.style";
 import AccountSettings from "@lichtblick/suite-base/components/AccountSettingsSidebar/AccountSettings";
+import { AlertsList } from "@lichtblick/suite-base/components/AlertsList";
 import { AppBar } from "@lichtblick/suite-base/components/AppBar";
 //import { CustomWindowControlsProps } from "@lichtblick/suite-base/components/AppBar/CustomWindowControls";
 // import VerticalAppBar from "@lichtblick/studio-base/components/AppBar/VerticalAppBar";
@@ -103,8 +111,7 @@ import isDesktopApp from "@lichtblick/suite-base/util/isDesktopApp";
 
 import VerticalAppBar from "./components/AppBar/VerticalAppBar";
 import { useWorkspaceActions } from "./context/Workspace/useWorkspaceActions";
-import { AlertsList } from "@lichtblick/suite-base/components/AlertsList";
-import { useStyles } from "@lichtblick/suite-base/Workspace.style";
+
 const log = Logger.getLogger(__filename);
 
 // const useStyles = makeStyles(theme)({

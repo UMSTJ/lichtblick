@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { Typography, List, Button } from "antd";
 import { useTranslation } from "react-i18next";
 
 // 假设这些组件已经在你的项目中存在
 import TextMiddleTruncate from "@lichtblick/suite-base/components/TextMiddleTruncate";
-import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessage";
+import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessageComponent";
 import { usePlayerSelection } from "@lichtblick/suite-base/context/PlayerSelectionContext";
 
 const { Title } = Typography;
@@ -13,9 +16,9 @@ const NewStart = () => {
   const { t } = useTranslation("openDialog");
 
   // 这个函数用于检测是否在Electron环境中运行
-  const isRunningInElectron = () => {
-    return window.electron !== undefined || (window.process && window.process.type === "renderer");
-  };
+  // const isRunningInElectron = () => {
+  //   return window.electron !== undefined || (window.process && window.process.type === "renderer");
+  // };
 
   // 假设这些数据和函数在你的应用中已定义
   const { recentSources, selectRecent } = usePlayerSelection();
@@ -70,7 +73,7 @@ const NewStart = () => {
           </List.Item>
         )}
       />
-      {isRunningInElectron() && (
+      {true && (
         <>
           <Title level={5}>{t("activeClients")}</Title>
           <UdpMessageComponent />
