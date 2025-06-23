@@ -191,6 +191,7 @@ const PGMCanvasEditor: React.FC = () => {
   const [layers, setLayers] = useState<Layer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string>();
   const [isLayerDrawerOpen, setIsLayerDrawerOpen] = useState(false);
+  const [showedBaseLayerDrawError, setShowedBaseLayerDrawError] = useState(false);
 
   const [pgmData, setPGMData] = useState<PGMImage | undefined>(undefined);
   const [drawing, setDrawing] = useState(false);
@@ -216,12 +217,12 @@ const PGMCanvasEditor: React.FC = () => {
   const playerName = useMessagePipeline(selectPlayerName);
   const [ipAddr, setIpAddr] = useState("");
   useEffect(() => {
-    if (playerName == undefined) {
-      return;
-    }
-    const currentIp = getIpAddress(playerName);
-    setIpAddr(currentIp);
-    // setIpAddr("192.243.117.147:9000")
+    // if (playerName == undefined) {
+    //   return;
+    // }
+    // const currentIp = getIpAddress(playerName);
+    // setIpAddr(currentIp);
+    setIpAddr("192.243.117.147:9000")
   }, [playerName, setIpAddr]);
 
   const getIpAddress = (name: string): string => {
@@ -476,7 +477,7 @@ const PGMCanvasEditor: React.FC = () => {
   // 添加新图层
   const handleAddLayer = useCallback(() => {
     if (!sceneRef.current) return;
-
+    setShowedBaseLayerDrawError(false);
     setLayers(prev => {
       if (prev.length === 0) return prev;
       const base = prev[0];
@@ -583,6 +584,7 @@ const PGMCanvasEditor: React.FC = () => {
   // 选择图层
   const handleLayerSelect = useCallback((id: string) => {
     setSelectedLayerId(id);
+    setShowedBaseLayerDrawError(false);
     console.log("selectedLayerId",selectedLayerId);
   }, []);
 
@@ -1319,10 +1321,15 @@ const PGMCanvasEditor: React.FC = () => {
     }
 
     const layer = layers.find(l => l.id === selectedLayerId)!;
-    // if (!layer || layer.id === 'base') {
-    //   console.warn('不能在基础层上绘制');
-    //   return;
-    // }
+    if (!layer || layer.id === 'base') {
+      console.warn('不能在基础层上绘制');
+      const now = Date.now();
+      if (now - lastBaseLayerDrawErrorTime.current > 1000) { // 1秒内只弹一次
+        sendNotification("不能在基础层上绘制,请新增图层", "", "user", "error");
+        lastBaseLayerDrawErrorTime.current = now;
+      }
+      return;
+    }
     const mesh = layer.mesh;
     const tex = layer.texture;
 
@@ -1446,8 +1453,12 @@ const PGMCanvasEditor: React.FC = () => {
   const savePGM = async () => {
     if (!pgmData || !sceneRef.current || layers.length === 0) return;
 
-    const mergedData = new Uint8Array(pgmData.data);
-    const sortedLayers = [...layers].sort((a, b) => a.mesh.renderOrder - b.mesh.renderOrder);
+    // 只合成非base层数据，底图全白
+    const mergedData = new Uint8Array(pgmData.data.length);
+    mergedData.fill(pgmData.maxVal); // 全白底图
+    const sortedLayers = [...layers]
+      .filter(layer => layer.id !== 'base')
+      .sort((a, b) => a.mesh.renderOrder - b.mesh.renderOrder);
 
     sortedLayers.forEach(layer => {
       if (!layer.visible) return;
@@ -1489,11 +1500,14 @@ const PGMCanvasEditor: React.FC = () => {
       });
 
       if (!response.ok) {
+        sendNotification(`PGM上传失败: ${response.status} ${response.statusText}`, "", "user", "error");
         throw new Error(`上传失败: ${response.status} ${response.statusText}`);
       }
 
+      sendNotification("PGM上传成功！", "", "user", "info");
       console.log("PGM上传成功");
     } catch (error) {
+      sendNotification(`PGM上传失败: ${error instanceof Error ? error.message : '未知错误'}`, "", "user", "error");
       console.error("上传PGM失败:", error);
     }
   };
@@ -1538,6 +1552,101 @@ const PGMCanvasEditor: React.FC = () => {
     downloadPoints();
   }, []);
 
+  // 下载maskMap.pgm并作为新图层添加
+  const onDownloadMaskMap = useCallback(async () => {
+    if (!selectedMap || !ipAddr || !sceneRef.current) {
+      sendNotification("请先选择地图", "", "user", "error");
+      return;
+    }
+    try {
+      const url = `http://${ipAddr}/mapServer/download/${selectedMap}/maskMap.pgm`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        sendNotification(`下载maskMap失败: ${response.status} ${response.statusText}`, "", "user", "error");
+        return;
+      }
+      const buffer = await response.arrayBuffer();
+      // 解析PGM
+      let maskPGM: PGMImage | undefined;
+      // 尝试P2和P5
+      const decoder = new TextDecoder("ascii");
+      const headerSnippet = decoder.decode(new Uint8Array(buffer).slice(0, 15));
+      const magic = headerSnippet.trim().split(/\s+/)[0];
+      if (magic === "P2") {
+        maskPGM = parsePGM(decoder.decode(buffer));
+      } else if (magic === "P5") {
+        maskPGM = parsePGMBuffer(buffer);
+      } else {
+        sendNotification("未知PGM格式", "", "user", "error");
+        return;
+      }
+      if (!maskPGM) {
+        sendNotification("maskMap.pgm解析失败", "", "user", "error");
+        return;
+      }
+      // 创建新图层
+      const rgbaData = new Uint8Array(maskPGM.width * maskPGM.height * 4);
+      const maxVal = maskPGM.maxVal ?? 255;
+      if (maskPGM.data) {
+        for (let y = 0; y < maskPGM.height; y++) {
+          for (let x = 0; x < maskPGM.width; x++) {
+            const srcIdx = (maskPGM.height - 1 - y) * maskPGM.width + x; // 倒序
+            const dstIdx = (y * maskPGM.width + x) * 4;
+            const value = Math.floor((maskPGM.data[srcIdx] / maxVal) * 255);
+            rgbaData[dstIdx] = value;
+            rgbaData[dstIdx + 1] = value;
+            rgbaData[dstIdx + 2] = value;
+            rgbaData[dstIdx + 3] = (value < 255) ? 255 : 0;
+          }
+        }
+      }
+      const newTex = new THREE.DataTexture(
+        rgbaData,
+        maskPGM.width,
+        maskPGM.height,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType
+      );
+      newTex.generateMipmaps = false;
+      newTex.flipY = false;
+      newTex.needsUpdate = true;
+      const material = new THREE.MeshBasicMaterial({
+        map: newTex,
+        transparent: true,
+        opacity: 1,
+        toneMapped: false,
+        depthTest: true,
+        depthWrite: true,
+        side: THREE.DoubleSide,
+      });
+      const imageAspect = maskPGM.width / maskPGM.height;
+      const planeWidth = 2;
+      const planeHeight = planeWidth / imageAspect;
+      const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+      const newMesh = new THREE.Mesh(geometry, material);
+      // 设置z和renderOrder
+      const newLayerIndex = layers.length;
+      newMesh.renderOrder = newLayerIndex;
+      newMesh.position.z = newLayerIndex * 0.1;
+      sceneRef.current.add(newMesh);
+      const newLayer = {
+        id: `maskMap-${Date.now()}`,
+        name: `MaskMap ${newLayerIndex}`,
+        visible: true,
+        texture: newTex,
+        mesh: newMesh
+      };
+      setLayers(prev => [...prev, newLayer]);
+      setSelectedLayerId(newLayer.id);
+      sendNotification("maskMap.pgm下载并添加为新图层成功", "", "user", "info");
+    } catch (err) {
+      sendNotification(`下载maskMap异常: ${err instanceof Error ? err.message : '未知错误' }`, "", "user", "error");
+    }
+  }, [selectedMap, ipAddr, sceneRef, layers]);
+
+  // 节流基础层画画错误提示
+  const lastBaseLayerDrawErrorTime = useRef(0);
+
   return (
     <div
       // @ts-ignore
@@ -1570,6 +1679,7 @@ const PGMCanvasEditor: React.FC = () => {
           setIsPointsDrawerOpen(!isPointsDrawerOpen);
         }}
         isPointsPanelOpen={isPointsDrawerOpen}
+        onDownloadMaskMap={onDownloadMaskMap}
       />
       <div>
         <label htmlFor="map-select">选择地图：</label>

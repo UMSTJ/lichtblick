@@ -93,6 +93,7 @@ interface DrawingToolbarProps {
   loadPoints: () => void;
   onPointsDrawerToggle: () => void;
   isPointsPanelOpen: boolean;
+  onDownloadMaskMap: () => void;
 }
 
 export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
@@ -109,6 +110,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
   loadPoints,
   onPointsDrawerToggle,
   isPointsPanelOpen,
+  onDownloadMaskMap,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -169,20 +171,16 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
 
             <Divider orientation="vertical" flexItem />
 
-            <Tooltip title="Save PGM">
-              <ToolButton onClick={savePGM}>
-                <Save24Regular />
-              </ToolButton>
-            </Tooltip>
-            <Tooltip title="EXPORT Points">
-              <ToolButton onClick={onExportPoints}>
-                {/*<SaveArrowRight24Filled />*/}
-                <BoxArrowUpRegular />
-              </ToolButton>
-            </Tooltip>
+
 
             {/* 颜色选择器部分 */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 180 }}>
+              {/* 笔刷大小部分保持原样 */}
+              <Tooltip title={`Brush Size: ${brushSize}`}>
+                <ToolButton onClick={handleBrushSizeClick}>
+                  <LineHorizontal124Regular />
+                </ToolButton>
+              </Tooltip>
               <Tooltip title="Brush Color">
                 <ToolButton>
                   <ColorLine24Regular />
@@ -225,18 +223,26 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
               </Typography>
             </Box>
 
+            <Divider orientation="vertical" flexItem />
 
-            {/*<Divider orientation="vertical" flexItem />*/}
-
-            {/* 笔刷大小部分保持原样 */}
-            <Tooltip title={`Brush Size: ${brushSize}`}>
-              <ToolButton onClick={handleBrushSizeClick}>
-                <LineHorizontal124Regular />
+            <Tooltip title="Save PGM">
+              <ToolButton onClick={savePGM}>
+                <Save24Regular />
               </ToolButton>
             </Tooltip>
-            <Tooltip title={"Load Points"}>
+            <Tooltip title="Download MaskMap">
+              <ToolButton onClick={onDownloadMaskMap}>
+                <SaveArrowRight24Filled />
+              </ToolButton>
+            </Tooltip>
+            <Tooltip title="EXPORT Points">
+              <ToolButton onClick={onExportPoints}>
+                {/*<SaveArrowRight24Filled />*/}
+                <BoxArrowUpRegular />
+              </ToolButton>
+            </Tooltip>
+            <Tooltip title="Download Points">
               <ToolButton onClick={loadPoints}>
-                {/*<BoxArrowUpRegular />*/}
                 <SaveArrowRight24Filled />
               </ToolButton>
             </Tooltip>
@@ -251,6 +257,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
                 <Layer24Regular />
               </ToolButton>
             </Tooltip>
+
             <Tooltip title="Points">
               <ToolButton
                 onClick={onPointsDrawerToggle}
@@ -305,17 +312,6 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
           />
         </Box>
       </BrushSizePopover>
-
-      {/*/!* 隐藏的文件输入 *!/*/}
-      {/*<HiddenFileInput ref={fileInputRef} type="file" accept=".pgm" onChange={handleFileUpload} />*/}
-
-      {/*<HiddenFileInput*/}
-      {/*  ref={yamlInputRef}*/}
-      {/*  type="file"*/}
-      {/*  accept=".yaml"*/}
-      {/*  onChange={handleYamlUpload}*/}
-      {/*  style={{ display: 'none' }}*/}
-      {/*/>*/}
     </StyledAppBar>
   );
 

@@ -38,6 +38,7 @@ import Panel from "@lichtblick/suite-base/components/Panel";
 import PanelToolbar from "@lichtblick/suite-base/components/PanelToolbar";
 import useCallbackWithToast from "@lichtblick/suite-base/hooks/useCallbackWithToast";
 import usePublisher from "@lichtblick/suite-base/hooks/usePublisher";
+import sendNotification from "@lichtblick/suite-base/util/sendNotification";
 import BatteryIndicator from "@lichtblick/suite-base/panels/VehicleControl/components/BatteryIndicator";
 import FileUploadModal from "@lichtblick/suite-base/panels/VehicleControl/components/FileUploadModal";
 import MapFilesTab from "@lichtblick/suite-base/panels/VehicleControl/components/MapFilesTab";
@@ -486,12 +487,48 @@ const VehicleControlPanel: React.FC<Props> = ({ config, saveConfig }) => {
       }
     };
 
+    // 右键点击事件处理
+    const handleRightClick = (event: MouseEvent) => {
+      event.preventDefault(); // 阻止默认右键菜单
+
+      if (!cameraRef.current || !rendererRef.current || !interactionManagerRef.current) {
+        return;
+      }
+
+      try {
+        interactionManagerRef.current.handleClick(event, cameraRef.current, rendererRef.current);
+
+        const selectedRfidId = interactionManagerRef.current.getSelectedRfidId();
+        if (selectedRfidId) {
+          // 直接publish选中的点位
+          if (nodeTopicName) {
+            try {
+              nodePublish({ end_node: Number(selectedRfidId), pass_nodes: [] } as Record<string, unknown>);
+              sendNotification(`点位 ${selectedRfidId} 发送成功`, "", "user", "info");
+            } catch (error) {
+              console.error("Failed to publish RFID:", error);
+              const errorMessage = error instanceof Error ? error.message : '未知错误';
+              sendNotification(`点位 ${selectedRfidId} 发送失败: ${errorMessage}`, "", "user", "error");
+            }
+          } else {
+            sendNotification("发送失败：无效的topic名称", "", "user", "error");
+          }
+        }
+      } catch (error) {
+        console.error("Right click handling error:", error);
+        const errorMessage = error instanceof Error ? error.message : '未知错误';
+        sendNotification(`右键点击处理失败: ${errorMessage}`, "", "user", "error");
+      }
+    };
+
     rendererRef.current.domElement.addEventListener("click", handleClick);
+    rendererRef.current.domElement.addEventListener("contextmenu", handleRightClick);
 
     return () => {
       rendererRef.current?.domElement.removeEventListener("click", handleClick);
+      rendererRef.current?.domElement.removeEventListener("contextmenu", handleRightClick);
     };
-  }, [isSceneReady, setEndNode, map]);
+  }, [isSceneReady, setEndNode, map, nodeTopicName, nodePublish]);
 
   useEffect(() => {
     return () => {
