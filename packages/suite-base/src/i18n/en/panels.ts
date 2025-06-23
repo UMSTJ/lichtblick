@@ -6,6 +6,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 export const panels = {
+  NavSelectPanel: "NavSelectPanel",
+  LoadMapAndNavSelectPanel: "LoadMapAndNavSelectPanel",
   pidPlot: "PID Plot",
   pidPlotDescription: "PID Plot Description",
   SlamMapEditPanel: "Slam Map Edit Panel",

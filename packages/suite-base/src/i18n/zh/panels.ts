@@ -3,6 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 export const panels = {
+  NavSelectPanel: "导航选择面板",
+  LoadMapAndNavSelectPanel: "加载地图和导航选择面板",
   pidPlot: "PID 绘图",
   pnumber:"p值",
   inumber:"i值",
