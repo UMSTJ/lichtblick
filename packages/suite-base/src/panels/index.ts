@@ -67,6 +67,12 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     thumbnail: joystickSummaryThumbnail,
     module: async () => await import("./Joystick"),
   },
+  {
+    title: "AutoBase",
+    type: "AutoBase",
+    description: t("logDescription"),
+    module: async () => await import("./AutoBase"),
+  },
   // {
   //   title: t("deviceSetting"),
   //   type: "DeviceSetting",
