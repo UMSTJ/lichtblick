@@ -57,13 +57,14 @@ import {
   convertCoordinates,
   debounce,
 } from "./manager/RFIDInteractionManager";
+import { MessagePipelineContext, useMessagePipeline } from "@lichtblick/suite-base/components/MessagePipeline";
 
 type Props = {
   config: VehicleControlConfig;
   saveConfig: SaveConfig<VehicleControlConfig>;
 };
 type SandTableMap = {
-  map: string;
+  map: THREE.DataTexture;
   json: any;
 };
 
@@ -120,31 +121,49 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     datatypes,
   });
 
-  // 在现有的useEffect之外添加这个新的useEffect
+  const selectPlayerName = (ctx: MessagePipelineContext) => ctx.playerState.name;
+  const [ipAddr, setIpAddr] = useState("");
+  const playerName = useMessagePipeline(selectPlayerName);
   useEffect(() => {
-    if (!map?.map) {
-      console.error("No map image URL available");
-      setImageLoadStatus("error");
-      return;
-    }
+    setIpAddr(getIpAddress(playerName));
+  }, [playerName]);
+  function getIpAddress(name: string): string {
+    if (!name) return "";
+    let addressPart = name.startsWith("ws://") ? name.substring(5) : name;
+    const firstSpaceIndex = addressPart.indexOf(" ");
+    if (firstSpaceIndex !== -1) addressPart = addressPart.substring(0, firstSpaceIndex);
+    let host = addressPart.split(":")[0] ?? "";
+    return `${host}:9000`;
+  }
+  useEffect(() => {
+    setIpAddr("192.243.117.147:9000");
+  }, []);
 
-    setImageLoadStatus("loading");
-    console.log("Testing image load from URL:", map.map);
-
-    // 保存URL以便在UI中使用
-    // setImageUrl(map.map);
-
-    const testImg = new Image();
-    testImg.onload = () => {
-      console.log("TEST IMAGE LOADED SUCCESSFULLY:", testImg.width, "x", testImg.height);
-      setImageLoadStatus("success");
-    };
-    testImg.onerror = (err) => {
-      console.error("TEST IMAGE LOAD FAILED:", err);
-      setImageLoadStatus("error");
-    };
-    testImg.src = map.map;
-  }, [map?.map]);
+  // 在现有的useEffect之外添加这个新的useEffect
+  // useEffect(() => {
+  //   if (!map?.map) {
+  //     console.error("No map image URL available");
+  //     setImageLoadStatus("error");
+  //     return;
+  //   }
+  //
+  //   setImageLoadStatus("loading");
+  //   console.log("Testing image load from URL:", map.map);
+  //
+  //   // 保存URL以便在UI中使用
+  //   // setImageUrl(map.map);
+  //
+  //   const testImg = new Image();
+  //   testImg.onload = () => {
+  //     console.log("TEST IMAGE LOADED SUCCESSFULLY:", testImg.width, "x", testImg.height);
+  //     setImageLoadStatus("success");
+  //   };
+  //   testImg.onerror = (err) => {
+  //     console.error("TEST IMAGE LOAD FAILED:", err);
+  //     setImageLoadStatus("error");
+  //   };
+  //   testImg.src = map.map;
+  // }, [map?.map]);
   useEffect(() => {
     setOpenModal(update_map);
   }, [update_map]);
@@ -205,7 +224,6 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     }
 
     const pathGroups = jsonData.canvas.objects.filter((obj: any) => obj.name === "path");
-
     pathGroups.forEach((pathGroup) => {
       const pathObjects = (pathGroup.objects as any[]) || [];
       const group = new THREE.Group();
@@ -289,14 +307,10 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       console.error("map or json or mountRef.current is undefined");
       return;
     }
-    const sence_map = map.map;
-
     const mount = mountRef.current;
-
     // 创建场景
     const scene = new THREE.Scene();
     sceneRef.current = scene;
-
     // 创建相机
     const camera = new THREE.PerspectiveCamera(
       75,
@@ -306,7 +320,6 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     );
     camera.position.set(0, 0, 5);
     cameraRef.current = camera;
-
     // 创建渲染器
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -315,125 +328,72 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       depth: true,
       alpha: true,
     });
-    // 设置设备像素比
     renderer.setPixelRatio(window.devicePixelRatio || 2);
-
-    // // 启用阴影映射
-    // renderer.shadowMap.enabled = true;
-    // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-    // 设置编码，提高颜色表现
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    // renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    // renderer.toneMappingExposure = 1;
-
     renderer.setSize(mount.clientWidth, mount.clientHeight, false);
     mount.appendChild(renderer.domElement);
     rendererRef.current = renderer;
-
     // 创建控制器
-    // 在初始化 useEffect 中，修改 OrbitControls 配置的部分
     const controls = new OrbitControls(camera, renderer.domElement);
-    // 禁用旋转
     controls.enableRotate = false;
-    // 禁用自动旋转
     controls.autoRotate = false;
-    // 启用平移
     controls.enablePan = true;
-    // 设置左键用于平移
     controls.mouseButtons = {
       LEFT: THREE.MOUSE.PAN,
       MIDDLE: THREE.MOUSE.DOLLY,
-      // RIGHT: THREE.MOUSE.DOLLY,
     };
-    // 可选：设置缩放限制
     controls.minZoom = 1;
     controls.maxZoom = 5;
-    // 设置平移为屏幕空间模式
     controls.screenSpacePanning = true;
-    // 设置阻尼效果使移动更平滑
     controls.enableDamping = true;
     controls.dampingFactor = 0.1;
-
     controls.minDistance = 3;
     controls.maxDistance = 8;
-
-    // controls.minPan.set(-10, -10, 0);
-    // controls.maxPan.set(10, 10, 0);
-
     controlsRef.current = controls;
-
     // 添加光源
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(1, 1, 1).normalize();
     scene.add(light);
+    // 加载PGM纹理
+    if (map.map instanceof THREE.DataTexture && map.json.init.width && map.json.init.height) {
 
-    // 加载地图
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(sence_map, (mapTexture) => {
-      try {
-        // 获取图片的原始宽高比
-        const imageAspect = mapTexture.image.width / mapTexture.image.height;
-
-        // 设置基准宽度为10（与原代码保持一致）
-        const width = 10;
-        // 根据宽高比计算高度
-        const height = width / imageAspect;
-
-        const mapGeometry = new THREE.PlaneGeometry(width, height);
-        const mapMaterial = new THREE.MeshBasicMaterial({ map: mapTexture });
-        // 添加下面这行代码，确保材质正确应用纹理
-        mapMaterial.needsUpdate = true; // 修复：明确标记材质需要更新
-        // 可选：确保纹理参数正确设置
-        mapTexture.encoding = THREE.sRGBEncoding; // 修复：设置正确的编码
-        mapTexture.needsUpdate = true; // 修复：明确标记纹理需要更新
-        mapTexture.flipY = true; // 修复：确保纹理方向正确
-
-        const mapMesh = new THREE.Mesh(mapGeometry, mapMaterial);
-        scene.add(mapMesh);
-
-        interactionManagerRef.current = parseAndRenderRfids(map.json, scene, {
-          width: mapTexture.image.width,
-          height: mapTexture.image.height,
-        });
-
-        parseAndRenderPaths(map.json, scene, {
-          width: mapTexture.image.width,
-          height: mapTexture.image.height,
-        });
-
-        // 可选：调整相机位置以适应新的地图尺寸
-        const maxDimension = Math.max(width, height);
-        camera.position.z = maxDimension * 0.7; // 调整这个系数以获得合适的视图
-        camera.updateProjectionMatrix();
-
-        // 增加强制渲染调用，确保变更立即生效
-        renderer.render(scene, camera); // 修复：在加载完成后立即进行一次渲染
-
-        // 在textureLoader.load回调中，最后添加：
-        setTimeout(() => {
-          // 强制更新材质和重新渲染
-          mapMaterial.needsUpdate = true;
-          mapTexture.needsUpdate = true;
-          // 强制重新渲染几次
-          for (let i = 0; i < 5; i++) {
-            renderer.render(scene, camera);
-          }
-          // 标记场景准备完毕
-          setIsSceneReady(true);
-        }, 1000);
-      } catch (error) {
-        console.error("Error parsing JSON:", error);
-      }
-    });
-
+      const width = 10;
+      const imageAspect = map.json.init.width / map.json.init.height;
+      const height = width / imageAspect;
+      const mapGeometry = new THREE.PlaneGeometry(width, height);
+      const mapMaterial = new THREE.MeshBasicMaterial({ map: map.map });
+      mapMaterial.needsUpdate = true;
+      const mapMesh = new THREE.Mesh(mapGeometry, mapMaterial);
+      scene.add(mapMesh);
+      // 其余渲染逻辑保持不变
+      interactionManagerRef.current = parseAndRenderRfids(map.json, scene, {
+        width: map.json.init.width,
+        height: map.json.init.height,
+      });
+      parseAndRenderPaths(map.json, scene, {
+        width: map.json.init.width,
+        height: map.json.init.height,
+      });
+      const maxDimension = Math.max(width, height);
+      camera.position.z = maxDimension * 0.7;
+      camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
+      setTimeout(() => {
+        mapMaterial.needsUpdate = true;
+        for (let i = 0; i < 5; i++) {
+          renderer.render(scene, camera);
+        }
+        setIsSceneReady(true);
+      }, 1000);
+    } else {
+      console.error("map.map is not a DataTexture or json missing width/height");
+    }
     // 渲染循环
     const animate = () => {
       animationFrameRef.current = requestAnimationFrame(animate);
       controls.update();
       renderer.render(scene, camera);
     };
-
     animate();
   }, [map]);
 
@@ -642,187 +602,116 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     };
   }, [mountRef, cameraRef, rendererRef, debouncedResize, resizeObserverRef, map]);
 
-  const loadMapAndJson = async (fileName: string) => {
-    if (!fileName) {
-      return;
-    }
+  useEffect(() => {
+    console.log("ipAddr", ipAddr);
+    if (!ipAddr) return;
+    fetch(`http://${ipAddr}/mapServer/mapList`)
+      .then(res => res.json())
+      .then(list => {
+        setMapFiles(list);
+        setMapName(list[0] || "");
+      })
+      .catch(err => {
+        console.error("获取地图列表失败:", err);
+        setMapFiles([]);
+        setMapName("");
+      });
+  }, [ipAddr]);
 
+  // 1. 复制PGM解析函数
+  function parsePGMBuffer(buffer: ArrayBuffer): { width: number; height: number; maxVal: number; data: Uint8Array } | undefined {
     try {
-      let jsonData = {};
-      let mapImageData = null;
-
-      // 读取文件，无论它是什么类型
-      const result = await window.electron.fileRenderer.readFile("documents", fileName);
-      console.log("File read result:", result)
-      if (!result.success || !result.data) {
-        console.error("Failed to read file:", fileName);
-        setMap({ map: demap, json: {} });
-        return;
+      const bytes = new Uint8Array(buffer);
+      const decoder = new TextDecoder("ascii");
+      let header = "";
+      let i = 0;
+      while (i < bytes.length && header.split('\n').filter(line => line.trim() !== '').length < 3) {
+        header += decoder.decode(bytes.slice(i, i + 1));
+        i++;
       }
-
-      // 检测文件内容类型
-      const isJsonContent = isProbablyJson(result.data);
-      const isPngContent = isProbablyPng(result.data);
-
-      console.log(`File content analysis: isJson=${isJsonContent}, isPng=${isPngContent}`);
-
-      if (isJsonContent) {
-        // 处理JSON内容
-        try {
-          const jsonContent = new TextDecoder().decode(result.data);
-          jsonData = JSON.parse(jsonContent);
-          console.log("Successfully parsed JSON data");
-
-          // 尝试查找匹配的PNG文件
-          const pngFileName = derivePngFileName(fileName);
-          if (pngFileName) {
-            try {
-              const pngResult = await window.electron.fileRenderer.readFile(
-                "documents",
-                pngFileName,
-              );
-
-              if (pngResult.success && pngResult.data && isProbablyPng(pngResult.data)) {
-                // 转换为base64数据URL
-                const base64Image = Buffer.from(pngResult.data).toString("base64");
-                mapImageData = `data:image/png;base64,${base64Image}`;
-                console.log("Successfully loaded associated PNG file");
-              }
-            } catch (pngError) {
-              console.warn("Error loading associated PNG:", pngError);
-            }
-          }
-        } catch (jsonError) {
-          console.error("Error parsing JSON:", jsonError);
+      const lines = header
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((line) => line.length > 0 && !line.startsWith("#"));
+      if (lines[0] !== "P5") return undefined;
+      const [width, height] = lines[1].split(/\s+/).map(Number);
+      const maxVal = parseInt(lines[2], 10);
+      if (
+        typeof width !== "number" || typeof height !== "number" || typeof maxVal !== "number" ||
+        isNaN(width) || isNaN(height) || isNaN(maxVal) || width <= 0 || height <= 0 || maxVal <= 0
+      ) return undefined;
+      const pixelData = bytes.slice(i, i + width * height);
+      if (pixelData.length !== width * height) return undefined;
+      return { width, height, maxVal, data: pixelData };
+    } catch { return undefined; }
+  }
+  function parsePGM(data: string): { width: number; height: number; maxVal: number; data: Uint8Array } | undefined {
+    try {
+      const lines = data.split(/\r?\n/).filter((line) => line.trim() !== "" && !line.startsWith("#"));
+      if (lines[0] !== "P2") return undefined;
+      const dimensions = lines[1].split(/\s+/).map(Number);
+      if (dimensions.length !== 2) return undefined;
+      const [width, height] = dimensions;
+      const maxVal = parseInt(lines[2], 10);
+      if (
+        typeof width !== "number" || typeof height !== "number" || typeof maxVal !== "number" ||
+        isNaN(width) || isNaN(height) || isNaN(maxVal)
+      ) return undefined;
+      const pixelData = new Uint8Array(width * height);
+      let pixelIndex = 0;
+      for (let i = 3; i < lines.length && pixelIndex < width * height; i++) {
+        const values = lines[i].trim().split(/\s+/).map((v) => parseInt(v, 10));
+        for (const val of values) {
+          if (pixelIndex >= width * height) break;
+          pixelData[pixelIndex++] = val;
         }
-      } else if (isPngContent) {
-        // 处理PNG内容
-        try {
-          // 转换为base64数据URL
-          const base64Image = Buffer.from(result.data).toString("base64");
-          mapImageData = `data:image/png;base64,${base64Image}`;
-          console.log("Successfully loaded PNG image");
-
-          // 尝试查找匹配的JSON文件
-          const jsonFileName = deriveJsonFileName(fileName);
-          if (jsonFileName) {
-            try {
-              const jsonResult = await window.electron.fileRenderer.readFile(
-                "documents",
-                jsonFileName,
-              );
-
-              if (jsonResult.success && jsonResult.data && isProbablyJson(jsonResult.data)) {
-                const jsonContent = new TextDecoder().decode(jsonResult.data);
-                jsonData = JSON.parse(jsonContent);
-                console.log("Successfully loaded associated JSON file");
-              }
-            } catch (jsonError) {
-              console.warn("Error loading associated JSON:", jsonError);
-            }
-          }
-        } catch (pngError) {
-          console.error("Error processing PNG:", pngError);
-        }
+      }
+      if (pixelIndex !== width * height) return undefined;
+      return { width, height, maxVal, data: pixelData };
+    } catch { return undefined; }
+  }
+  // 2. 替换地图图片加载逻辑为PGM下载和解析
+  useEffect(() => {
+    if (!ipAddr || !mapName) return;
+    Promise.all([
+      fetch(`http://${ipAddr}/mapServer/download/pgmfile?mapname=${mapName}`).then(res => res.arrayBuffer()),
+      fetch(`http://${ipAddr}/mapServer/download/${mapName}/map.json`).then(res => res.json())
+    ]).then(([buffer, jsonData]) => {
+      const decoder = new TextDecoder("ascii");
+      const headerSnippet = decoder.decode(new Uint8Array(buffer).slice(0, 15));
+      const magic = headerSnippet.trim().split(/\s+/)[0];
+      let pgmData: { width: number; height: number; maxVal: number; data: Uint8Array } | undefined;
+      if (magic === "P2") {
+        pgmData = parsePGM(decoder.decode(buffer));
+      } else if (magic === "P5") {
+        pgmData = parsePGMBuffer(buffer);
       } else {
-        // 未知文件类型
-        console.error("Unknown file content type, neither JSON nor PNG");
+        throw new Error("未知PGM格式");
       }
-
-      // 如果没有找到地图图像，使用默认图像
-      if (!mapImageData) {
-        mapImageData = demap;
-        console.log("Using default map image");
-
-        return;
+      if (!pgmData) throw new Error("PGM解析失败");
+      const { width, height, maxVal, data } = pgmData;
+      const rgbaData = new Uint8Array(width * height * 4);
+      for (let i = 0; i < data.length; i++) {
+        const value = Math.floor((data[i] / maxVal) * 255);
+        rgbaData[i * 4] = value;
+        rgbaData[i * 4 + 1] = value;
+        rgbaData[i * 4 + 2] = value;
+        rgbaData[i * 4 + 3] = 255;
       }
-
-      // 更新状态
-      setMap({ map: mapImageData, json: jsonData });
-    } catch (error) {
-      console.error("Error in loadMapAndJson:", error);
-      setMap({ map: demap, json: {} });
-    }
-  };
-
-  // 辅助函数来检测内容类型
-  const isProbablyJson = (data: {
-    slice: (arg0: number, arg1: number) => AllowSharedBufferSource | undefined;
-  }) => {
-    try {
-      // 尝试将数据转换为字符串并检查是否像JSON
-      const str = new TextDecoder().decode(data.slice(0, 100));
-      return str.trim().startsWith("{") || str.trim().startsWith("[");
-    } catch (e) {
-      return false;
-    }
-  };
-
-  const isProbablyPng = (data: string | any[]) => {
-    try {
-      // 检查PNG文件标志：第一个8字节应该是固定的PNG头
-      if (!data || data.length < 8) {
-        return false;
-      }
-
-      // PNG文件头标志：89 50 4E 47 0D 0A 1A 0A
-      return (
-        data[0] === 0x89 &&
-        data[1] === 0x50 &&
-        data[2] === 0x4e &&
-        data[3] === 0x47 &&
-        data[4] === 0x0d &&
-        data[5] === 0x0a &&
-        data[6] === 0x1a &&
-        data[7] === 0x0a
+      const texture = new THREE.DataTexture(
+        rgbaData,
+        width,
+        height,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType
       );
-    } catch (e) {
-      return false;
-    }
-  };
-
-  // 辅助函数来派生相应的文件名
-  const derivePngFileName = (filename: string) => {
-    if (filename.toLowerCase().endsWith(".json")) {
-      return filename.replace(/\.json$/i, ".png");
-    } else if (!filename.includes(".")) {
-      return `${filename}.png`;
-    }
-    return null;
-  };
-
-  const deriveJsonFileName = (filename: string) => {
-    if (filename.toLowerCase().endsWith(".png")) {
-      return filename.replace(/\.png$/i, ".json");
-    } else if (!filename.includes(".")) {
-      return `${filename}.json`;
-    }
-    return null;
-  };
-  useEffect(() => {
-    loadMapAndJson(mapName).catch((error) => {
-      console.error("Failed to load map and json:", error);
+      texture.needsUpdate = true;
+      setMap({ map: texture, json: jsonData });
+    }).catch(err => {
+      console.error("获取PGM或JSON失败:", err);
+      setMap(undefined);
     });
-  }, [mapName]);
-
-  useEffect(() => {
-    const loadMapFiles = async () => {
-      try {
-        const result = await window.electron.fileRenderer.listFiles("documents");
-        if (result.success && result.files) {
-          // 只过滤 .json 文件
-          const jsonFiles = result.files.filter((file: string) => file.endsWith(".json"));
-          setMapFiles(jsonFiles);
-          setMapName(jsonFiles[0]);
-        }
-      } catch (error) {
-        console.error("Failed to load map files:", error);
-      }
-    };
-    loadMapFiles().catch((error) => {
-      console.error("Failed to load map files:", error);
-    });
-  }, []);
+  }, [ipAddr, mapName]);
 
   return (
     <Stack>

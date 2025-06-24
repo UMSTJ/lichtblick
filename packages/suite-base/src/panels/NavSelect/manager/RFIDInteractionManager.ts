@@ -322,24 +322,29 @@ export class RFIDInteractionManager {
   }
 }
 export const convertCoordinates = (
-  canvasX: number,
-  canvasY: number,
-  mapSize: { width: number; height: number },
-  worldWidth: number,
+  canvasX: number, // 画布（像素）坐标X
+  canvasY: number, // 画布（像素）坐标Y
+  mapSize: { width: number; height: number }, // 地图的像素宽高
+  worldWidth: number, // Three.js 平面宽度
 ): { x: number; y: number } => {
   // 1. 将画布坐标归一化到 0-1 范围
+  // 例如：canvasX=50, mapSize.width=100，则 normalizedX=0.5
   const normalizedX = canvasX / mapSize.width;
   const normalizedY = canvasY / mapSize.height;
 
-  // 2. 计算世界空间的高度
+  // 2. 计算Three.js世界坐标系下的高度
+  // 保证Three.js平面宽高比和图片一致
+  // worldHeight = worldWidth * (图片高/图片宽)
   const worldHeight = worldWidth * (mapSize.height / mapSize.width);
 
-  // 3. 转换到Three.js坐标系
-  // 将 0-1 范围映射到 -worldWidth/2 到 worldWidth/2
+  // 3. 归一化坐标映射到Three.js平面坐标
+  // X轴：0~1 -> -worldWidth/2 ~ worldWidth/2（中心为0）
   const worldX = normalizedX * worldWidth - worldWidth / 2;
-  // 将 0-1 范围映射到 worldHeight/2 到 -worldHeight/2（注意Y轴方向相反）
+  // Y轴：0~1 -> worldHeight/2 ~ -worldHeight/2（中心为0，且Y轴方向翻转）
+  // 这样图片左上角对应Three.js平面左上角，右下角对应右下角
   const worldY = -(normalizedY * worldHeight) + worldHeight / 2;
 
+  // 返回Three.js世界坐标
   return { x: worldX, y: worldY };
 };
 
@@ -475,7 +480,6 @@ export const parseAndRenderRfids = (
 
   return interactionManager;
 };
-
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number,
@@ -519,3 +523,49 @@ export function debounce<T extends (...args: any[]) => any>(
 //       // 渲染代码...
 //     );
 //   };
+
+function createTextSprite(
+  text: string,
+  color: string = "#0000ff",
+  fontSize: number = 32
+): THREE.Sprite {
+  // 创建画布
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 128;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("无法获取2D上下文");
+  }
+
+  // 设置背景透明
+  context.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 设置文字样式
+  context.font = `bold ${fontSize}px Arial`;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillStyle = color;
+
+  // 绘制文字
+  context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  // 创建纹理
+  const texture = new THREE.Texture(canvas);
+  texture.needsUpdate = true;
+
+  // 创建精灵材质
+  const spriteMaterial = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+  });
+
+  // 创建精灵
+  const sprite = new THREE.Sprite(spriteMaterial);
+  // 调整精灵大小（可根据实际需求调整）
+  sprite.scale.set(0.7, 0.35, 1);
+
+  return sprite;
+}
