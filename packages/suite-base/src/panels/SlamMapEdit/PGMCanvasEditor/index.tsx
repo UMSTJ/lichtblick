@@ -15,14 +15,9 @@ import {
 import * as yaml from 'js-yaml';
 import { MessagePipelineContext, useMessagePipeline } from "@lichtblick/suite-base/components/MessagePipeline";
 import sendNotification from "@lichtblick/suite-base/util/sendNotification";
+import { PointInteractionManager, Point, MapConfig, PGMImage, Line, debounce } from "./manager/PointInteractionManager";
 
-// PGM 格式定义
-export interface PGMImage {
-  width: number;
-  height: number;
-  maxVal: number;
-  data: Uint8Array;
-}
+// 地图配置接口
 interface ROSMapConfig {
   image: string;
   resolution: number;
@@ -196,7 +191,6 @@ const PGMCanvasEditor: React.FC = () => {
   const [pgmData, setPGMData] = useState<PGMImage | undefined>(undefined);
   const [drawing, setDrawing] = useState(false);
   const [drawPoint,setDrawPoint] = useState(false);
-  const [points, setPoints] = useState<Array<{ id: number; x: number; y: number; worldX: number; worldY: number ;name:string; visible: boolean}>>([]);
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isMouseDown, setIsMouseDown] = useState(false);
@@ -213,6 +207,24 @@ const PGMCanvasEditor: React.FC = () => {
   // PointsDrawer相关状态
   const [isPointsDrawerOpen, setIsPointsDrawerOpen] = useState(false);
   const [selectedPointId, setSelectedPointId] = useState<number | undefined>();
+
+  // PointInteractionManager相关
+  const pointManagerRef = useRef<PointInteractionManager | undefined>(undefined);
+  const [points, setPoints] = useState<Point[]>([]);
+  const [lines, setLines] = useState<Line[]>([]);
+
+  // 右键菜单相关状态
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    pointId: number | null;
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    pointId: null
+  });
 
   const playerName = useMessagePipeline(selectPlayerName);
   const [ipAddr, setIpAddr] = useState("");
@@ -319,6 +331,7 @@ const PGMCanvasEditor: React.FC = () => {
           }
         }
         setPoints([]);
+        setLines([]); // 同时清除线段数据
       } catch (error) {
         console.error('地图下载加载错误:', error);
         // 处理错误情况
@@ -334,72 +347,18 @@ const PGMCanvasEditor: React.FC = () => {
 
 
   const downloadPoints = async () => {
-
-    if (!selectedMap || !pgmData || !mapConfig) {
-      console.error(selectedMap, pgmData, mapConfig)
-      sendNotification("下载失败：缺少必要的地图数据或配置", "", "user", "error");
-      return;
-
-    }
-    try {
-      const url = `http://${ipAddr}/mapServer/download/${selectedMap}/map.json`;
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP 错误: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("data:", data)
-      const { origin, resolution } = mapConfig;
-      console.log("origin:", origin, "resolution:", resolution)
-      const formattedPoints = data.map((point: any) => {
-        if (!pgmData.height || !pgmData.width) {
-          console.warn("PGM 高宽数据无效");
-          return null;
+    if (pointManagerRef.current) {
+      await pointManagerRef.current.downloadPoints();
+      setPoints(pointManagerRef.current.getPoints());
+      // pointManagerRef.current.setLines(pointManagerRef.current.getLines())
+      // 强制重新渲染所有线段
+      pointManagerRef.current.forceRenderLines();
+      // 添加延时手动渲染（确保状态更新完成）
+      setTimeout(() => {
+        if (rendererRef.current && sceneRef.current && cameraRef.current) {
+          rendererRef.current.render(sceneRef.current, cameraRef.current);
         }
-
-        // 计算出像素坐标
-        // @ts-ignore
-        const pixelX = (point.x - origin[0]) / resolution - 0.5;
-        // @ts-ignore
-        const pixelY = pgmData.height - (point.y - origin[1]) / resolution - 0.5;
-
-        console.log("像素坐标:", pixelX, pixelY)
-        // 归一化像素到 [0, 1]
-        const uvX = pixelX / pgmData.width;
-        const uvY = pixelY / pgmData.height;
-        console.log("归一化像素坐标:", uvX, uvY)
-        const mesh = layers[0]?.mesh;
-        if (!mesh) {
-          console.warn("Mesh 不存在，无法反推坐标");
-          return null;
-        }
-
-
-        const geometry = mesh.geometry;
-        geometry.computeBoundingBox();
-        const boundingBox = geometry.boundingBox!;
-        const size = new THREE.Vector3();
-        boundingBox.getSize(size);
-
-        const localX = uvX * size.x + boundingBox.min.x;
-        const localY = (1 - uvY) * size.y + boundingBox.min.y;
-        console.log("localX:", localX, "localY:", localY)
-        return {
-          id: point.id,
-          name: point.name,
-          x: localX,
-          y: -localY,
-          worldX: point.x,
-          worldY: point.y,
-        };
-      }).filter(Boolean); // 过滤掉 mesh 不存在的情况
-      console.log(formattedPoints)
-      setPoints(formattedPoints);
-      sendNotification(`点位下载成功！共下载 ${formattedPoints.length} 个点位`, "", "user", "info");
-    } catch (error) {
-      console.error('点位下载错误:', error);
-      sendNotification(`点位下载失败：${error instanceof Error ? error.message : '未知错误'}`, "", "user", "error");
+      }, 100);
     }
   };
 // 选中地图后加载 YAML
@@ -422,48 +381,10 @@ const PGMCanvasEditor: React.FC = () => {
 
   // 添加导出点位函数
   const exportPoints = useCallback(async () => {
-    if (!mapConfig || points.length === 0) {
-      sendNotification("导出失败：没有可导出的点位数据", "", "user", "error");
-      return;
+    if (pointManagerRef.current) {
+      await pointManagerRef.current.exportPoints();
     }
-
-    // 提取地图名称
-    const mapName = selectedMap;
-
-    // 构建符合后端 Java DTO 的结构
-    const payload = {
-      mapName: mapName,
-      points: points.map(p => ({
-        x: p.worldX,
-        y: p.worldY,
-        id: p.id,
-        name: p.name,
-        // latitude: p.latitude ?? 0,      // 如果没有经纬度可默认为 0 或 null
-        // longitude: p.longitude ?? 0
-      }))
-    };
-
-    try {
-      const url = `http://${ipAddr}/mapServer/save/points`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-      console.log("body:", JSON.stringify(payload));
-      if (!response.ok) {
-        throw new Error(`保存失败: ${response.status} ${response.statusText}`);
-      }
-
-      console.log("保存成功");
-      sendNotification(`点位导出成功！共导出 ${points.length} 个点位`, "", "user", "info");
-    } catch (error) {
-      console.error("保存点位失败:", error);
-      sendNotification(`点位导出失败：${error instanceof Error ? error.message : '未知错误'}`, "", "user", "error");
-    }
-  }, [mapConfig, points]);
+  }, []);
 
 
 
@@ -558,6 +479,7 @@ const PGMCanvasEditor: React.FC = () => {
   }, [selectedLayerId]);
 
 
+
   // 切换图层可见性
   // 修改可见性切换函数
   const handleLayerVisibilityChange = useCallback((id: string) => {
@@ -601,7 +523,7 @@ const PGMCanvasEditor: React.FC = () => {
       // 修改为指数级递增z位置
       arr.forEach((l, i) => {
         l.mesh.renderOrder = i;
-        l.mesh.position.z = i * 0.1; // 加大层间间距
+        l.mesh.position.z = i * 0.05; // 加大层间间距
       });
       return arr;
     });
@@ -1020,294 +942,41 @@ const PGMCanvasEditor: React.FC = () => {
   };
 
   const handleAddPoint = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!pgmData || !sceneRef.current || !canvasRef.current || !cameraRef.current) return;
+    if (!pointManagerRef.current) {
+      console.warn("PointInteractionManager 尚未初始化");
+      sendNotification("请等待地图加载完成后再添加点位", "", "user", "info");
+      return;
+    }
 
-    const canvas = canvasRef.current;
-    const camera = cameraRef.current;
-    const mesh = layers[0]?.mesh;
+    if (!canvasRef.current || !cameraRef.current) {
+      console.warn("Canvas 或 Camera 未准备好");
+      return;
+    }
 
-    if (!mesh) return;
+    if (!layers || layers.length === 0) {
+      console.warn("没有可用的图层");
+      sendNotification("请等待地图图层加载完成", "", "user", "info");
+      return;
+    }
 
-    // 获取鼠标位置
-    const rect = canvas.getBoundingClientRect();
-    const mouse = new THREE.Vector2(
-      ((e.clientX - rect.left) / rect.width) * 2 - 1,
-      -((e.clientY - rect.top) / rect.height) * 2 + 1
-    );
-
-    // 执行射线检测
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, camera);
-
-    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-    const intersection = new THREE.Vector3();
-    if (!raycaster.ray.intersectPlane(plane, intersection)) return;
-
-    // 转换到纹理坐标
-    const worldToLocal = new THREE.Matrix4().copy(mesh.matrixWorld).invert();
-    const localPoint = intersection.clone().applyMatrix4(worldToLocal);
-    const { x: pixelX, y: pixelY } = uvToTextureCoords(localPoint, mesh, pgmData);
-
-    // 转换为实际坐标（使用YAML参数）
-    const { origin, resolution } = mapConfig;
-    // 米制坐标计算（包含像素中心偏移）
-    // @ts-ignore
-    const worldX = origin[0] + (pixelX + 0.5) * resolution;
-    // @ts-ignore
-    const worldY = origin[1] + (pgmData.height - pixelY - 0.5) * resolution;
-    console.log("添加点 原始像素坐标:", pixelX, pixelY);
-    console.log("添加点 实际坐标:", worldX, worldY);
-
-    // 添加点到状态
-    setPoints(prev => {
-      const newId = prev.length > 0 ? Math.max(...prev.map(p => p.id)) + 1 : 1;
-      return [...prev, { id: newId, x: intersection.x, y: intersection.y, worldX: worldX, worldY: worldY ,name: `点${newId}`, visible: true }];
-    });
-
-
+    pointManagerRef.current.addPointFromClick(e, cameraRef.current, canvasRef.current);
+    setPoints(pointManagerRef.current.getPoints());
   };
-// Markers: keep refs
-  const markersRef = useRef<Record<number, THREE.Object3D>>({});
 
-  // 1. 添加一个创建编号标记的函数
-  function createNumberedMarker(pointId: number, position: THREE.Vector3) {
-    // 1.1 创建圆环几何体作为标记背景
-    const markerGeometry = new THREE.RingGeometry(0.008, 0.01, 64);
-    const markerMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
-      side: THREE.DoubleSide
-    });
-
-    // 1.2 创建圆环背景
-    const circle = new THREE.Mesh(markerGeometry, markerMaterial);
-    circle.position.copy(position);
-
-    // 1.3 创建带数字编号的精灵
-    const sprite = createNumberSprite(pointId.toString());
-    sprite.position.copy(position);
-    sprite.position.z = position.z + 0.001; // 确保精灵在圆环上方
-
-    // 1.4 创建一个组来包含圆环和精灵
-    const group = new THREE.Group();
-    group.add(circle);
-    group.add(sprite);
-
-    // 存储点的ID以便识别
-    circle.userData = { id: pointId };
-    sprite.userData = { id: pointId };
-
-    return group;
-  }
-
-// 2. 修改createNumberSprite函数使其更好适配
-  function createNumberSprite(text: string) {
-    const canvas = document.createElement('canvas');
-    const size = 64; // 减小尺寸以提高清晰度
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d')!;
-
-    // 2.1 绘制透明背景
-    ctx.clearRect(0, 0, size, size);
-
-    // 2.2 绘制文字居中
-    ctx.font = 'bold 32px Arial';
-    ctx.fillStyle = 'white';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    // 2.3 添加阴影增强可读性
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 3;
-    ctx.shadowOffsetX = 1;
-    ctx.shadowOffsetY = 1;
-
-    ctx.fillText(text, size/2, size/2);
-
-    // 2.4 创建纹理和精灵材质
-    const texture = new THREE.CanvasTexture(canvas);
-    const spriteMaterial = new THREE.SpriteMaterial({
-      map: texture,
-      depthTest: false,
-      transparent: true
-    });
-
-    // 2.5 创建精灵
-    const sprite = new THREE.Sprite(spriteMaterial);
-    sprite.scale.set(0.03, 0.03, 1); // 减小尺寸以适应圆环
-
-    return sprite;
-  }
-
-  // 3. 修改用于渲染标记的useEffect
+  // 同步点位数据
   useEffect(() => {
-    if (!sceneRef.current) return;
-    const scene = sceneRef.current;
-
-    // 3.1 清理旧标记
-    Object.values(markersRef.current).forEach(m => scene.remove(m));
-    markersRef.current = {};
-
-    // 3.2 使用修改后的函数创建新标记
-    points.forEach(p => {
-      // 只渲染可见的点（visible !== false）
-      if (p.visible !== false) {
-        const pos = new THREE.Vector3(p.x, p.y, 0.5);
-        const marker = createNumberedMarker(p.id, pos);
-        scene.add(marker);
-        markersRef.current[p.id] = marker;
-      }
-    });
-  }, [points]);
-
-
-
-
-
-  const pointsRef = useRef(points);
-
-// 每当 points 更新，同步更新 ref
-  useEffect(() => {
-    pointsRef.current = points;
-  }, [points]);
-
+    if (pointManagerRef.current) {
+      setPoints(pointManagerRef.current.getPoints());
+    }
+  }, [pointManagerRef.current]);
 
   // 修改点删除逻辑
   const handleDeletePoint = useCallback((idToDelete: number) => {
-    setPoints(prevPoints => {
-      // 1. 过滤掉要删除的点
-      const filtered = prevPoints.filter(p => p.id !== idToDelete);
-
-      // 2. 重新分配连续ID（索引+1）
-      return filtered.map((point, index) => ({
-        ...point,
-        id: index + 1
-      }));
-    });
+    if (pointManagerRef.current) {
+      pointManagerRef.current.deletePoint(idToDelete);
+      setPoints(pointManagerRef.current.getPoints());
+    }
   }, []);
-
-  // Pointer events
-  useEffect(() => {
-    if (!rendererRef.current || !cameraRef.current) return;
-    const canvas = rendererRef.current.domElement;
-
-    const onPointerDown = (e:PointerEvent) => {
-      if (!pgmData || !sceneRef.current || !canvasRef.current || !cameraRef.current) return;
-
-      const canvas = canvasRef.current;
-      const camera = cameraRef.current;
-      const mesh = layers[0]?.mesh;
-      if (!mesh) return;
-
-      // 获取鼠标在 canvas 中的位置
-      const rect = canvas.getBoundingClientRect();
-      const mouse = new THREE.Vector2(
-        ((e.clientX - rect.left) / rect.width) * 2 - 1,
-        -((e.clientY - rect.top) / rect.height) * 2 + 1
-      );
-
-      // 执行射线检测
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(mouse, camera);
-
-      // 与 z=0 平面相交（假设 PGMap 在 z=0）
-      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-      const intersection = new THREE.Vector3();
-      if (!raycaster.ray.intersectPlane(plane, intersection)) return;
-
-      // 转换到纹理坐标
-      const worldToLocal = new THREE.Matrix4().copy(mesh.matrixWorld).invert();
-      const localPoint = intersection.clone().applyMatrix4(worldToLocal);
-      const { x: pixelX, y: pixelY } = uvToTextureCoords(localPoint, mesh, pgmData);
-
-      // 最终得到地图中的 world 坐标
-      const { origin, resolution } = mapConfig;
-      // @ts-ignore
-      const worldX = origin[0] + (pixelX + 0.5) * resolution;
-      // @ts-ignore
-      const worldY = origin[1] + (pgmData.height - pixelY - 0.5) * resolution;
-
-      // ✅ 判断是否是右键
-      if (e.button === 2) {
-        const threshold = 1; // 距离阈值（单位：像素）
-        const clickedPointId = pointsRef.current.find((p) => {
-          const dx = p.worldX - worldX;
-          const dy = p.worldY - worldY;
-          const result = Math.sqrt(dx * dx + dy * dy);
-          console.log("p.worldX:", p.worldX, "p.worldY:", p.worldY, "worldX:", worldX, "worldY:", worldY, "result:", result);
-          return result < threshold;
-        });
-        console.log(pointsRef.current)
-        console.log("点击点的像素坐标:", pixelX, pixelY)
-        console.log("点击的点坐标:", worldX, worldY)
-        console.log("点击的点 ID:", clickedPointId)
-
-        if (clickedPointId !== undefined) {
-
-          // setPoints(prev => prev.filter(p => p.id !== clickedPointId?.id));
-          handleDeletePoint(clickedPointId.id);
-        }
-        return;
-      }
-
-
-      if (e.button === 0) {
-        // left click: check hit
-        const ray = new THREE.Raycaster();
-        const mouse = new THREE.Vector2(
-          (e.offsetX / canvas.clientWidth) * 2 - 1,
-          -(e.offsetY / canvas.clientHeight) * 2 + 1
-        );
-        ray.setFromCamera(mouse, cameraRef.current);
-        const intersects = ray.intersectObjects(Object.values(markersRef.current), true);
-        if (intersects.length) {
-          // @ts-ignore
-          const group = intersects[0].object.parent;
-          // @ts-ignore
-          const id = group.children[0].userData.id;
-          setDraggingId(id);
-          // compute offset
-          // @ts-ignore
-          const hitPoint = intersects[0].point;
-          // @ts-ignore
-          const markerPos = group.position;
-          dragOffset.current = { x: markerPos.x - hitPoint.x, y: markerPos.y - hitPoint.y };
-        }
-      }
-    };
-    const onPointerUp = () => setDraggingId(null);
-    // @ts-ignore
-    const onContextMenu = (e) => {
-      e.preventDefault();
-      const ray = new THREE.Raycaster();
-      const mouse = new THREE.Vector2(
-        (e.offsetX / canvas.clientWidth) * 2 - 1,
-        -(e.offsetY / canvas.clientHeight) * 2 + 1
-      );
-      // @ts-ignore
-      ray.setFromCamera(mouse, cameraRef.current);
-      const intersects = ray.intersectObjects(Object.values(markersRef.current), true);
-      if (intersects.length) {
-        // @ts-ignore
-        const group = intersects[0].object.parent;
-        // @ts-ignore
-        const id = group.children[0].userData.id;
-        // remove
-        setPoints(prev => prev.filter(p => p.id !== id).map((p, idx) => ({ id: idx+1, x: p.x, y: p.y,  worldX: p.worldX, worldY: p.worldY ,name: p.name, visible: p.visible})));
-      }
-    };
-
-    canvas.addEventListener('pointerdown', onPointerDown, { capture: true });
-    // canvas.addEventListener('pointermove', onPointerMove);
-    canvas.addEventListener('pointerup', onPointerUp);
-    canvas.addEventListener('contextmenu', onContextMenu);
-    return () => {
-      canvas.removeEventListener('pointerdown', onPointerDown);
-      // canvas.removeEventListener('pointermove', onPointerMove);
-      canvas.removeEventListener('pointerup', onPointerUp);
-      canvas.removeEventListener('contextmenu', onContextMenu);
-    };
-  },  [canvasRef.current, cameraRef.current, draggingId, mapConfig]);
 
   const endDraw = () => {
     setIsMouseDown(false);
@@ -1315,6 +984,7 @@ const PGMCanvasEditor: React.FC = () => {
       brushPreviewRef.current.visible = false;
     }
   };
+
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isMouseDown || !drawing || !pgmData) {
       return;
@@ -1335,9 +1005,6 @@ const PGMCanvasEditor: React.FC = () => {
 
     const canvas = rendererRef.current!.domElement;
     const camera = cameraRef.current!;
-
-    // 1. 获取设备像素坐标
-    const { x: canvasX, y: canvasY } = getCanvasMousePosition(e, canvas);
 
     // 2. 标准化设备坐标 [-1,1]
     const rect = canvas.getBoundingClientRect();
@@ -1402,33 +1069,7 @@ const PGMCanvasEditor: React.FC = () => {
       brushPreviewRef.current.position.copy(intersectPoint);
       updateBrushPreviewScale(camera, pgmData);
     }
-
-    console.log("Canvas Size:", canvas.width, canvas.height);
-    console.log("Camera View:", camera.left, camera.right, camera.top, camera.bottom);
-    console.log("Canvas Coords:", canvasX, canvasY);
-    console.log("Texture Coord:", textureX, textureY);
-    console.log("Camera Parameters:", {
-      left: camera.left,
-      right: camera.right,
-      top: camera.top,
-      bottom: camera.bottom,
-    });
-    // @ts-ignore
-    console.log("Mesh Geometry:", {
-      // @ts-ignore
-      width: mesh.geometry.parameters.width,
-      // @ts-ignore
-      height: mesh.geometry.parameters.height,
-    });
-
-
   };
-  // 添加鼠标移动事件处理
-  useEffect(() => {
-    if (brushPreviewRef.current) {
-      brushPreviewRef.current.visible = drawing || isHoveringCanvas;
-    }
-  }, [drawing, isHoveringCanvas]);
 
   const toggleDrawing = useCallback(() => {
     setDrawing((prev) => {
@@ -1442,13 +1083,12 @@ const PGMCanvasEditor: React.FC = () => {
       return newDrawingState;
     });
   }, []);
+
   const toggleDrawPoint = useCallback(() => {
     setDrawPoint((prev) => {
       return !prev;
     });
   }, []);
-
-
 
   const savePGM = async () => {
     if (!pgmData || !sceneRef.current || layers.length === 0) return;
@@ -1512,46 +1152,6 @@ const PGMCanvasEditor: React.FC = () => {
     }
   };
 
-  // PointsDrawer相关处理函数
-  const handlePointSelect = useCallback((id: number) => {
-    setSelectedPointId(id);
-  }, []);
-
-  const handlePointVisibilityChange = useCallback((id: number) => {
-    setPoints(prev => prev.map(point =>
-      point.id === id
-        ? { ...point, visible: point.visible === false ? true : false }
-        : point
-    ));
-  }, []);
-
-  const handlePointNameChange = useCallback((id: number, newName: string) => {
-    setPoints(prev => prev.map(point =>
-      point.id === id
-        ? { ...point, name: newName }
-        : point
-    ));
-  }, []);
-
-  const handleAddPointFromDrawer = useCallback(() => {
-    // 这里可以添加一个默认点或者提示用户在地图上点击
-    const newId = points.length > 0 ? Math.max(...points.map(p => p.id)) + 1 : 1;
-    const newPoint = {
-      id: newId,
-      name: `新点位${newId}`,
-      x: 0,
-      y: 0,
-      worldX: 0,
-      worldY: 0,
-      visible: true
-    };
-    setPoints(prev => [...prev, newPoint]);
-  }, [points]);
-
-  const handleRefreshPoints = useCallback(() => {
-    downloadPoints();
-  }, []);
-
   // 下载maskMap.pgm并作为新图层添加
   const onDownloadMaskMap = useCallback(async () => {
     if (!selectedMap || !ipAddr || !sceneRef.current) {
@@ -1592,7 +1192,7 @@ const PGMCanvasEditor: React.FC = () => {
           for (let x = 0; x < maskPGM.width; x++) {
             const srcIdx = (maskPGM.height - 1 - y) * maskPGM.width + x; // 倒序
             const dstIdx = (y * maskPGM.width + x) * 4;
-            const value = Math.floor((maskPGM.data[srcIdx] / maxVal) * 255);
+            const value = Math.floor(((maskPGM.data?.[srcIdx] ?? 0) / maxVal) * 255);
             rgbaData[dstIdx] = value;
             rgbaData[dstIdx + 1] = value;
             rgbaData[dstIdx + 2] = value;
@@ -1644,8 +1244,210 @@ const PGMCanvasEditor: React.FC = () => {
     }
   }, [selectedMap, ipAddr, sceneRef, layers]);
 
+  // PointsDrawer相关处理函数
+  const handlePointSelect = useCallback((id: number) => {
+    setSelectedPointId(id);
+  }, []);
+
+  const handlePointVisibilityChange = useCallback((id: number) => {
+    if (pointManagerRef.current) {
+      pointManagerRef.current.togglePointVisibility(id);
+      setPoints(pointManagerRef.current.getPoints());
+    }
+  }, []);
+
+  const handlePointNameChange = useCallback((id: number, newName: string) => {
+    if (pointManagerRef.current) {
+      pointManagerRef.current.updatePoint(id, { name: newName });
+      setPoints(pointManagerRef.current.getPoints());
+    }
+  }, []);
+
+  const handleAddPointFromDrawer = useCallback(() => {
+    // 这里可以添加一个默认点或者提示用户在地图上点击
+    const newId = points.length > 0 ? Math.max(...points.map(p => p.id)) + 1 : 1;
+    const newPoint: Point = {
+      id: newId,
+      name: `新点位${newId}`,
+      x: 0,
+      y: 0,
+      worldX: 0,
+      worldY: 0,
+      visible: true
+    };
+    if (pointManagerRef.current) {
+      pointManagerRef.current.addPoint(newPoint);
+      setPoints(pointManagerRef.current.getPoints());
+    }
+  }, [points]);
+
+  const handleRefreshPoints = useCallback(() => {
+    downloadPoints();
+  }, []);
+
+  // 右键菜单处理函数
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+
+    if (pointManagerRef.current) {
+      const selectedPointId = pointManagerRef.current.getSelectedPointForMenu();
+      if (selectedPointId !== null && selectedPointId !== undefined) {
+        setContextMenu({
+          visible: true,
+          x: e.clientX,
+          y: e.clientY,
+          pointId: selectedPointId
+        });
+      }
+    }
+  }, []);
+
+  // 关闭右键菜单
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(prev => ({ ...prev, visible: false }));
+  }, []);
+
+  // 删除点位
+  const handleDeletePointFromMenu = useCallback(() => {
+    if (contextMenu.pointId !== null && pointManagerRef.current) {
+      pointManagerRef.current.deletePoint(contextMenu.pointId);
+      setPoints(pointManagerRef.current.getPoints());
+      closeContextMenu();
+      sendNotification("点位删除成功", "", "user", "info");
+    }
+  }, [contextMenu.pointId, closeContextMenu]);
+
+  // 开始创建线段
+  const handleStartCreatingLine = useCallback(() => {
+    if (contextMenu.pointId !== null && pointManagerRef.current) {
+      pointManagerRef.current.startCreatingLine(contextMenu.pointId);
+      closeContextMenu();
+      sendNotification("开始创建折线，右键点击空白处添加中间点，点击另一个点位完成", "", "user", "info");
+    }
+  }, [contextMenu.pointId, closeContextMenu]);
+
+  // 取消线段创建
+  const handleCancelCreatingLine = useCallback(() => {
+    if (pointManagerRef.current) {
+      pointManagerRef.current.cancelCreatingLine();
+      sendNotification("线段创建已取消", "", "user", "info");
+    }
+  }, []);
+
+  // Pointer events
+  useEffect(() => {
+    if (!rendererRef.current || !cameraRef.current || !pointManagerRef.current) return;
+    const canvas = rendererRef.current.domElement;
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.button === 0) {
+        // 左键点击：处理拖拽开始
+        pointManagerRef.current?.handleDragStart(e, cameraRef.current!, rendererRef.current!);
+      }
+    };
+
+    const onPointerUp = () => {
+      pointManagerRef.current?.handleDragEnd();
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      pointManagerRef.current?.handleDragMove(e, cameraRef.current!, rendererRef.current!);
+    };
+
+    const onContextMenu = (e: Event) => {
+      e.preventDefault();
+      if (e instanceof MouseEvent) {
+        console.log("右键菜单事件触发");
+
+        if (!pointManagerRef.current) {
+          console.log("PointInteractionManager 未初始化");
+          return;
+        }
+
+        // 如果正在创建折线，不显示菜单，直接处理折线逻辑
+        if (pointManagerRef.current.isCreatingLine()) {
+          console.log("正在创建折线，直接处理折线逻辑");
+          pointManagerRef.current.handleRightClick(e, cameraRef.current!, rendererRef.current!);
+          setPoints(pointManagerRef.current?.getPoints() ?? []);
+          setLines(pointManagerRef.current?.getLines() ?? []);
+          return;
+        }
+
+        pointManagerRef.current.handleRightClick(e, cameraRef.current!, rendererRef.current!);
+        setPoints(pointManagerRef.current?.getPoints() ?? []);
+        setLines(pointManagerRef.current?.getLines() ?? []);
+
+        // 如果有点位被选中，显示右键菜单
+        const selectedPointId = pointManagerRef.current?.getSelectedPointForMenu();
+        console.log("选中的点位ID:", selectedPointId);
+        if (selectedPointId !== null && selectedPointId !== undefined) {
+          console.log("设置右键菜单，位置:", e.clientX, e.clientY);
+          setContextMenu({
+            visible: true,
+            x: e.clientX,
+            y: e.clientY,
+            pointId: selectedPointId
+          });
+        } else {
+          console.log("没有选中点位，清除菜单");
+          setContextMenu(prev => ({ ...prev, visible: false }));
+        }
+      }
+    };
+
+    canvas.addEventListener('pointerdown', onPointerDown, { capture: true });
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('contextmenu', onContextMenu);
+
+    return () => {
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('contextmenu', onContextMenu);
+    };
+  }, [cameraRef.current, rendererRef.current, pointManagerRef.current]);
+
   // 节流基础层画画错误提示
   const lastBaseLayerDrawErrorTime = useRef(0);
+
+  // 初始化PointInteractionManager
+  useEffect(() => {
+    if (sceneRef.current && pgmData && mapConfig && ipAddr && selectedMap && layers.length > 0) {
+      // 清理旧的管理器
+      if (pointManagerRef.current) {
+        pointManagerRef.current.dispose();
+      }
+
+      // 创建新的管理器
+      pointManagerRef.current = new PointInteractionManager(
+        sceneRef.current,
+        mapConfig as MapConfig,
+        pgmData,
+        ipAddr,
+        selectedMap,
+        layers
+      );
+      // 同步点位数据
+      setPoints(pointManagerRef.current.getPoints());
+    }
+  }, [sceneRef.current, pgmData, mapConfig, ipAddr, selectedMap]);
+
+  // 同步layers变化到PointInteractionManager
+  useEffect(() => {
+    if (pointManagerRef.current && layers.length > 0) {
+      pointManagerRef.current.updateLayers(layers);
+    }
+  }, [layers]);
+
+
+  // 监听sceneRef.current变化，确保PointInteractionManager的scene引用始终最新
+  useEffect(() => {
+    if (pointManagerRef.current && sceneRef.current) {
+      pointManagerRef.current.updateScene(sceneRef.current);
+      pointManagerRef.current.forceRenderLines();
+    }
+  }, [sceneRef.current]);
 
   return (
     <div
@@ -1680,6 +1482,8 @@ const PGMCanvasEditor: React.FC = () => {
         }}
         isPointsPanelOpen={isPointsDrawerOpen}
         onDownloadMaskMap={onDownloadMaskMap}
+        onCancelCreatingLine={handleCancelCreatingLine}
+        isCreatingLine={pointManagerRef.current?.isCreatingLine() ?? false}
       />
       <div>
         <label htmlFor="map-select">选择地图：</label>
@@ -1695,6 +1499,32 @@ const PGMCanvasEditor: React.FC = () => {
             </option>
           ))}
         </select>
+
+        {/* 测试按钮 */}
+        {/*<button*/}
+        {/*  onClick={(e) => {*/}
+        {/*    e.stopPropagation();*/}
+        {/*    if (pointManagerRef.current) {*/}
+        {/*      const newId = points.length > 0 ? Math.max(...points.map(p => p.id)) + 1 : 1;*/}
+        {/*      const newPoint: Point = {*/}
+        {/*        id: newId,*/}
+        {/*        name: `测试点位${newId}`,*/}
+        {/*        x: 0,*/}
+        {/*        y: 0,*/}
+        {/*        worldX: 0,*/}
+        {/*        worldY: 0,*/}
+        {/*        visible: true*/}
+        {/*      };*/}
+        {/*      pointManagerRef.current.addPoint(newPoint);*/}
+        {/*      setPoints(pointManagerRef.current.getPoints());*/}
+        {/*      console.log("添加测试点位:", newPoint);*/}
+        {/*    }*/}
+        {/*  }}*/}
+        {/*  onMouseDown={e => e.stopPropagation()}*/}
+        {/*  style={{ marginLeft: '10px' }}*/}
+        {/*>*/}
+        {/*  添加测试点位*/}
+        {/*</button>*/}
       </div>
 
       <div
@@ -1734,9 +1564,32 @@ const PGMCanvasEditor: React.FC = () => {
             maxWidth: "100%",
             maxHeight: "100%",
             objectFit: "contain", // 保持宽高比
-            cursor: drawing ? "crosshair" : "default",
+            cursor: pointManagerRef.current?.isCreatingLine() ? "crosshair" : (drawing ? "crosshair" : "default"),
           }}
         />
+
+        {/* 创建折线模式提示 */}
+        {pointManagerRef.current?.isCreatingLine() && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '10px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: 'rgba(255, 0, 0, 0.8)',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '4px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              zIndex: 1000,
+              pointerEvents: 'none',
+            }}
+          >
+            折线创建模式 - 右键点击空白处添加点，点击点位完成
+          </div>
+        )}
+
         <LayerDrawer
           open={isLayerDrawerOpen}
           layers={layers}
@@ -1764,6 +1617,66 @@ const PGMCanvasEditor: React.FC = () => {
           onPointNameChange={handlePointNameChange}
           onRefreshPoints={handleRefreshPoints}
         />
+
+        {/* 右键菜单 */}
+        {contextMenu.visible && (
+          <div
+            style={{
+              position: 'fixed',
+              top: contextMenu.y,
+              left: contextMenu.x,
+              backgroundColor: 'white',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              zIndex: 1000,
+              minWidth: '120px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: '8px 12px',
+                cursor: 'pointer',
+                borderBottom: '1px solid #eee',
+                fontSize: '14px',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+              onClick={handleStartCreatingLine}
+            >
+              创建折线
+            </div>
+            <div
+              style={{
+                padding: '8px 12px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                color: '#d32f2f',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+              onClick={handleDeletePointFromMenu}
+            >
+              删除点位
+            </div>
+          </div>
+        )}
+
+        {/* 全局点击关闭菜单 */}
+        {contextMenu.visible && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 999,
+            }}
+            onClick={closeContextMenu}
+          />
+        )}
       </div>
     </div>
 

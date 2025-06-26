@@ -5,7 +5,6 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-<<<<<<<< HEAD:packages/suite-base/src/panels/CodeServer/types.ts
 export type Codes = {
   i: number;
 };
@@ -14,6 +13,3 @@ export type CodeServerConfig = {
   host: string;
   password: string;
 };
-========
-export * from "./unwrap";
->>>>>>>> upstream/main:packages/den/monads/index.ts

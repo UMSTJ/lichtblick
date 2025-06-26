@@ -396,6 +396,11 @@ export const parseAndRenderNavPoints = (
     pgmHeight = 0,
     mesh = null,
   } = options;
+  console.log("origin", origin);
+  console.log("resolution", resolution);
+  console.log("pgmWidth", pgmWidth);
+  console.log("pgmHeight", pgmHeight);
+  console.log("mesh", mesh);
   // 创建交互管理器
   const interactionManager = new RFIDInteractionManager(scene, "#ffffff", "#000000");
   const rfidSize = 0.12 * 4; // 放大400%
@@ -504,8 +509,7 @@ export const parseAndRenderNavPoints = (
     const points: THREE.Vector3[] = [];
     if (edge.points && edge.points.length > 0) {
       edge.points.forEach((pt) => {
-        const {x, y } = worldToLocal(pt.worldx ?? 0, pt.worldy ?? 0)
-        points.push(new THREE.Vector3(x, y, 0.05));
+        points.push(new THREE.Vector3(pt.x, pt.y, 0.05));
       });
     }
     console.log("points", points);
