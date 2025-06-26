@@ -47,7 +47,7 @@ export class PointInteractionManager {
   #raycaster: THREE.Raycaster;
   #mouse: THREE.Vector2;
   #pointMarkers: Map<number, THREE.Group>; // 存储点位ID和对应的标记组
-  #defaultColor: string;
+  // #defaultColor: string;
   #selectedPointId: number | undefined;
   #draggingId: number | null = null;
   #dragOffset: { x: number; y: number } = { x: 0, y: 0 };
@@ -77,13 +77,13 @@ export class PointInteractionManager {
     ipAddr: string,
     selectedMap: string,
     layers: any[],
-    defaultColor: string = "#ff0000",
+    // defaultColor: string = "#ff0000",
   ) {
     this.#scene = scene;
     this.#raycaster = new THREE.Raycaster();
     this.#mouse = new THREE.Vector2();
     this.#pointMarkers = new Map();
-    this.#defaultColor = defaultColor;
+    // this.#defaultColor = defaultColor;
     this.#selectedPointId = undefined;
     this.#mapConfig = mapConfig;
     this.#pgmData = pgmData;
@@ -695,8 +695,6 @@ export class PointInteractionManager {
         console.log("没有线段数据或线段数据格式不正确");
       }
 
-      const totalPoints = data.points?.length || 0;
-      const totalEdges = data.edges?.length || 0;
       // sendNotification(`地图数据下载成功！共下载 ${totalPoints} 个点位，${totalEdges} 条线段`, "", "user", "info");
     } catch (error) {
       console.error('地图数据下载错误:', error);
@@ -818,12 +816,7 @@ export class PointInteractionManager {
   /**
    * 世界坐标转纹理像素坐标
    */
-  private worldToTextureCoords(worldX: number, worldY: number): { pixelX: number; pixelY: number } {
-    const { origin, resolution } = this.#mapConfig;
-    const pixelX = ((worldX - (origin[0] ?? 0)) / resolution) - 0.5;
-    const pixelY = this.#pgmData.height - ((worldY - (origin[1] ?? 0)) / resolution) - 0.5;
-    return { pixelX, pixelY };
-  }
+
 
   public addPointFromClick(event: React.MouseEvent<HTMLCanvasElement>, camera: THREE.Camera, canvas: HTMLCanvasElement): void {
     if (!this.#pgmData || !this.#layers || this.#layers.length === 0 || !this.#layers[0]?.mesh) {

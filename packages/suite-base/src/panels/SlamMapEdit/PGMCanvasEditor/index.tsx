@@ -15,7 +15,7 @@ import {
 import * as yaml from 'js-yaml';
 import { MessagePipelineContext, useMessagePipeline } from "@lichtblick/suite-base/components/MessagePipeline";
 import sendNotification from "@lichtblick/suite-base/util/sendNotification";
-import { PointInteractionManager, Point, MapConfig, PGMImage, Line, debounce } from "./manager/PointInteractionManager";
+import { PointInteractionManager, Point, MapConfig, PGMImage, Line } from "./manager/PointInteractionManager";
 
 // 地图配置接口
 interface ROSMapConfig {
@@ -186,16 +186,19 @@ const PGMCanvasEditor: React.FC = () => {
   const [layers, setLayers] = useState<Layer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string>();
   const [isLayerDrawerOpen, setIsLayerDrawerOpen] = useState(false);
+  // @ts-ignore
   const [showedBaseLayerDrawError, setShowedBaseLayerDrawError] = useState(false);
 
   const [pgmData, setPGMData] = useState<PGMImage | undefined>(undefined);
   const [drawing, setDrawing] = useState(false);
   const [drawPoint,setDrawPoint] = useState(false);
-  const [draggingId, setDraggingId] = useState<number | null>(null);
+  // const [draggingId, setDraggingId] = useState<number | null>(null);
+  // @ts-ignore
   const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isMouseDown, setIsMouseDown] = useState(false);
 
   // const [pgmFile, setPgmFile] = useState<File | undefined>(undefined);
+  // @ts-ignore
   const [isHoveringCanvas, setIsHoveringCanvas] = useState(false);
 
   const [brushColor, setBrushColor] = useState<number>(0);
@@ -211,6 +214,7 @@ const PGMCanvasEditor: React.FC = () => {
   // PointInteractionManager相关
   const pointManagerRef = useRef<PointInteractionManager | undefined>(undefined);
   const [points, setPoints] = useState<Point[]>([]);
+  // @ts-ignore
   const [lines, setLines] = useState<Line[]>([]);
 
   // 右键菜单相关状态
@@ -237,28 +241,28 @@ const PGMCanvasEditor: React.FC = () => {
     setIpAddr("192.243.117.147:9000")
   }, [playerName, setIpAddr]);
 
-  const getIpAddress = (name: string): string => {
-    if (!name) {
-      return "";
-    }
-
-    // 移除 "ws://" 前缀（如果存在）
-    let addressPart = name.startsWith("ws://") ? name.substring(5) : name;
-
-    // 只取第一个空格之前的部分 (例如 "10.51.129.39:8765" 或 "10.51.129.39")
-    const firstSpaceIndex = addressPart.indexOf(" ");
-    if (firstSpaceIndex !== -1) {
-      addressPart = addressPart.substring(0, firstSpaceIndex);
-    }
-
-    // 现在 addressPart 类似于 "10.51.129.39:8765" 或 "10.51.129.39" 或 "[::1]:8000"
-    // 我们需要提取主机部分
-    let host = addressPart; // 如果找不到端口或格式不符合预期，则默认为整个字符串
-    host = host.split(":")[0] ?? "";
-    // 如果不是数字端口（例如，冒号是 IPv6 地址的一部分，如 "[::1]"），则 host 保持为 addressPart
-    // 附加新的固定端口
-    return `${host}:9000`;
-  };
+  // const getIpAddress = (name: string): string => {
+  //   if (!name) {
+  //     return "";
+  //   }
+  //
+  //   // 移除 "ws://" 前缀（如果存在）
+  //   let addressPart = name.startsWith("ws://") ? name.substring(5) : name;
+  //
+  //   // 只取第一个空格之前的部分 (例如 "10.51.129.39:8765" 或 "10.51.129.39")
+  //   const firstSpaceIndex = addressPart.indexOf(" ");
+  //   if (firstSpaceIndex !== -1) {
+  //     addressPart = addressPart.substring(0, firstSpaceIndex);
+  //   }
+  //
+  //   // 现在 addressPart 类似于 "10.51.129.39:8765" 或 "10.51.129.39" 或 "[::1]:8000"
+  //   // 我们需要提取主机部分
+  //   let host = addressPart; // 如果找不到端口或格式不符合预期，则默认为整个字符串
+  //   host = host.split(":")[0] ?? "";
+  //   // 如果不是数字端口（例如，冒号是 IPv6 地址的一部分，如 "[::1]"），则 host 保持为 addressPart
+  //   // 附加新的固定端口
+  //   return `${host}:9000`;
+  // };
 
   // 在现有 state 中新增：
   const [mapConfig, setMapConfig] = useState<ROSMapConfig>({
@@ -530,22 +534,22 @@ const PGMCanvasEditor: React.FC = () => {
   }, []);
 
 
-  function getCanvasMousePosition(
-    e: React.MouseEvent<HTMLCanvasElement>,
-    canvas: HTMLCanvasElement,
-  ) {
-    const rect = canvas.getBoundingClientRect();
-
-    // 设备像素坐标
-    // const x = (e.clientX - rect.left) * pixelRatio;
-    // const y = (e.clientY - rect.top) * pixelRatio;
-
-    // 使用 CSS 像素坐标（更简单且足够精确）
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    return { x, y };
-  }
+  // function getCanvasMousePosition(
+  //   e: React.MouseEvent<HTMLCanvasElement>,
+  //   canvas: HTMLCanvasElement,
+  // ) {
+  //   const rect = canvas.getBoundingClientRect();
+  //
+  //   // 设备像素坐标
+  //   // const x = (e.clientX - rect.left) * pixelRatio;
+  //   // const y = (e.clientY - rect.top) * pixelRatio;
+  //
+  //   // 使用 CSS 像素坐标（更简单且足够精确）
+  //   const x = e.clientX - rect.left;
+  //   const y = e.clientY - rect.top;
+  //
+  //   return { x, y };
+  // }
   function uvToTextureCoords(localPoint: THREE.Vector3, mesh: THREE.Mesh, pgmData: PGMImage) {
     const geometry = mesh.geometry as THREE.PlaneGeometry;
     const meshWidth = geometry.parameters.width;
@@ -1286,21 +1290,21 @@ const PGMCanvasEditor: React.FC = () => {
   }, []);
 
   // 右键菜单处理函数
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-
-    if (pointManagerRef.current) {
-      const selectedPointId = pointManagerRef.current.getSelectedPointForMenu();
-      if (selectedPointId !== null && selectedPointId !== undefined) {
-        setContextMenu({
-          visible: true,
-          x: e.clientX,
-          y: e.clientY,
-          pointId: selectedPointId
-        });
-      }
-    }
-  }, []);
+  // const handleContextMenu = useCallback((e: React.MouseEvent) => {
+  //   e.preventDefault();
+  //
+  //   if (pointManagerRef.current) {
+  //     const selectedPointId = pointManagerRef.current.getSelectedPointForMenu();
+  //     if (selectedPointId !== null && selectedPointId !== undefined) {
+  //       setContextMenu({
+  //         visible: true,
+  //         x: e.clientX,
+  //         y: e.clientY,
+  //         pointId: selectedPointId
+  //       });
+  //     }
+  //   }
+  // }, []);
 
   // 关闭右键菜单
   const closeContextMenu = useCallback(() => {

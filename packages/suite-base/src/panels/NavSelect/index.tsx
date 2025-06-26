@@ -45,7 +45,7 @@ import BatteryIndicator from "@lichtblick/suite-base/panels/VehicleControl/compo
 import FileUploadModal from "@lichtblick/suite-base/panels/VehicleControl/components/FileUploadModal";
 import MapFilesTab from "@lichtblick/suite-base/panels/VehicleControl/components/MapFilesTab";
 import TextCard from "@lichtblick/suite-base/panels/VehicleControl/components/TextCard";
-import demap from "@lichtblick/suite-base/panels/VehicleControl/map.png";
+// import demap from "@lichtblick/suite-base/panels/VehicleControl/map.png";
 import {
   defaultConfig,
   useVehicleControlSettings,
@@ -56,7 +56,6 @@ import { SaveConfig } from "@lichtblick/suite-base/types/panels";
 import {
   parseAndRenderNavPoints,
   RFIDInteractionManager,
-  convertCoordinates,
   debounce,
 } from "./manager/RFIDInteractionManager";
 import { MessagePipelineContext, useMessagePipeline } from "@lichtblick/suite-base/components/MessagePipeline";
@@ -83,6 +82,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   const animationFrameRef = useRef<number>();
 
   // 在组件顶部添加这些状态
+  // @ts-ignore
   const [imageLoadStatus, setImageLoadStatus] = useState<"loading" | "success" | "error">(
     "loading",
   );
@@ -94,7 +94,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   const [mapName, setMapName] = useState<string>("");
   const [mapFiles, setMapFiles] = useState<string[]>([]);
   const [openModal, setOpenModal] = useState(false);
-  const WORLD_WIDTH = 10;
+  // const WORLD_WIDTH = 10;
   const { nodeTopicName, nodeDatatype, pathSource, rfidSource, batterySource, update_map } = config;
 
   const rfidMessages = useMessageDataItem(rfidSource);
@@ -220,91 +220,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     }
   }, [batteryObj]);
 
-  const parseAndRenderPaths = (
-    jsonData: { canvas?: { objects?: { name: string; type: string; [key: string]: any }[] } },
-    scene: THREE.Scene,
-    mapSize: { width: number; height: number },
-  ) => {
-    if (!jsonData.canvas?.objects) {
-      return;
-    }
 
-    const pathGroups = jsonData.canvas.objects.filter((obj: any) => obj.name === "path");
-    pathGroups.forEach((pathGroup) => {
-      const pathObjects = (pathGroup.objects as any[]) || [];
-      const group = new THREE.Group();
-
-      // 处理所有路径线段
-      pathObjects.forEach(
-        (obj: {
-          type: string;
-          name: string;
-          path?: [string, number, number][];
-          stroke?: string;
-          strokeWidth?: number;
-          radius?: number;
-          fill?: string;
-          left?: number;
-          top?: number;
-        }) => {
-          if (obj.type === "path" && obj.name === "pathLine") {
-            // 确保 path 数组存在且至少有两个点
-            if (!Array.isArray(obj.path) || obj.path.length < 2) {
-              return;
-            }
-
-            const points: THREE.Vector3[] = [];
-
-            // 处理路径中的所有点
-            obj.path.forEach((pathCmd: [string, number, number]) => {
-              // const _command = pathCmd[0];
-              const x = pathCmd[1];
-              const y = pathCmd[2];
-
-              // 转换坐标
-              const { x: worldX, y: worldY } = convertCoordinates(
-                Number(x),
-                Number(y),
-                mapSize,
-                WORLD_WIDTH,
-              );
-
-              points.push(new THREE.Vector3(worldX, worldY, 0.001));
-            });
-
-            // 创建线段几何体
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const material = new THREE.LineBasicMaterial({
-              color: obj.stroke ?? "#262626",
-              linewidth:
-                obj.strokeWidth != undefined && !isNaN(obj.strokeWidth) ? obj.strokeWidth : 4,
-              opacity: typeof pathGroup.opacity === "number" ? pathGroup.opacity : 1,
-              transparent: true,
-            });
-
-            const line = new THREE.Line(geometry, material);
-            group.add(line);
-          }
-        },
-      );
-
-      // 添加组的用户数据
-      group.userData = {
-        id: pathGroup.data.id,
-        type: "path",
-        startRfid: pathGroup.data.startRfid,
-        endRfid: pathGroup.data.endRfid,
-      };
-      scene.add(group);
-
-      const pathId = Number(pathGroup.data.id);
-      if (!isNaN(pathId)) {
-        interactionManagerRef.current?.registerPath(pathId, group);
-      } else {
-        //console.error("Invalid path ID:", pathGroup.data.id);
-      }
-    });
-  };
 
   // // 解析新的导航点数据格式
   // const parseAndRenderNavPoints = (
@@ -492,7 +408,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   // };
 
   // 初始化 Three.js
-
+  // @ts-ignore
   const [mapConfig, setMapConfig] = useState<any>(null);
 
   const initThreeJS = useCallback(() => {
@@ -927,6 +843,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       const { width, height, maxVal, data } = pgmData;
       const rgbaData = new Uint8Array(width * height * 4);
       for (let i = 0; i < data.length; i++) {
+        // @ts-ignore
         const value = Math.floor((data[i] / (maxVal ?? 255)) * 255);
         rgbaData[i * 4] = value;
         rgbaData[i * 4 + 1] = value;

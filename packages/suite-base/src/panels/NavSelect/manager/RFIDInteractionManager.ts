@@ -575,48 +575,48 @@ export function debounce<T extends (...args: any[]) => any>(
 //     );
 //   };
 
-function createTextSprite(
-  text: string,
-  color: string = "#0000ff",
-  fontSize: number = 32
-): THREE.Sprite {
-  // 创建画布
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 128;
-  const context = canvas.getContext("2d");
-  if (!context) {
-    throw new Error("无法获取2D上下文");
-  }
-
-  // 设置背景透明
-  context.clearRect(0, 0, canvas.width, canvas.height);
-
-  // 设置文字样式
-  context.font = `bold ${fontSize}px Arial`;
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  context.fillStyle = color;
-
-  // 绘制文字
-  context.fillText(text, canvas.width / 2, canvas.height / 2);
-
-  // 创建纹理
-  const texture = new THREE.Texture(canvas);
-  texture.needsUpdate = true;
-
-  // 创建精灵材质
-  const spriteMaterial = new THREE.SpriteMaterial({
-    map: texture,
-    transparent: true,
-    depthTest: false,
-    depthWrite: false,
-  });
-
-  // 创建精灵
-  const sprite = new THREE.Sprite(spriteMaterial);
-  // 调整精灵大小（可根据实际需求调整）
-  sprite.scale.set(0.7, 0.35, 1);
-
-  return sprite;
-}
+// function createTextSprite(
+//   text: string,
+//   color: string = "#0000ff",
+//   fontSize: number = 32
+// ): THREE.Sprite {
+//   // 创建画布
+//   const canvas = document.createElement("canvas");
+//   canvas.width = 256;
+//   canvas.height = 128;
+//   const context = canvas.getContext("2d");
+//   if (!context) {
+//     throw new Error("无法获取2D上下文");
+//   }
+//
+//   // 设置背景透明
+//   context.clearRect(0, 0, canvas.width, canvas.height);
+//
+//   // 设置文字样式
+//   context.font = `bold ${fontSize}px Arial`;
+//   context.textAlign = "center";
+//   context.textBaseline = "middle";
+//   context.fillStyle = color;
+//
+//   // 绘制文字
+//   context.fillText(text, canvas.width / 2, canvas.height / 2);
+//
+//   // 创建纹理
+//   const texture = new THREE.Texture(canvas);
+//   texture.needsUpdate = true;
+//
+//   // 创建精灵材质
+//   const spriteMaterial = new THREE.SpriteMaterial({
+//     map: texture,
+//     transparent: true,
+//     depthTest: false,
+//     depthWrite: false,
+//   });
+//
+//   // 创建精灵
+//   const sprite = new THREE.Sprite(spriteMaterial);
+//   // 调整精灵大小（可根据实际需求调整）
+//   sprite.scale.set(0.7, 0.35, 1);
+//
+//   return sprite;
+// }
