@@ -398,7 +398,7 @@ export const parseAndRenderNavPoints = (
   } = options;
   // 创建交互管理器
   const interactionManager = new RFIDInteractionManager(scene, "#ffffff", "#000000");
-  const rfidSize = 0.12 * 4; // 放大400%
+  const rfidSize = 0.12; // 放大400%
 
   // 辅助函数：世界坐标转本地坐标
   function worldToLocal(worldX: number, worldY: number) {
@@ -460,7 +460,7 @@ export const parseAndRenderNavPoints = (
       canvas.width = 256;
       canvas.height = 256;
       context.clearRect(0, 0, canvas.width, canvas.height);
-      context.font = `${fontSize * 6 * 2}px Arial`;
+      context.font = `${fontSize * 6 }px Arial`;
       context.textAlign = "center";
       context.textBaseline = "middle";
       context.fillStyle = color;

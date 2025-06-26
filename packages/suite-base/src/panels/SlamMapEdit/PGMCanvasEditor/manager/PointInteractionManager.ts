@@ -774,7 +774,7 @@ export class PointInteractionManager {
     const mapName = this.#selectedMap;
     const payload = {
       mapName: mapName,
-      points: this.#points.map(p => ({
+      navNodes: this.#points.map(p => ({
         x: p.worldX,
         y: p.worldY,
         id: p.id,
