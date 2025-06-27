@@ -404,7 +404,7 @@ export const parseAndRenderNavPoints = (
   function worldToLocal(worldX: number, worldY: number) {
     // 1. 世界坐标转像素坐标
     const pixelX = (worldX - (origin[0] ?? 0)) / resolution - 0.5;
-    const pixelY = pgmHeight - (worldY - (origin[1] ?? 0)) / resolution - 0.5;
+    const pixelY = (worldY - (origin[1] ?? 0)) / resolution - 0.5;
     // 2. 归一化
     const uvX = pixelX / pgmWidth;
     const uvY = pixelY / pgmHeight;
@@ -497,6 +497,62 @@ export const parseAndRenderNavPoints = (
     interactionManager.registerRfidPoint(point.id, rfidPoint);
   });
 
+  // 渲染origin点（左下角）
+  if (origin && origin.length >= 2) {
+    const oxVal = 0;
+    const oyVal = 0;
+    const { x: ox, y: oy } = worldToLocal(oxVal, oyVal);
+    const originSize = rfidSize * 1.5;
+    // 主圆
+    const originGeometry = new THREE.CircleGeometry(originSize, 32);
+    const originMaterial = new THREE.MeshBasicMaterial({
+      color: "#ff6600",
+      transparent: false,
+      opacity: 0.9,
+      side: THREE.DoubleSide,
+    });
+    const originCircle = new THREE.Mesh(originGeometry, originMaterial);
+    originCircle.position.set(ox, oy, 0.02);
+    // 描边
+    const strokeGeometry = new THREE.CircleGeometry(originSize * 1.1, 32);
+    const strokeMaterial = new THREE.MeshBasicMaterial({
+      color: "#cc3300",
+      transparent: false,
+      opacity: 0.9,
+      side: THREE.DoubleSide,
+    });
+    const strokeCircle = new THREE.Mesh(strokeGeometry, strokeMaterial);
+    strokeCircle.position.set(ox, oy, 0.015);
+    // 文字"O"
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font = `bold ${12 * 6}px Arial`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#cc3300";
+      ctx.shadowColor = "rgba(255,255,255,0.8)";
+      ctx.shadowBlur = 8;
+      ctx.fillText("O", canvas.width / 2, canvas.height / 2);
+      const texture = new THREE.Texture(canvas);
+      texture.needsUpdate = true;
+      const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const textSprite = new THREE.Sprite(spriteMaterial);
+      textSprite.scale.set(1.0, 1.0, 1); // 比普通点大
+      textSprite.position.set(ox, oy + 0.001, 0.03);
+      // 组合
+      const group = new THREE.Group();
+      group.add(originCircle);
+      group.add(strokeCircle);
+      group.add(textSprite);
+      group.userData = { id: -1, type: "origin" };
+      scene.add(group);
+    }
+  }
+
   // 渲染路径边
   jsonData.edges.forEach((edge) => {
     const group = new THREE.Group();
@@ -508,12 +564,15 @@ export const parseAndRenderNavPoints = (
         points.push(new THREE.Vector3(x, y, 0.05));
       });
     }
-    console.log("points", points);
+    // 样式区分
+    const isBidirectional = (edge as any).lang === 1;
+    const lineColor = isBidirectional ? 0x0066ff : 0x00ff00;
+    const lineWidth = isBidirectional ? 3 : 2;
     // 创建线段几何体
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     const material = new THREE.LineBasicMaterial({
-      color: 0x00ff00,
-      linewidth: 2,
+      color: lineColor,
+      linewidth: lineWidth,
       opacity: 0.8,
       transparent: true,
     });

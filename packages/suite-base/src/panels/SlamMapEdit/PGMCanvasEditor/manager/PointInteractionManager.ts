@@ -15,6 +15,12 @@ export interface Point {
   visible: boolean;
 }
 
+// 线段方向枚举
+export enum LineDirection {
+  UNIDIRECTIONAL = 0, // 单向
+  BIDIRECTIONAL = 1   // 双向
+}
+
 // 线段数据结构
 export interface Line {
   id: number;
@@ -22,6 +28,7 @@ export interface Line {
   endPointId: number;
   points: THREE.Vector3[]; // 折线的所有点
   visible: boolean;
+  direction: LineDirection; // 线段方向：单向或双向
 }
 
 // 地图配置接口
@@ -66,6 +73,7 @@ export class PointInteractionManager {
   #currentLineStartPointId: number | null = null;
   #currentLineMesh: THREE.Line | null = null;
   #selectedPointForMenu: number | null = null;
+  #currentLineDirection: LineDirection = LineDirection.UNIDIRECTIONAL; // 当前创建线段的方向
 
   // 新增：记录上一次点击的位置
   #lastLinePoint: THREE.Vector3 | null = null;
@@ -119,6 +127,12 @@ export class PointInteractionManager {
 
   // 删除点位
   public deletePoint(pointId: number): void {
+    // 防止删除origin点
+    if (this.isOriginPoint(pointId)) {
+      console.log("不能删除Origin点");
+      return;
+    }
+
     // 从场景中移除标记
     const marker = this.#pointMarkers.get(pointId);
     if (marker) {
@@ -129,11 +143,16 @@ export class PointInteractionManager {
     // 从点位列表中移除
     this.#points = this.#points.filter(p => p.id !== pointId);
 
-    // 重新分配ID
-    this.#points = this.#points.map((point, index) => ({
-      ...point,
-      id: index + 1
-    }));
+    // 重新分配ID（排除origin点）
+    this.#points = this.#points.map((point, index) => {
+      if (point.name === "Origin") {
+        return point; // origin点保持原有ID
+      }
+      return {
+        ...point,
+        id: index + 1
+      };
+    });
 
     // 重新渲染所有点位
     this.renderPoints();
@@ -211,9 +230,10 @@ export class PointInteractionManager {
   }
 
   // 开始创建线段
-  public startCreatingLine(startPointId: number): void {
+  public startCreatingLine(startPointId: number, direction: LineDirection = LineDirection.UNIDIRECTIONAL): void {
     this.#isCreatingLine = true;
     this.#currentLineStartPointId = startPointId;
+    this.#currentLineDirection = direction;
     this.#currentLinePoints = [];
     const startPoint = this.#points.find(p => p.id === startPointId);
     if (startPoint) {
@@ -222,7 +242,8 @@ export class PointInteractionManager {
       this.#lastLinePoint = v;
       this.updateCurrentLineMesh(); // 立即渲染起点（即使只有一个点）
     }
-    sendNotification("开始创建折线，右键点击空白处或点位继续，点击点位完成", "", "user", "info");
+    const directionText = direction === LineDirection.UNIDIRECTIONAL ? "单向" : "双向";
+    sendNotification(`开始创建${directionText}折线，右键点击空白处或点位继续，点击点位完成`, "", "user", "info");
   }
 
   // 添加线段中间点
@@ -243,7 +264,8 @@ export class PointInteractionManager {
       startPointId: this.#currentLineStartPointId,
       endPointId: endPointId,
       points: [...this.#currentLinePoints],
-      visible: true
+      visible: true,
+      direction: this.#currentLineDirection
     };
     console.log("newLine:", newLine);
     this.#lines.push(newLine);
@@ -258,6 +280,7 @@ export class PointInteractionManager {
     this.#currentLineStartPointId = null;
     this.#currentLinePoints = [];
     this.#lastLinePoint = null;
+    this.#currentLineDirection = LineDirection.UNIDIRECTIONAL;
     if (this.#currentLineMesh) {
       this.#scene.remove(this.#currentLineMesh);
       this.#currentLineMesh = null;
@@ -270,6 +293,36 @@ export class PointInteractionManager {
     return this.#isCreatingLine;
   }
 
+  // 获取当前创建线段的方向
+  public getCurrentLineDirection(): LineDirection {
+    return this.#currentLineDirection;
+  }
+
+  // 检查是否为origin点
+  private isOriginPoint(pointId: number): boolean {
+    const point = this.#points.find(p => p.id === pointId);
+    return point ? point.name === "Origin" : false;
+  }
+
+  // 更新线段方向
+  public updateLineDirection(lineId: number, direction: LineDirection): void {
+    const line = this.#lines.find(l => l.id === lineId);
+    if (line) {
+      line.direction = direction;
+      // 重新创建线段网格以更新颜色
+      const lineMesh = this.#lineMeshes.get(lineId);
+      if (lineMesh) {
+        this.#scene.remove(lineMesh);
+        lineMesh.geometry.dispose();
+        if (lineMesh.material instanceof THREE.Material) {
+          lineMesh.material.dispose();
+        }
+        this.#lineMeshes.delete(lineId);
+      }
+      this.createLineMesh(line);
+    }
+  }
+
   // 更新当前线段网格 - 修改为显示连续的折线
   private updateCurrentLineMesh(): void {
     if (this.#currentLineMesh) {
@@ -278,8 +331,12 @@ export class PointInteractionManager {
 
     if (this.#currentLinePoints.length >= 2) {
       const geometry = new THREE.BufferGeometry().setFromPoints(this.#currentLinePoints);
+
+      // 根据方向设置颜色：单向为红色，双向为橙色
+      const lineColor = this.#currentLineDirection === LineDirection.UNIDIRECTIONAL ? 0xff0000 : 0xff6600;
+
       const material = new THREE.LineBasicMaterial({
-        color: 0xff0000,
+        color: lineColor,
         linewidth: 2,
         transparent: true,
         opacity: 0.8
@@ -299,8 +356,12 @@ export class PointInteractionManager {
     }
 
     const geometry = new THREE.BufferGeometry().setFromPoints(line.points);
+
+    // 根据方向设置颜色：单向为绿色，双向为蓝色
+    const lineColor = line.direction === LineDirection.UNIDIRECTIONAL ? 0x00ff00 : 0x0066ff;
+
     const material = new THREE.LineBasicMaterial({
-      color: 0x00ff00,
+      color: lineColor,
       linewidth: 2,
       transparent: true,
       opacity: 0.8
@@ -349,12 +410,20 @@ export class PointInteractionManager {
 
     // 使用与NavSelect相同的样式参数，但调整大小以适应SlamMapEdit
     const baseSize = 0.12;
-    const pointSize = baseSize * 0.2  ; // 稍微缩小一点以适应SlamMapEdit的比例
+    const pointSize = baseSize * 0.2; // 稍微缩小一点以适应SlamMapEdit的比例
 
-    // 创建主圆环（高亮则红色，否则白色）
-    const markerGeometry = new THREE.CircleGeometry(pointSize, 32);
+    // 判断是否为origin点
+    const isOriginPoint = point.name === "Origin";
+
+    // 为origin点使用特殊样式
+    const markerSize = isOriginPoint ? pointSize * 1.5 : pointSize; // origin点稍大
+    const markerColor = isOriginPoint ? "#ff6600" : (highlight ? "#ff0000" : "#ffffff"); // origin点为橙色
+    const strokeColor = isOriginPoint ? "#cc3300" : "#050215"; // origin点描边为深橙色
+
+    // 创建主圆环
+    const markerGeometry = new THREE.CircleGeometry(markerSize, 32);
     const markerMaterial = new THREE.MeshBasicMaterial({
-      color: highlight ? "#ff0000" : "#ffffff",
+      color: markerColor,
       transparent: false,
       opacity: 0.8,
     });
@@ -362,10 +431,10 @@ export class PointInteractionManager {
     circle.position.set(point.x, point.y, 0.01);
     circle.userData = { id: point.id, type: 'main' };
 
-    // 创建描边圆环（深色边框）
-    const strokeGeometry = new THREE.CircleGeometry(pointSize * 1.1, 32);
+    // 创建描边圆环
+    const strokeGeometry = new THREE.CircleGeometry(markerSize * 1.1, 32);
     const strokeMaterial = new THREE.MeshBasicMaterial({
-      color: "#050215",
+      color: strokeColor,
       transparent: false,
       opacity: 0.8,
     });
@@ -375,7 +444,9 @@ export class PointInteractionManager {
     strokeCircle.userData = { id: point.id, type: 'stroke' };
 
     // 创建文字精灵
-    const textSprite = this.createTextSprite(point.id.toString(), "#003C80", 4);
+    const textColor = isOriginPoint ? "#cc3300" : "#003C80"; // origin点文字为深橙色
+    const textContent = isOriginPoint ? "O" : point.id.toString(); // origin点显示"O"
+    const textSprite = this.createTextSprite(textContent, textColor, 4);
     textSprite.position.x = point.x;
     textSprite.position.y = point.y + 0.001;
     textSprite.position.z = 0.5; // 确保文字在圆点上方
@@ -493,6 +564,13 @@ export class PointInteractionManager {
         }
         if (!this.#isCreatingLine) {
           // console.log("设置选中打开菜单的点位ID:", pointId);
+
+          // 防止对origin点显示右键菜单
+          if (this.isOriginPoint(pointId)) {
+            console.log("Origin点不支持右键菜单");
+            return;
+          }
+
           this.setSelectedPointForMenu(pointId);
         }
         return;
@@ -536,7 +614,15 @@ export class PointInteractionManager {
     for (const intersect of intersects) {
       // 直接检查相交对象
       if (intersect.object.userData && typeof intersect.object.userData.id === "number") {
-        this.#draggingId = intersect.object.userData.id;
+        const pointId = intersect.object.userData.id;
+
+        // 防止拖拽origin点
+        if (this.isOriginPoint(pointId)) {
+          console.log("不能拖拽Origin点");
+          return;
+        }
+
+        this.#draggingId = pointId;
         const hitPoint = intersect.point;
         const markerPos = intersect.object.position;
         this.#dragOffset = { x: markerPos.x - hitPoint.x, y: markerPos.y - hitPoint.y };
@@ -547,7 +633,15 @@ export class PointInteractionManager {
       let parent = intersect.object.parent;
       while (parent) {
         if (parent.userData && typeof parent.userData.id === "number") {
-          this.#draggingId = parent.userData.id;
+          const pointId = parent.userData.id;
+
+          // 防止拖拽origin点
+          if (this.isOriginPoint(pointId)) {
+            console.log("不能拖拽Origin点");
+            return;
+          }
+
+          this.#draggingId = pointId;
           const hitPoint = intersect.point;
           const markerPos = parent.position;
           this.#dragOffset = { x: markerPos.x - hitPoint.x, y: markerPos.y - hitPoint.y };
@@ -642,7 +736,7 @@ export class PointInteractionManager {
           boundingBox.getSize(size);
 
           const localX = uvX * size.x + boundingBox.min.x;
-          const localY = (1 - uvY) * size.y + boundingBox.min.y;
+          const localY = uvY * size.y + boundingBox.min.y;
 
           return {
             id: point.id,
@@ -680,7 +774,8 @@ export class PointInteractionManager {
             startPointId: edge.nodeStart,
             endPointId: edge.nodeEnd,
             points: linePoints,
-            visible: true
+            visible: true,
+            direction: edge.lang !== undefined ? edge.lang : LineDirection.UNIDIRECTIONAL
           };
 
           this.#lines.push(result);
@@ -705,7 +800,27 @@ export class PointInteractionManager {
   // 导出线段数据
   public async exportEdges(): Promise<void> {
     if (!this.#mapConfig || !this.#lines || this.#lines.length === 0) {
-      sendNotification("导出失败：没有可导出的线段数据", "", "user", "error");
+      try {
+        const url = `http://${this.#ipAddr}/mapServer/save/edges`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            mapName: this.#selectedMap,
+            edges: []
+          })
+        });
+        if (!response.ok) {
+          throw new Error(`保存失败: ${response.status} ${response.statusText}`);
+        }
+        sendNotification(`线段导出成功！共导出 ${this.#lines.length} 条线段`, "", "user", "info");
+      } catch (error) {
+        console.error("保存线段失败:", error);
+        sendNotification(`线段导出失败：${error instanceof Error ? error.message : '未知错误'}` , "", "user", "error");
+      }
+      // sendNotification("导出成功：导出的线段数据为空", "", "user", "info");
       return;
     }
     const mapName = this.#selectedMap;
@@ -718,7 +833,7 @@ export class PointInteractionManager {
           nodeStart: line.startPointId,
           nodeEnd: line.endPointId,
           weight: 1.0, // 如有权重字段可替换
-          lang: 0,     // 如有方向字段可替换
+          lang: line.direction,     // 根据线段方向设置lang值
           points:  line.points.map(point=>{
             const mesh = this.#layers?.[0]?.mesh;
             if (!mesh) {
@@ -774,12 +889,14 @@ export class PointInteractionManager {
     const mapName = this.#selectedMap;
     const payload = {
       mapName: mapName,
-      navNodes: this.#points.map(p => ({
-        x: p.worldX,
-        y: p.worldY,
-        id: p.id,
-        name: p.name,
-      }))
+      navNodes: this.#points
+        .filter(p => p.id !== -1) // 过滤掉origin点
+        .map(p => ({
+          x: p.worldX,
+          y: p.worldY,
+          id: p.id,
+          name: p.name,
+        }))
     };
     try {
       const url = `http://${this.#ipAddr}/mapServer/save/points`;
@@ -794,7 +911,7 @@ export class PointInteractionManager {
       if (!response.ok) {
         throw new Error(`保存失败: ${response.status} ${response.statusText}`);
       }
-      sendNotification(`点位导出成功！共导出 ${this.#points.length} 个点位`, "", "user", "info");
+      sendNotification(`点位导出成功！共导出 ${this.#points.length-1} 个点位`, "", "user", "info");
       // 点位导出成功后自动导出线段
       await this.exportEdges();
     } catch (error) {
@@ -808,8 +925,13 @@ export class PointInteractionManager {
    */
   private textureToWorldCoords(pixelX: number, pixelY: number): { worldX: number; worldY: number } {
     const { origin, resolution } = this.#mapConfig;
+    console.log("origin:", origin);
+    console.log("resolution:", resolution);
+    console.log("pixelX:", pixelX);
+    console.log("pixelY:", pixelY);
+    console.log("this.#pgmData", this.#pgmData);
     const worldX = (origin[0] ?? 0) + (pixelX + 0.5) * resolution;
-    const worldY = (origin[1] ?? 0) + (this.#pgmData.height - pixelY - 0.5) * resolution;
+    const worldY = (origin[1] ?? 0) + (pixelY - 0.5) * resolution;
     return { worldX, worldY };
   }
 
@@ -939,6 +1061,73 @@ export class PointInteractionManager {
   // 动态更新scene对象
   public updateScene(scene: THREE.Scene) {
     this.#scene = scene;
+  }
+
+  // 创建origin点标记
+  public createOriginPoint(): void {
+    if (!this.#mapConfig || !this.#layers || this.#layers.length === 0) {
+      console.warn("无法创建origin点：缺少必要的数据");
+      return;
+    }
+
+    const mesh = this.#layers[0].mesh;
+    const { origin } = this.#mapConfig;
+
+    if (!origin || origin.length < 2) {
+      console.warn("Origin数据无效");
+      return;
+    }
+
+    // 检查是否已存在origin点
+    const existingOriginPoint = this.#points.find(p => p.name === "Origin");
+    if (existingOriginPoint) {
+      console.log("Origin点已存在，跳过创建");
+      return;
+    }
+
+    // 将世界坐标转换为屏幕坐标
+    const worldX = 0;
+    const worldY =0;
+
+    // 使用与addPointFromClick相同的坐标转换逻辑
+    const { resolution } = this.#mapConfig;
+    const { width, height } = this.#pgmData;
+
+    // 计算像素坐标
+    const pixelX = (worldX - (origin[0] ?? 0)) / resolution - 0.5;
+    const pixelY = height - (worldY - (origin[1] ?? 0)) / resolution - 0.5;
+
+    // 归一化像素到 [0, 1]
+    const uvX = pixelX / width;
+    const uvY = pixelY / height;
+
+    const geometry = mesh.geometry;
+    geometry.computeBoundingBox();
+    const boundingBox = geometry.boundingBox;
+    if (!boundingBox) {
+      console.warn("无法计算边界框");
+      return;
+    }
+
+    const size = new THREE.Vector3();
+    boundingBox.getSize(size);
+
+    const localX = uvX * size.x + boundingBox.min.x;
+    const localY = (1 - uvY) * size.y + boundingBox.min.y;
+
+    // 创建origin点
+    const originPoint: Point = {
+      id: -1, // 使用特殊ID表示origin点
+      name: "Origin",
+      x: localX,
+      y: localY,
+      worldX: worldX,
+      worldY: worldY,
+      visible: true
+    };
+
+    this.addPoint(originPoint);
+    console.log("Origin点创建成功:", originPoint);
   }
 }
 

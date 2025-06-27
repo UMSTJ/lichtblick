@@ -40,7 +40,6 @@ interface PointsDrawerProps {
   points: Point[];
   selectedPoint?: number;
   onClose: () => void;
-  onAddPoint: () => void;
   onDeletePoint: (id: number) => void;
   onPointVisibilityChange: (id: number) => void;
   onPointSelect: (id: number) => void;
@@ -86,7 +85,6 @@ export const PointsDrawer: React.FC<PointsDrawerProps> = ({
   points,
   selectedPoint,
   onClose,
-  onAddPoint,
   onDeletePoint,
   onPointVisibilityChange,
   onPointSelect,
@@ -137,9 +135,9 @@ export const PointsDrawer: React.FC<PointsDrawerProps> = ({
             <IconButton onClick={onRefreshPoints} size="small" title="刷新点位">
               <ArrowClockwise24Regular />
             </IconButton>
-            <IconButton onClick={onAddPoint} size="small" title="添加点位">
+            {/* <IconButton onClick={onAddPoint} size="small" title="添加点位">
               <Add24Regular />
-            </IconButton>
+            </IconButton> */}
           </Stack>
         </Stack>
 

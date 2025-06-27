@@ -45,7 +45,6 @@ import BatteryIndicator from "@lichtblick/suite-base/panels/VehicleControl/compo
 import FileUploadModal from "@lichtblick/suite-base/panels/VehicleControl/components/FileUploadModal";
 import MapFilesTab from "@lichtblick/suite-base/panels/VehicleControl/components/MapFilesTab";
 import TextCard from "@lichtblick/suite-base/panels/VehicleControl/components/TextCard";
-// import demap from "@lichtblick/suite-base/panels/VehicleControl/map.png";
 import {
   defaultConfig,
   useVehicleControlSettings,
@@ -141,9 +140,9 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     let host = addressPart.split(":")[0] ?? "";
     return `${host}:9000`;
   }
-  // useEffect(() => {
-  //   setIpAddr("192.243.117.147:9000");
-  // }, []);
+  useEffect(() => {
+    setIpAddr("192.243.117.147:9000");
+  }, []);
 
   // 在现有的useEffect之外添加这个新的useEffect
   // useEffect(() => {
@@ -462,8 +461,8 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     if (map.map instanceof THREE.DataTexture) {
       // 对于新的导航点数据格式，我们需要估算地图尺寸
       // 从导航点数据中计算边界框来确定地图尺寸
-      let mapWidth = 10;
-      let mapHeight = 10;
+      let mapWidth = map.pgmData.width /100;
+      let mapHeight = map.pgmData.height /100;
 
       if (map.json.points && map.json.points.length > 0) {
         const points = map.json.points;

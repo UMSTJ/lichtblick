@@ -15,7 +15,7 @@ import {
 import * as yaml from 'js-yaml';
 import { MessagePipelineContext, useMessagePipeline } from "@lichtblick/suite-base/components/MessagePipeline";
 import sendNotification from "@lichtblick/suite-base/util/sendNotification";
-import { PointInteractionManager, Point, MapConfig, PGMImage, Line } from "./manager/PointInteractionManager";
+import { PointInteractionManager, Point, MapConfig, PGMImage, Line, LineDirection } from "./manager/PointInteractionManager";
 
 // 地图配置接口
 interface ROSMapConfig {
@@ -347,7 +347,7 @@ const PGMCanvasEditor: React.FC = () => {
 
     downloadAndLoadMap();
 
-  }, [selectedMap ]); // 依赖mapConfig，当配置变更时触发
+  }, [selectedMap ]); //
 
 
   const downloadPoints = async () => {
@@ -357,6 +357,11 @@ const PGMCanvasEditor: React.FC = () => {
       // pointManagerRef.current.setLines(pointManagerRef.current.getLines())
       // 强制重新渲染所有线段
       pointManagerRef.current.forceRenderLines();
+
+      // 确保origin点存在
+      pointManagerRef.current.createOriginPoint();
+      setPoints(pointManagerRef.current.getPoints());
+
       // 添加延时手动渲染（确保状态更新完成）
       setTimeout(() => {
         if (rendererRef.current && sceneRef.current && cameraRef.current) {
@@ -1267,23 +1272,7 @@ const PGMCanvasEditor: React.FC = () => {
     }
   }, []);
 
-  const handleAddPointFromDrawer = useCallback(() => {
-    // 这里可以添加一个默认点或者提示用户在地图上点击
-    const newId = points.length > 0 ? Math.max(...points.map(p => p.id)) + 1 : 1;
-    const newPoint: Point = {
-      id: newId,
-      name: `新点位${newId}`,
-      x: 0,
-      y: 0,
-      worldX: 0,
-      worldY: 0,
-      visible: true
-    };
-    if (pointManagerRef.current) {
-      pointManagerRef.current.addPoint(newPoint);
-      setPoints(pointManagerRef.current.getPoints());
-    }
-  }, [points]);
+
 
   const handleRefreshPoints = useCallback(() => {
     downloadPoints();
@@ -1322,11 +1311,12 @@ const PGMCanvasEditor: React.FC = () => {
   }, [contextMenu.pointId, closeContextMenu]);
 
   // 开始创建线段
-  const handleStartCreatingLine = useCallback(() => {
+  const handleStartCreatingLine = useCallback((direction: LineDirection) => {
     if (contextMenu.pointId !== null && pointManagerRef.current) {
-      pointManagerRef.current.startCreatingLine(contextMenu.pointId);
+      pointManagerRef.current.startCreatingLine(contextMenu.pointId, direction);
       closeContextMenu();
-      sendNotification("开始创建折线，右键点击空白处添加中间点，点击另一个点位完成", "", "user", "info");
+      const directionText = direction === LineDirection.UNIDIRECTIONAL ? "单向" : "双向";
+      sendNotification(`开始创建${directionText}折线，右键点击空白处添加中间点，点击另一个点位完成`, "", "user", "info");
     }
   }, [contextMenu.pointId, closeContextMenu]);
 
@@ -1432,7 +1422,12 @@ const PGMCanvasEditor: React.FC = () => {
         selectedMap,
         layers
       );
+
       // 同步点位数据
+      setPoints(pointManagerRef.current.getPoints());
+
+      // 创建origin点标记
+      pointManagerRef.current.createOriginPoint();
       setPoints(pointManagerRef.current.getPoints());
     }
   }, [sceneRef.current, pgmData, mapConfig, ipAddr, selectedMap]);
@@ -1441,9 +1436,20 @@ const PGMCanvasEditor: React.FC = () => {
   useEffect(() => {
     if (pointManagerRef.current && layers.length > 0) {
       pointManagerRef.current.updateLayers(layers);
+      // 当layers更新时，重新创建origin点
+      pointManagerRef.current.createOriginPoint();
+      setPoints(pointManagerRef.current.getPoints());
     }
   }, [layers]);
 
+  // 当mapConfig更新时，重新创建origin点
+  useEffect(() => {
+    if (pointManagerRef.current && mapConfig && layers.length > 0) {
+      // 创建origin点标记
+      pointManagerRef.current.createOriginPoint();
+      setPoints(pointManagerRef.current.getPoints());
+    }
+  }, [mapConfig, layers]);
 
   // 监听sceneRef.current变化，确保PointInteractionManager的scene引用始终最新
   useEffect(() => {
@@ -1590,7 +1596,7 @@ const PGMCanvasEditor: React.FC = () => {
               pointerEvents: 'none',
             }}
           >
-            折线创建模式 - 右键点击空白处添加点，点击点位完成
+            {pointManagerRef.current?.getCurrentLineDirection() === LineDirection.UNIDIRECTIONAL ? '单向' : '双向'}折线创建模式 - 右键点击空白处添加点，点击点位完成
           </div>
         )}
 
@@ -1614,7 +1620,7 @@ const PGMCanvasEditor: React.FC = () => {
           onClose={() => {
             setIsPointsDrawerOpen(false);
           }}
-          onAddPoint={handleAddPointFromDrawer}
+
           onDeletePoint={handleDeletePoint}
           onPointVisibilityChange={handlePointVisibilityChange}
           onPointSelect={handlePointSelect}
@@ -1647,9 +1653,28 @@ const PGMCanvasEditor: React.FC = () => {
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-              onClick={handleStartCreatingLine}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStartCreatingLine(LineDirection.UNIDIRECTIONAL);
+              }}
             >
-              创建折线
+              创建单向折线
+            </div>
+            <div
+              style={{
+                padding: '8px 12px',
+                cursor: 'pointer',
+                borderBottom: '1px solid #eee',
+                fontSize: '14px',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStartCreatingLine(LineDirection.BIDIRECTIONAL);
+              }}
+            >
+              创建双向折线
             </div>
             <div
               style={{
