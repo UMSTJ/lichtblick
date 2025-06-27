@@ -1,18 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
-// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
-// SPDX-License-Identifier: MPL-2.0
-
-// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
-// SPDX-License-Identifier: MPL-2.0
-
-// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
-// SPDX-License-Identifier: MPL-2.0
-
-// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
-// SPDX-License-Identifier: MPL-2.0
-
 import { Button, List, ListItem } from "@mui/material";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, Event as TauriEvent } from "@tauri-apps/api/event"; // Tauri 事件监听
@@ -67,10 +55,10 @@ export const openCode = (ip: string) => {
 };
 
 const isTauriEnvironment = (): boolean => {
-  return true;
+  return false;
 };
 const UdpMessageComponent: React.FC = () => {
-  const [udpIp, setUdpIp] = useState<string[]>([]);
+  const [udpIp, setUdpIp] = useState<string[]>(["127.0.0.1"]);
   const { selectSource } = usePlayerSelection();
 
   const { t } = useTranslation("openDialog");

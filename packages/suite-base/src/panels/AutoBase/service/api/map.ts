@@ -10,7 +10,9 @@
 // --- Generic API Fetch Helper (no changes needed here) ---
 const apiFetch = async (url: string, options: RequestInit = {}) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, 5000);
 
   try {
     const response = await fetch(url, {
@@ -24,7 +26,9 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       const errorMessage =
-        typeof errorData?.message === "string" ? errorData.message : `HTTP error! status: ${response.status}`;
+        typeof errorData?.message === "string"
+          ? errorData.message
+          : `HTTP error! status: ${response.status}`;
       throw new Error(errorMessage);
     }
 
@@ -35,11 +39,12 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
     return {};
   } catch (error) {
     clearTimeout(timeoutId);
-    if (error.name === 'AbortError') throw new Error("Request timed out.");
+    if (error.name === "AbortError") {
+      throw new Error("Request timed out.");
+    }
     throw error;
   }
 };
-
 
 // --- Type Definitions (Interfaces from your files) ---
 export interface CreateMapRequest {
@@ -47,7 +52,18 @@ export interface CreateMapRequest {
   mapType: string;
 }
 export interface MapCreationStatus {
-  status: "pending" | "in_progress" | "completed" | "failed";
+  status:
+    | "IDLE"
+    | "STARTING_LIDAR"
+    | "STARTING_SLAM"
+    | "MAPPING"
+    | "STOPPING_SLAM"
+    | "SAVING_MAP"
+    | "CONVERTING_PCD_TO_PGM"
+    | "STOPPING_LIDAR"
+    | "MOVING_MAP"
+    | "COMPLETED"
+    | "FAILED";
   message: string | null;
 }
 export interface LaunchRequest {
@@ -71,10 +87,20 @@ export interface RosProcess {
   recentLogs?: string[];
 }
 export interface LocationControllerState {
-  navigationService: { message: string; processId: string; serviceName: string; status: "IDLE" | "RUNNING" | "ERROR"; };
-  positioningService: { message: string; serviceName: string; status: "IDLE" | "RUNNING" | "ERROR"; atStartPoint: boolean; currentMap: string; };
+  navigationService: {
+    message: string;
+    processId: string;
+    serviceName: string;
+    status: "IDLE" | "RUNNING" | "ERROR";
+  };
+  positioningService: {
+    message: string;
+    serviceName: string;
+    status: "IDLE" | "RUNNING" | "ERROR";
+    atStartPoint: boolean;
+    currentMap: string;
+  };
 }
-
 
 // --- Map Creation API ---
 export const startMapCreation = async (backendIp: string, data: CreateMapRequest): Promise<any> => {
@@ -84,10 +110,13 @@ export const startMapCreation = async (backendIp: string, data: CreateMapRequest
   });
 };
 
+export const cancelMapCreation = async (backendIp: string): Promise<any> => {
+  return await apiFetch(`http://${backendIp}/api/map/create/stop`, { method: "POST" });
+};
+
 export const getMapCreationStatus = async (backendIp: string): Promise<MapCreationStatus> => {
   return await apiFetch(`http://${backendIp}/api/map/create/status`);
 };
-
 
 // --- Location Controller API ---
 export const fetchMapList = async (backendIp: string): Promise<string[]> => {
@@ -106,9 +135,10 @@ export const fetchLocationStatus = async (backendIp: string): Promise<LocationCo
 };
 
 export const signalAtStartPoint = async (backendIp: string): Promise<unknown> => {
-  return await apiFetch(`http://${backendIp}/api/location/signal/at_start_point`, { method: "POST" });
+  return await apiFetch(`http://${backendIp}/api/location/signal/at_start_point`, {
+    method: "POST",
+  });
 };
-
 
 // --- ROS Launch Controller API ---
 export const fetchRosLaunchList = async (backendIp: string): Promise<RosProcess[]> => {
