@@ -1,6 +1,5 @@
 /* eslint-disable no-restricted-imports */
 
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable react/forbid-component-props */
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
@@ -25,85 +24,20 @@ import {
   ListItem,
   ListItemText,
   Stack,
+  ListItemButton,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import React, { useState, useEffect, useCallback } from "react";
-// --- API Helper Function ---
-const apiFetch = async (url: string, options: RequestInit = {}) => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => {
-    controller.abort();
-  }, 5000);
 
-  const response = await fetch(url, {
-    ...options,
-    signal: controller.signal,
-    headers: { "Content-Type": "application/json", ...options.headers },
-  });
-
-  clearTimeout(timeoutId);
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    const errorMessage =
-      typeof errorData?.message === "string"
-        ? errorData.message
-        : `HTTP error! status: ${response.status}`;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    throw new Error(errorMessage);
-  }
-
-  const contentType = response.headers.get("content-type");
-  if (contentType?.includes("application/json") ?? false) {
-    return await response.json().catch(() => ({}));
-  }
-  return {};
-};
-
-// --- API Definitions ---
-// Schemas
-interface LaunchRequest {
-  rosPackageName: string;
-  launchFilePath: string;
-  workspaceSetupScript: string;
-  parameters: string[];
-  restartOnError: boolean;
-}
-interface RosProcess {
-  id: string;
-  rosPackageName: string;
-  launchFile: string;
-  paramters: string[];
-  workspaceSetupScript: string;
-  alive: boolean;
-  pid: number;
-  restartCount: number;
-  terminalSlotId: number;
-  state: "RUNNING" | "STOPPED" | "ERROR";
-  recentLogs?: string[];
-}
-
-// == ROS Launch Controller APIs ==
-const fetchRosLaunchList = async (backendIp: string): Promise<RosProcess[]> => {
-  return await apiFetch(`http://${backendIp}/api/ros/launch/list`);
-};
-// const fetchRosProcessStatus = async (backendIp: string, id: string): Promise<RosProcessStatus> => {
-//   return await apiFetch(`http://${backendIp}/api/ros/launch/status/${id}`);
-// };
-const stopRosProcess = async (backendIp: string, id: string) =>
-  await apiFetch(`http://${backendIp}/api/ros/launch/stop/${id}`, { method: "POST" });
-const startRosProcess = async (backendIp: string, data: LaunchRequest) =>
-  await apiFetch(`http://${backendIp}/api/ros/launch/start`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-
-const getRosProcessLog = async (backendIp: string, id: string): Promise<RosProcess> => {
-  return await apiFetch(`http://${backendIp}/api/ros/launch/status/${id}`);
-};
-
-const restartRosProcess = async (backendIp: string, id: string) =>
-  await apiFetch(`http://${backendIp}/api/ros/launch/restart/${id}`, { method: "POST" });
+import {
+  fetchRosLaunchList,
+  stopRosProcess,
+  startRosProcess,
+  getRosProcessLog,
+  restartRosProcess,
+  LaunchRequest,
+  RosProcess,
+} from "../service/api/map"; // 从中心化文件导入
 
 // --- Styled Components ---
 
@@ -450,10 +384,6 @@ const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
               {processes.map((proc) => (
                 <React.Fragment key={proc.id}>
                   <ListItem
-                    selected={selectedProcess === proc.id}
-                    onClick={() => {
-                      handleProcessClick(proc.id);
-                    }}
                     sx={{
                       borderLeft: 4,
                       borderColor:
@@ -463,52 +393,61 @@ const RosLaunchController: React.FC<ControllerProps> = ({ backendIp }) => {
                             ? "error.main"
                             : "grey.500",
                       bgcolor: selectedProcess === proc.id ? "action.selected" : "inherit",
+                      p: 0, // Remove default padding so ListItemButton fills the area
                     }}
                   >
-                    <ListItemText
-                      primary={
-                        <Stack direction="row" spacing={2} alignItems="center">
-                          <StatusIndicator status={proc.state} />
-                          <Typography>{proc.launchFile}</Typography>
-                          <Box sx={{ flexGrow: 1 }} />
-                          {proc.state === "RUNNING" && (
-                            <>
-                              <Button
-                                size="small"
-                                variant="contained"
-                                color="error"
-                                disabled={loading.stop === proc.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void handleStopProcess(proc.id);
-                                }}
-                                startIcon={
-                                  loading.stop === proc.id ? <CircularProgress size={16} /> : null
-                                }
-                              >
-                                {loading.stop === proc.id ? "" : "结束"}
-                              </Button>
-                              <Button
-                                size="small"
-                                variant="contained"
-                                color="warning"
-                                disabled={loading.stop === proc.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void handleRestartProcess(proc.id);
-                                }}
-                                startIcon={
-                                  loading.stop === proc.id ? <CircularProgress size={16} /> : null
-                                }
-                              >
-                                {loading.stop === proc.id ? "" : "重启"}
-                              </Button>
-                            </>
-                          )}
-                        </Stack>
-                      }
-                      secondary={`PID: ${proc.pid} | 重启次数: ${proc.restartCount}`}
-                    />
+                    <ListItemButton
+                      selected={selectedProcess === proc.id}
+                      onClick={() => {
+                        handleProcessClick(proc.id);
+                      }}
+                      sx={{ p: 2 }}
+                    >
+                      <ListItemText
+                        primary={
+                          <Stack direction="row" spacing={2} alignItems="center">
+                            <StatusIndicator status={proc.state} />
+                            <Typography>{proc.launchFile}</Typography>
+                            <Box sx={{ flexGrow: 1 }} />
+                            {proc.state === "RUNNING" && (
+                              <>
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="error"
+                                  disabled={loading.stop === proc.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void handleStopProcess(proc.id);
+                                  }}
+                                  startIcon={
+                                    loading.stop === proc.id ? <CircularProgress size={16} /> : null
+                                  }
+                                >
+                                  {loading.stop === proc.id ? "" : "结束"}
+                                </Button>
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="warning"
+                                  disabled={loading.stop === proc.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void handleRestartProcess(proc.id);
+                                  }}
+                                  startIcon={
+                                    loading.stop === proc.id ? <CircularProgress size={16} /> : null
+                                  }
+                                >
+                                  {loading.stop === proc.id ? "" : "重启"}
+                                </Button>
+                              </>
+                            )}
+                          </Stack>
+                        }
+                        secondary={`PID: ${proc.pid} | 重启次数: ${proc.restartCount}`}
+                      />
+                    </ListItemButton>
                   </ListItem>
                   <Divider />
                 </React.Fragment>

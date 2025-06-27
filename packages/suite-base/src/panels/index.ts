@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
@@ -48,11 +54,11 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     module: async () => await import("./wheel2Status"),
   },
   {
-    title: "autobase",
+    title: "Autobase",
     type: "autobase",
-    description: t("LaunchMotionDescription"),
+    description: "autobase",
     // thumbnail: joystickSummaryThumbnail,
-    module: async () => await import("./SlamMapSwitch"),
+    module: async () => await import("./Autobase"),
   },
 
   {

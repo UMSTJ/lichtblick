@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
@@ -30,7 +33,7 @@ import {
 import Panel from "@lichtblick/suite-base/components/Panel";
 import useCallbackWithToast from "@lichtblick/suite-base/hooks/useCallbackWithToast";
 import usePublisher from "@lichtblick/suite-base/hooks/usePublisher";
-import LocationController from "@lichtblick/suite-base/panels/SlamMapSwitch/LocationController";
+import LocationController from "@lichtblick/suite-base/panels/AutoBase/LocationController";
 
 // Enums and Types for statuses
 enum ControlMode {

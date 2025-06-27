@@ -25,6 +25,7 @@ import {
   startMapCreation,
   CreateMapRequest,
   getMapCreationStatus,
+  cancelMapCreation,
   MapCreationStatus,
 } from "../service/api/map"; // 假设的路径
 
@@ -61,8 +62,10 @@ export const CreateMapController: React.FC<RosLaunchControllerProps> = ({ backen
           const statusData = await getMapCreationStatus(backendIp);
           setCreationStatus(statusData);
 
-          if (statusData.status === "completed" || statusData.status === "failed") {
+          if (statusData.status === "COMPLETED" || statusData.status === "FAILED") {
             setIsPolling(false);
+            setIsSubmitting(false);
+            setError(null);
           }
         } catch (err: unknown) {
           setError("无法获取地图创建状态，轮询已停止。");
@@ -79,6 +82,16 @@ export const CreateMapController: React.FC<RosLaunchControllerProps> = ({ backen
   }, [isPolling, backendIp]); // 依赖数组加入 backendIp
   // 依赖数组，仅在 isPolling 的值改变时重新运行此 effect
 
+  const handleCancel = async (): Promise<void> => {
+    if (!backendIp) {
+      setError("后端IP地址未提供，无法发送请求。");
+      return;
+    }
+    await cancelMapCreation(backendIp).then(() => {
+      //setIsPolling(false);
+      //setIsSubmitting(false);
+    });
+  };
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     // f) 增加对 backendIp prop 的校验
     if (!backendIp) {
@@ -101,7 +114,7 @@ export const CreateMapController: React.FC<RosLaunchControllerProps> = ({ backen
     try {
       // g) 将 backendIp 传递给API调用
       const response = await startMapCreation(backendIp, requestData);
-      if (response.ok) {
+      if (response) {
         setIsPolling(true);
         setError(null);
       } else {
@@ -109,6 +122,7 @@ export const CreateMapController: React.FC<RosLaunchControllerProps> = ({ backen
         setError("创建地图失败。" + (errorData.message || "请检查服务器日志以获取更多信息。"));
       }
     } catch (err: unknown) {
+      console.error("发生网络错误:", err);
       setError("发生网络错误，无法连接到服务器。");
     } finally {
       setIsSubmitting(false);
@@ -216,10 +230,19 @@ export const CreateMapController: React.FC<RosLaunchControllerProps> = ({ backen
             {isPolling ? "创建中..." : "开始创建"}
           </Button>
           {isSubmitting && <CircularProgress size={24} />}
+          {isPolling && (
+            <Button
+              onClick={() => {
+                void handleCancel();
+              }}
+            >
+              停止建图
+            </Button>
+          )}
         </Stack>
       </Stack>
       {creationStatus && (
-        <Alert severity={creationStatus.status === "completed" ? "success" : "info"}>
+        <Alert severity={creationStatus.status === "COMPLETED" ? "success" : "info"}>
           <AlertTitle>地图创建状态</AlertTitle>
           当前状态: {creationStatus.status} - {creationStatus.message ?? "无额外信息"}
         </Alert>

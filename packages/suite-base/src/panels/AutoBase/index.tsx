@@ -11,9 +11,9 @@ import {
 import Panel from "@lichtblick/suite-base/components/Panel";
 import PanelToolbar from "@lichtblick/suite-base/components/PanelToolbar";
 import Stack from "@lichtblick/suite-base/components/Stack";
-import CreateMapController from "@lichtblick/suite-base/panels/SlamMapSwitch/CreateMapController";
-import LocationController from "@lichtblick/suite-base/panels/SlamMapSwitch/LocationController";
-import RosLaunchController from "@lichtblick/suite-base/panels/SlamMapSwitch/RosLaunchController";
+import CreateMapController from "@lichtblick/suite-base/panels/AutoBase/CreateMapController";
+import LocationController from "@lichtblick/suite-base/panels/AutoBase/LocationController";
+import RosLaunchController from "@lichtblick/suite-base/panels/AutoBase/RosLaunchController";
 
 const selectPlayerName = (ctx: MessagePipelineContext) => ctx.playerState.name;
 const AutoBase: React.FC = () => {
