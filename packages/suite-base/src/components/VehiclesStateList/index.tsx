@@ -1,3 +1,11 @@
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+import { Box, Button, Card, Divider, Typography } from "@mui/material";
+import * as _ from "lodash-es";
+import { useRef, ReactElement, useEffect, useState } from "react";
+import request from "umi-request";
+
 import { getIpAddress } from "@lichtblick/suite-base/components/AppBar/VerticalAppBar";
 import { isRunningInElectron } from "@lichtblick/suite-base/components/DataSourceDialog/Start";
 import {
@@ -5,11 +13,7 @@ import {
   useMessagePipeline,
 } from "@lichtblick/suite-base/components/MessagePipeline";
 import Stack from "@lichtblick/suite-base/components/Stack";
-import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessage";
-import { Box, Button, Card, Divider, Typography } from "@mui/material";
-import * as _ from "lodash-es";
-import { useRef, ReactElement, useEffect, useState } from "react";
-import request from "umi-request";
+import UdpMessageComponent from "@lichtblick/suite-base/components/UdpMessageComponent";
 
 const ANIMATION_RESET_DELAY_MS = 1500;
 
@@ -65,7 +69,9 @@ export default function VehiclesStateList(): ReactElement {
         console.error("Request failed:", error);
       }
     };
-    if (nowIPAddr) getSystemInfo();
+    if (nowIPAddr) {
+      getSystemInfo();
+    }
   }, [nowIPAddr]);
   return (
     <Stack flex="auto" fullWidth overflowX="auto">

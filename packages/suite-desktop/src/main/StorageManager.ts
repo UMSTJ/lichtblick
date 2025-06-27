@@ -1,3 +1,12 @@
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 /* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable no-underscore-dangle */
@@ -7,7 +16,7 @@ import path from "path";
 
 export interface FileOperation {
   success: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  files?: string[];
   data?: any;
   error?: string;
 }

@@ -1,1 +1,1 @@
-{"migrated":{"identifier":"migrated","description":"permissions that were migrated from v1","local":true,"windows":["main"],"permissions":["core:default"]}}
+{"migrated":{"identifier":"migrated","description":"permissions that were migrated from v1","local":true,"windows":["main"],"permissions":["core:default","core:event:default"]},"mobile-capability":{"identifier":"mobile-capability","description":"","local":true,"windows":["main"],"permissions":[],"platforms":["android"]}}

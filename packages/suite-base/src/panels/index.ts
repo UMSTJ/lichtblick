@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
@@ -35,31 +41,37 @@ import threeDeeRenderThumbnail from "./ThreeDeeRender/thumbnail.png";
 // import topicGraphThumbnail from "./TopicGraph/thumbnail.png";
 // import userScriptEditorThumbnail from "./UserScriptEditor/thumbnail.png";
 // import variableSliderThumbnail from "./VariableSlider/thumbnail.png";
-import vehicleControlSummaryThumbnail from "./VehicleControl/thumbnail.png";
+// import vehicleControlSummaryThumbnail from "./VehicleControl/thumbnail.png";
 // import diagnosticStatusThumbnail from "./diagnostics/thumbnails/diagnostic-status.png";
 // import diagnosticSummaryThumbnail from "./diagnostics/thumbnails/diagnostic-summary.png";
 
 export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
   // {
-  //   title: t("hardwareInfo"),
-  //   type: "hardwareInfo",
-  //   description: t("hardwareInfo"),
+  //   title: "NavSelect",
+  //   type: "navselect",
+  //   //description: t("hardwareInfo"),
   //   // thumbnail: joystickSummaryThumbnail,
-  //   module: async () => await import("./hardwareInfo"),
+  //   module: async () => await import("./NavSelect"),
   // },
-  // {
-  //   title: t("LaunchMotion"),
-  //   type: "LaunchMotion",
-  //   description: t("LaunchMotionDescription"),
-  //   // thumbnail: joystickSummaryThumbnail,
-  //   module: async () => await import("./LaunchMotion"),
-  // },
+  {
+    title: "SlamMapEdit",
+    type: "SlamMapEdit",
+    // description: t("LaunchMotionDescription"),
+    // thumbnail: joystickSummaryThumbnail,
+    module: async () => await import("./SlamMapEdit"),
+  },
   {
     title: t("joystick"),
     type: "Joystick",
     description: "Joystick",
     thumbnail: joystickSummaryThumbnail,
     module: async () => await import("./Joystick"),
+  },
+  {
+    title: "AutoBase",
+    type: "AutoBase",
+    description: t("logDescription"),
+    module: async () => await import("./AutoBase"),
   },
   // {
   //   title: t("deviceSetting"),
@@ -68,13 +80,13 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
   //   thumbnail: deviceSettingSummaryThumbnail,
   //   module: async () => await import("./DeviceSetting"),
   // },
-  {
-    title: t("VehicleControl"),
-    type: "VehicleControl",
-    description: t("VehicleControl"),
-    thumbnail: vehicleControlSummaryThumbnail,
-    module: async () => await import("./VehicleControl"),
-  },
+  // {
+  //   title: t("VehicleControl"),
+  //   type: "VehicleControl",
+  //   description: t("VehicleControl"),
+  //   thumbnail: vehicleControlSummaryThumbnail,
+  //   module: async () => await import("./VehicleControl"),
+  // },
   // {
   //   title: t("VehicleControl"),
   //   type: "CodeServer",
