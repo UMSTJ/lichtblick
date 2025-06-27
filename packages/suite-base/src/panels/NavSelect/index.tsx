@@ -141,9 +141,9 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     let host = addressPart.split(":")[0] ?? "";
     return `${host}:9000`;
   }
-  useEffect(() => {
-    setIpAddr("192.243.117.147:9000");
-  }, []);
+  // useEffect(() => {
+  //   setIpAddr("192.243.117.147:9000");
+  // }, []);
 
   // 在现有的useEffect之外添加这个新的useEffect
   // useEffect(() => {
