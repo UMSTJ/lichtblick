@@ -25,7 +25,7 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
-import { Button, Stack } from "@mui/material";
+import { Stack } from "@mui/material";
 // import { Card } from "antd";
 // import { use } from "cytoscape";
 import yaml from 'js-yaml';
@@ -77,10 +77,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   const batteryPercentageRef = useRef<number | undefined>(0);
   const animationFrameRef = useRef<number>();
 
-  // 在组件顶部添加这些状态
-  const [imageLoadStatus, setImageLoadStatus] = useState<"loading" | "success" | "error">(
-    "loading",
-  );
+
   // const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const [isSceneReady, setIsSceneReady] = useState(false);
@@ -89,7 +86,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   const [mapName, setMapName] = useState<string>("");
   const [mapFiles, setMapFiles] = useState<string[]>([]);
   // const WORLD_WIDTH = 10;
-  const { nodeTopicName, nodeDatatype, pathSource, rfidSource, batterySource, update_map } = config;
+  const { nodeTopicName, nodeDatatype, pathSource, rfidSource, batterySource } = config;
 
   const rfidMessages = useMessageDataItem(rfidSource);
   const pathMessages = useMessageDataItem(pathSource);
@@ -135,9 +132,9 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     const host = addressPart.split(":")[0] ?? "";
     return `${host}:9000`;
   }
-  useEffect(() => {
-    setIpAddr("192.243.117.147:9000");
-  }, []);
+  // useEffect(() => {
+  //   setIpAddr("192.243.117.147:9000");
+  // }, []);
 
 
 
