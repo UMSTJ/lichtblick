@@ -2,7 +2,7 @@
 /* eslint-disable @lichtblick/no-restricted-imports */
 /* eslint-disable react/forbid-component-props */
 import {
-  Add24Regular,
+  // Add24Regular,
   Delete24Regular,
   Eye24Regular,
   EyeOff24Regular,
@@ -43,7 +43,7 @@ interface PointsDrawerProps {
   points: Point[];
   selectedPoint?: number;
   onClose: () => void;
-  onAddPoint: () => void;
+
   onDeletePoint: (id: number) => void;
   onPointVisibilityChange: (id: number) => void;
   onPointSelect: (id: number) => void;
@@ -89,7 +89,6 @@ export const PointsDrawer: React.FC<PointsDrawerProps> = ({
   points,
   selectedPoint,
   onClose,
-  onAddPoint,
   onDeletePoint,
   onPointVisibilityChange,
   onPointSelect,
@@ -139,9 +138,6 @@ export const PointsDrawer: React.FC<PointsDrawerProps> = ({
           <Stack direction="row" spacing={1}>
             <IconButton onClick={onRefreshPoints} size="small" title="刷新点位">
               <ArrowClockwise24Regular />
-            </IconButton>
-            <IconButton onClick={onAddPoint} size="small" title="添加点位">
-              <Add24Regular />
             </IconButton>
           </Stack>
         </Stack>

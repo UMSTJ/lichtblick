@@ -6,6 +6,7 @@
 import * as THREE from "three";
 
 import sendNotification from "@lichtblick/suite-base/util/sendNotification";
+import { LineDirection } from "@lichtblick/suite-base/panels/SlamMapEdit/PGMCanvasEditor";
 
 // 点位数据结构
 export interface Point {
@@ -25,6 +26,7 @@ export interface Line {
   endPointId: number;
   points: THREE.Vector3[]; // 折线的所有点
   visible: boolean;
+  direction: LineDirection; // 线段方向：单向或双向
 }
 
 // 地图配置接口
@@ -52,8 +54,6 @@ export class PointInteractionManager {
   #pointMarkers: Map<number, THREE.Group>; // 存储点位ID和对应的标记组
   // #defaultColor: string;
   #selectedPointId: number | undefined;
-  #draggingId: number | null = null;
-  #dragOffset: { x: number; y: number } = { x: 0, y: 0 };
   #points: Point[] = [];
   #mapConfig: MapConfig;
   #pgmData: PGMImage;
@@ -65,6 +65,11 @@ export class PointInteractionManager {
   #lines: Line[] = [];
   #lineMeshes = new Map<number, THREE.Line>();
   #isCreatingLine: boolean = false;
+  _onCreatingLineChange?: (isCreating: boolean) => void;
+
+  public setCreatingLineChangeListener(cb: (isCreating: boolean) => void) {
+    this._onCreatingLineChange = cb;
+  }
   #currentLinePoints: THREE.Vector3[] = [];
   #currentLineStartPointId: number | null = null;
   #currentLineMesh: THREE.Line | null = null;
@@ -72,6 +77,7 @@ export class PointInteractionManager {
 
   // 新增：记录上一次点击的位置
   #lastLinePoint: THREE.Vector3 | null = null;
+  #currentLineDirection: LineDirection =  LineDirection.UNIDIRECTIONAL; // 当前创建线段的方向;
 
   public constructor(
     scene: THREE.Scene,
@@ -115,11 +121,16 @@ export class PointInteractionManager {
   public addPoint(point: Point): void {
     this.#points.push(point);
     this.renderPoints();
-    this.#draggingId = null; // 新增点位后清理拖动状态
   }
 
   // 删除点位
   public deletePoint(pointId: number): void {
+    // 防止删除origin点
+    if (this.isOriginPoint(pointId)) {
+      console.log("不能删除Origin点");
+      return;
+    }
+
     // 从场景中移除标记
     const marker = this.#pointMarkers.get(pointId);
     if (marker) {
@@ -128,14 +139,18 @@ export class PointInteractionManager {
     }
 
     // 从点位列表中移除
-    this.#points = this.#points.filter((p) => p.id !== pointId);
+    this.#points = this.#points.filter(p => p.id !== pointId);
 
-    // 重新分配ID
-    this.#points = this.#points.map((point, index) => ({
-      ...point,
-      id: index + 1,
-    }));
-
+    // 重新分配ID（排除origin点）
+    this.#points = this.#points.map((point, index) => {
+      if (point.name === "Origin") {
+        return point; // origin点保持原有ID
+      }
+      return {
+        ...point,
+        id: index + 1
+      };
+    });
     // 重新渲染所有点位
     this.renderPoints();
   }
@@ -209,18 +224,20 @@ export class PointInteractionManager {
   }
 
   // 开始创建线段
-  public startCreatingLine(startPointId: number): void {
+  public startCreatingLine(startPointId: number, direction: LineDirection = LineDirection.UNIDIRECTIONAL): void {
     this.#isCreatingLine = true;
     this.#currentLineStartPointId = startPointId;
+    this.#currentLineDirection = direction;
     this.#currentLinePoints = [];
-    const startPoint = this.#points.find((p) => p.id === startPointId);
+    const startPoint = this.#points.find(p => p.id === startPointId);
     if (startPoint) {
       const v = new THREE.Vector3(startPoint.x, startPoint.y, 0.5);
       this.#currentLinePoints.push(v);
       this.#lastLinePoint = v;
       this.updateCurrentLineMesh(); // 立即渲染起点（即使只有一个点）
     }
-    sendNotification("开始创建折线，右键点击空白处或点位继续，点击点位完成", "", "user", "info");
+    const directionText = direction === LineDirection.UNIDIRECTIONAL ? "单向" : "双向";
+    sendNotification(`开始创建${directionText}折线，右键点击空白处或点位继续，点击点位完成`, "", "user", "info");
   }
 
   // 添加线段中间点
@@ -235,21 +252,20 @@ export class PointInteractionManager {
 
   // 完成线段创建
   public finishCreatingLine(endPointId: number): void {
-    if (!this.#isCreatingLine || this.#currentLineStartPointId == null) {
-      return;
-    }
+    if (!this.#isCreatingLine || !this.#currentLineStartPointId) return;
     // 不再push终点，因为已在handleRightClick中push
-    const lineId = this.#lines.length > 0 ? Math.max(...this.#lines.map((l) => l.id)) + 1 : 1;
+    const lineId = this.#lines.length > 0 ? Math.max(...this.#lines.map(l => l.id)) + 1 : 1;
     const newLine: Line = {
       id: lineId,
       startPointId: this.#currentLineStartPointId,
-      endPointId,
+      endPointId: endPointId,
       points: [...this.#currentLinePoints],
       visible: true,
+      direction: this.#currentLineDirection
     };
-    //console.log("newLine:", newLine);
+    console.log("newLine:", newLine);
     this.#lines.push(newLine);
-    //console.log("this.#lines:", this.#lines);
+    console.log("this.#lines:", this.#lines);
     this.createLineMesh(newLine);
     this.cancelCreatingLine();
   }
@@ -264,12 +280,42 @@ export class PointInteractionManager {
       this.#scene.remove(this.#currentLineMesh);
       this.#currentLineMesh = null;
     }
-    sendNotification("线段创建已取消", "", "user", "info");
+    // sendNotification("线段创建已取消", "", "user", "info");
   }
 
   // 检查是否正在创建线段
   public isCreatingLine(): boolean {
     return this.#isCreatingLine;
+  }
+
+  // 获取当前创建线段的方向
+  public getCurrentLineDirection(): LineDirection {
+    return this.#currentLineDirection;
+  }
+
+  // 检查是否为origin点
+  private isOriginPoint(pointId: number): boolean {
+    const point = this.#points.find(p => p.id === pointId);
+    return point ? point.name === "Origin" : false;
+  }
+
+  // 更新线段方向
+  public updateLineDirection(lineId: number, direction: LineDirection): void {
+    const line = this.#lines.find(l => l.id === lineId);
+    if (line) {
+      line.direction = direction;
+      // 重新创建线段网格以更新颜色
+      const lineMesh = this.#lineMeshes.get(lineId);
+      if (lineMesh) {
+        this.#scene.remove(lineMesh);
+        lineMesh.geometry.dispose();
+        if (lineMesh.material instanceof THREE.Material) {
+          lineMesh.material.dispose();
+        }
+        this.#lineMeshes.delete(lineId);
+      }
+      this.createLineMesh(line);
+    }
   }
 
   // 更新当前线段网格 - 修改为显示连续的折线
@@ -280,8 +326,12 @@ export class PointInteractionManager {
 
     if (this.#currentLinePoints.length >= 2) {
       const geometry = new THREE.BufferGeometry().setFromPoints(this.#currentLinePoints);
+
+      // 根据方向设置颜色：单向为红色，双向为橙色
+      const lineColor = this.#currentLineDirection === LineDirection.UNIDIRECTIONAL ? 0xff0000 : 0xff6600;
+
       const material = new THREE.LineBasicMaterial({
-        color: 0xff0000,
+        color: lineColor,
         linewidth: 2,
         transparent: true,
         opacity: 0.8,
@@ -301,14 +351,18 @@ export class PointInteractionManager {
     }
 
     const geometry = new THREE.BufferGeometry().setFromPoints(line.points);
+
+    // 根据方向设置颜色：单向为绿色，双向为蓝色
+    const lineColor = line.direction === LineDirection.UNIDIRECTIONAL ? 0x00ff00 : 0x0066ff;
+
     const material = new THREE.LineBasicMaterial({
-      color: 0x00ff00,
+      color: lineColor,
       linewidth: 2,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.8
     });
     const lineMesh = new THREE.Line(geometry, material);
-    //console.log("lineMesh:", lineMesh);
+    console.log("lineMesh:", lineMesh);
     this.#scene.add(lineMesh);
     this.#lineMeshes.set(line.id, lineMesh);
     // console.log("线段网格已添加到场景，ID:", line.id);
@@ -353,10 +407,18 @@ export class PointInteractionManager {
     const baseSize = 0.12;
     const pointSize = baseSize * 0.2; // 稍微缩小一点以适应SlamMapEdit的比例
 
-    // 创建主圆环（高亮则红色，否则白色）
-    const markerGeometry = new THREE.CircleGeometry(pointSize, 32);
+    // 判断是否为origin点
+    const isOriginPoint = point.name === "Origin";
+
+    // 为origin点使用特殊样式
+    const markerSize = isOriginPoint ? pointSize * 1.5 : pointSize; // origin点稍大
+    const markerColor = isOriginPoint ? "#ff6600" : (highlight ? "#ff0000" : "#ffffff"); // origin点为橙色
+    const strokeColor = isOriginPoint ? "#cc3300" : "#050215"; // origin点描边为深橙色
+
+    // 创建主圆环
+    const markerGeometry = new THREE.CircleGeometry(markerSize, 32);
     const markerMaterial = new THREE.MeshBasicMaterial({
-      color: highlight ? "#ff0000" : "#ffffff",
+      color: markerColor,
       transparent: false,
       opacity: 0.8,
     });
@@ -365,9 +427,9 @@ export class PointInteractionManager {
     circle.userData = { id: point.id, type: "main" };
 
     // 创建描边圆环（深色边框）
-    const strokeGeometry = new THREE.CircleGeometry(pointSize * 1.1, 32);
+    const strokeGeometry = new THREE.CircleGeometry(markerSize * 1.1, 32);
     const strokeMaterial = new THREE.MeshBasicMaterial({
-      color: "#050215",
+      color: strokeColor,
       transparent: false,
       opacity: 0.8,
     });
@@ -377,11 +439,16 @@ export class PointInteractionManager {
     strokeCircle.userData = { id: point.id, type: "stroke" };
 
     // 创建文字精灵
-    const textSprite = this.createTextSprite(point.id.toString(), "#003C80", 4);
+    const textColor = isOriginPoint ? "#cc3300" : "#003C80"; // origin点文字为深橙色
+    const textContent = isOriginPoint ? "O" : point.id.toString(); // origin点显示"O"
+    const textSprite = this.createTextSprite(textContent, textColor, 4);
     textSprite.position.x = point.x;
     textSprite.position.y = point.y + 0.001;
     textSprite.position.z = 0.5; // 确保文字在圆点上方
-    textSprite.userData = { id: point.id, type: "label" };
+    textSprite.userData = {
+      id: point.id,
+      type: "label"
+    };
     textSprite.raycast = () => {};
 
     // 添加到组
@@ -440,33 +507,7 @@ export class PointInteractionManager {
     return sprite;
   }
 
-  // 处理点击事件
-  public handleClick(event: MouseEvent, camera: THREE.Camera, renderer: THREE.WebGLRenderer): void {
-    const rect = renderer.domElement.getBoundingClientRect();
-    this.#mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    this.#mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-    this.#raycaster.setFromCamera(this.#mouse, camera);
-    const intersects = this.#raycaster.intersectObjects(this.#scene.children, true);
-
-    for (const intersect of intersects) {
-      // 直接检查相交对象
-      if (typeof intersect.object.userData.id === "number") {
-        this.selectPoint(intersect.object.userData.id);
-        return;
-      }
-
-      // 也检查父对象（兼容性）
-      let parent = intersect.object.parent;
-      while (parent) {
-        if (typeof parent.userData.id === "number") {
-          this.selectPoint(parent.userData.id);
-          return;
-        }
-        parent = parent.parent;
-      }
-    }
-  }
 
   // 处理右键点击
   public handleRightClick(
@@ -480,7 +521,6 @@ export class PointInteractionManager {
     this.#mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.#raycaster.setFromCamera(this.#mouse, camera);
     const intersects = this.#raycaster.intersectObjects(this.#scene.children, true);
-    // console.log("射线检测到的对象数量:", intersects.length);
     let block;
     block = true;
     for (const intersect of intersects) {
@@ -490,6 +530,7 @@ export class PointInteractionManager {
         typeof intersect.object.userData.id === "number" &&
         ["main"].includes(intersect.object.userData.type as string)
       ) {
+        console.log("intersect", intersect)
         block = false;
         const pointId = intersect.object.userData.id;
         const point = this.#points.find((p) => p.id === pointId);
@@ -500,7 +541,6 @@ export class PointInteractionManager {
             this.updateCurrentLineMesh();
             this.finishCreatingLine(pointId);
           }
-          return;
         }
 
         if (!this.#isCreatingLine) {
@@ -520,99 +560,12 @@ export class PointInteractionManager {
       this.#currentLinePoints.push(v);
       this.updateCurrentLineMesh();
     }
-    // 空白处
-    if (this.#isCreatingLine) {
-      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-      const intersection = new THREE.Vector3();
-      if (this.#raycaster.ray.intersectPlane(plane, intersection)) {
-        if (this.#lastLinePoint) {
-          this.#currentLinePoints.push(intersection.clone());
-          this.#lastLinePoint = intersection.clone();
-          this.updateCurrentLineMesh();
-          sendNotification("已添加折线点，继续右键点击空白处或点位", "", "user", "info");
-        }
-      }
-    } else {
+    else {
       this.setSelectedPointForMenu(null);
     }
     return;
   }
 
-  // 处理拖拽开始
-  public handleDragStart(
-    event: MouseEvent,
-    camera: THREE.Camera,
-    renderer: THREE.WebGLRenderer,
-  ): void {
-    const rect = renderer.domElement.getBoundingClientRect();
-    this.#mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    this.#mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    this.#raycaster.setFromCamera(this.#mouse, camera);
-    const intersects = this.#raycaster.intersectObjects(this.#scene.children, true);
-
-    for (const intersect of intersects) {
-      // 直接检查相交对象
-      if (typeof intersect.object.userData.id === "number") {
-        this.#draggingId = intersect.object.userData.id;
-        const hitPoint = intersect.point;
-        const markerPos = intersect.object.position;
-        this.#dragOffset = { x: markerPos.x - hitPoint.x, y: markerPos.y - hitPoint.y };
-        return;
-      }
-
-      // 也检查父对象（兼容性）
-      let parent = intersect.object.parent;
-      while (parent) {
-        if (typeof parent.userData.id === "number") {
-          this.#draggingId = parent.userData.id;
-          const hitPoint = intersect.point;
-          const markerPos = parent.position;
-          this.#dragOffset = { x: markerPos.x - hitPoint.x, y: markerPos.y - hitPoint.y };
-          return;
-        }
-        parent = parent.parent;
-      }
-    }
-  }
-
-  // 处理拖拽结束
-  public handleDragEnd(): void {
-    this.#draggingId = null;
-  }
-
-  // 处理拖拽移动
-  public handleDragMove(
-    event: MouseEvent,
-    camera: THREE.Camera,
-    renderer: THREE.WebGLRenderer,
-  ): void {
-    if (this.#draggingId == null) {
-      return;
-    }
-
-    const rect = renderer.domElement.getBoundingClientRect();
-    this.#mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    this.#mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    this.#raycaster.setFromCamera(this.#mouse, camera);
-    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-    const intersection = new THREE.Vector3();
-
-    if (this.#raycaster.ray.intersectPlane(plane, intersection)) {
-      const marker = this.#pointMarkers.get(this.#draggingId);
-      if (marker) {
-        marker.position.x = intersection.x + this.#dragOffset.x;
-        marker.position.y = intersection.y + this.#dragOffset.y;
-
-        // 更新点位数据
-        this.updatePoint(this.#draggingId, {
-          x: marker.position.x,
-          y: marker.position.y,
-        });
-      }
-    }
-  }
 
   // 下载点位数据
   public async downloadPoints(): Promise<void> {
@@ -667,7 +620,7 @@ export class PointInteractionManager {
             boundingBox.getSize(size);
 
             const localX = uvX * size.x + boundingBox.min.x;
-            const localY = (1 - uvY) * size.y + boundingBox.min.y;
+            const localY = uvY * size.y + boundingBox.min.y;
 
             return {
               id: point.id,
@@ -694,6 +647,7 @@ export class PointInteractionManager {
               id: number;
               nodeStart: number;
               nodeEnd: number;
+              lang?: number; // 方向字段可选
               points: { x: number; y: number }[];
             }) => {
               // 创建线段点数组
@@ -714,6 +668,7 @@ export class PointInteractionManager {
                 endPointId: edge.nodeEnd,
                 points: linePoints,
                 visible: true,
+                direction: edge.lang !== undefined ? edge.lang : LineDirection.UNIDIRECTIONAL
               };
 
               this.#lines.push(result);
@@ -757,7 +712,7 @@ export class PointInteractionManager {
           nodeStart: line.startPointId,
           nodeEnd: line.endPointId,
           weight: 1.0, // 如有权重字段可替换
-          lang: 0, // 如有方向字段可替换
+          lang: line.direction,     // 根据线段方向设置lang值
           points: line.points.map((point) => {
             const mesh = this.#layers[0]?.mesh;
             if (!mesh) {
@@ -858,7 +813,7 @@ export class PointInteractionManager {
   private textureToWorldCoords(pixelX: number, pixelY: number): { worldX: number; worldY: number } {
     const { origin, resolution } = this.#mapConfig;
     const worldX = (origin[0] ?? 0) + (pixelX + 0.5) * resolution;
-    const worldY = (origin[1] ?? 0) + (this.#pgmData.height - pixelY - 0.5) * resolution;
+    const worldY = (origin[1] ?? 0) + (pixelY - 0.5) * resolution;
     return { worldX, worldY };
   }
 

@@ -46,13 +46,13 @@ import threeDeeRenderThumbnail from "./ThreeDeeRender/thumbnail.png";
 // import diagnosticSummaryThumbnail from "./diagnostics/thumbnails/diagnostic-summary.png";
 
 export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
-  // {
-  //   title: "NavSelect",
-  //   type: "navselect",
-  //   //description: t("hardwareInfo"),
-  //   // thumbnail: joystickSummaryThumbnail,
-  //   module: async () => await import("./NavSelect"),
-  // },
+  {
+    title: "NavSelect",
+    type: "navselect",
+    //description: t("hardwareInfo"),
+    // thumbnail: joystickSummaryThumbnail,
+    module: async () => await import("./NavSelect"),
+  },
   {
     title: "SlamMapEdit",
     type: "SlamMapEdit",

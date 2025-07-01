@@ -96,7 +96,6 @@ interface DrawingToolbarProps {
   isPointsPanelOpen: boolean;
   onDownloadMaskMap: () => void;
   onCancelCreatingLine?: () => void;
-  isCreatingLine?: boolean;
 }
 
 export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
@@ -117,7 +116,6 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
   isPointsPanelOpen,
   onDownloadMaskMap,
   onCancelCreatingLine,
-  isCreatingLine = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -273,7 +271,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
             </Tooltip>
 
             {/* 取消线段创建按钮 */}
-            {isCreatingLine && onCancelCreatingLine && (
+            {onCancelCreatingLine && (
               <>
                 <Divider orientation="vertical" flexItem />
                 <Tooltip title="取消折线创建">

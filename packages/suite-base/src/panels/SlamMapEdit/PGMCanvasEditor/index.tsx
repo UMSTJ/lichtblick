@@ -33,6 +33,12 @@ interface ROSMapConfig {
   free_thresh: number;
 }
 
+// 线段方向枚举
+export enum LineDirection {
+  UNIDIRECTIONAL = 0, // 单向
+  BIDIRECTIONAL = 1   // 双向
+}
+
 export function parsePGMBuffer(buffer: ArrayBuffer): PGMImage | undefined {
   try {
     const bytes = new Uint8Array(buffer);
@@ -202,7 +208,14 @@ const PGMCanvasEditor: React.FC = () => {
   const [layers, setLayers] = useState<Layer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string>();
   const [isLayerDrawerOpen, setIsLayerDrawerOpen] = useState(false);
+  const [isCreatingLine, setIsCreatingLine] = useState(false);
 
+  useEffect(() => {
+    const manager = pointManagerRef.current;
+    if (manager) {
+      manager.setCreatingLineChangeListener(setIsCreatingLine);
+    }
+  }, [])
   // const [showedBaseLayerDrawError, setShowedBaseLayerDrawError] = useState(false);
 
   const [pgmData, setPGMData] = useState<PGMImage | undefined>(undefined);
@@ -255,6 +268,9 @@ const PGMCanvasEditor: React.FC = () => {
     setIpAddr(currentIp);
     // setIpAddr("192.243.117.147:9000")
   }, [playerName, setIpAddr]);
+  // useEffect(() => {
+  //   setIpAddr("192.243.117.147:9000")
+  // }, []);
 
   const getIpAddress = (name: string): string => {
     if (!name) {
@@ -1299,23 +1315,7 @@ const PGMCanvasEditor: React.FC = () => {
     }
   }, []);
 
-  const handleAddPointFromDrawer = useCallback(() => {
-    // 这里可以添加一个默认点或者提示用户在地图上点击
-    const newId = points.length > 0 ? Math.max(...points.map((p) => p.id)) + 1 : 1;
-    const newPoint: Point = {
-      id: newId,
-      name: `新点位${newId}`,
-      x: 0,
-      y: 0,
-      worldX: 0,
-      worldY: 0,
-      visible: true,
-    };
-    if (pointManagerRef.current) {
-      pointManagerRef.current.addPoint(newPoint);
-      setPoints(pointManagerRef.current.getPoints());
-    }
-  }, [points]);
+
 
   const handleRefreshPoints = useCallback(() => {
     void downloadPoints();
@@ -1354,16 +1354,12 @@ const PGMCanvasEditor: React.FC = () => {
   }, [contextMenu.pointId, closeContextMenu]);
 
   // 开始创建线段
-  const handleStartCreatingLine = useCallback(() => {
-    if (contextMenu.pointId != null && pointManagerRef.current) {
-      pointManagerRef.current.startCreatingLine(contextMenu.pointId);
+  const handleStartCreatingLine = useCallback((direction: LineDirection) => {
+    if (contextMenu.pointId !== null && pointManagerRef.current) {
+      pointManagerRef.current.startCreatingLine(contextMenu.pointId, direction);
       closeContextMenu();
-      sendNotification(
-        "开始创建折线，右键点击空白处添加中间点，点击另一个点位完成",
-        "",
-        "user",
-        "info",
-      );
+      const directionText = direction === LineDirection.UNIDIRECTIONAL ? "单向" : "双向";
+      sendNotification(`开始创建${directionText}折线，右键点击空白处添加中间点，点击另一个点位完成`, "", "user", "info");
     }
   }, [contextMenu.pointId, closeContextMenu]);
 
@@ -1385,16 +1381,12 @@ const PGMCanvasEditor: React.FC = () => {
     const onPointerDown = (e: PointerEvent) => {
       if (e.button === 0) {
         // 左键点击：处理拖拽开始
-        pointManagerRef.current?.handleDragStart(e, cameraRef.current!, rendererRef.current!);
+        // pointManagerRef.current?.handleDragStart(e, cameraRef.current!, rendererRef.current!);
       }
     };
 
     const onPointerUp = () => {
-      pointManagerRef.current?.handleDragEnd();
-    };
-
-    const onPointerMove = (e: PointerEvent) => {
-      pointManagerRef.current?.handleDragMove(e, cameraRef.current!, rendererRef.current!);
+      // pointManagerRef.current?.handleDragEnd();
     };
 
     const onContextMenu = (e: Event) => {
@@ -1439,13 +1431,13 @@ const PGMCanvasEditor: React.FC = () => {
     };
 
     canvas.addEventListener("pointerdown", onPointerDown, { capture: true });
-    canvas.addEventListener("pointermove", onPointerMove);
+    // canvas.addEventListener("pointermove", onPointerMove);
     canvas.addEventListener("pointerup", onPointerUp);
     canvas.addEventListener("contextmenu", onContextMenu);
 
     return () => {
       canvas.removeEventListener("pointerdown", onPointerDown);
-      canvas.removeEventListener("pointermove", onPointerMove);
+      // canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", onPointerUp);
       canvas.removeEventListener("contextmenu", onContextMenu);
     };
@@ -1526,7 +1518,6 @@ const PGMCanvasEditor: React.FC = () => {
         isPointsPanelOpen={isPointsDrawerOpen}
         onDownloadMaskMap={onDownloadMaskMap}
         onCancelCreatingLine={handleCancelCreatingLine}
-        isCreatingLine={pointManagerRef.current?.isCreatingLine() ?? false}
       />
       <div>
         <label htmlFor="map-select">选择地图：</label>
@@ -1544,32 +1535,6 @@ const PGMCanvasEditor: React.FC = () => {
             </option>
           ))}
         </select>
-
-        {/* 测试按钮 */}
-        {/*<button*/}
-        {/*  onClick={(e) => {*/}
-        {/*    e.stopPropagation();*/}
-        {/*    if (pointManagerRef.current) {*/}
-        {/*      const newId = points.length > 0 ? Math.max(...points.map(p => p.id)) + 1 : 1;*/}
-        {/*      const newPoint: Point = {*/}
-        {/*        id: newId,*/}
-        {/*        name: `测试点位${newId}`,*/}
-        {/*        x: 0,*/}
-        {/*        y: 0,*/}
-        {/*        worldX: 0,*/}
-        {/*        worldY: 0,*/}
-        {/*        visible: true*/}
-        {/*      };*/}
-        {/*      pointManagerRef.current.addPoint(newPoint);*/}
-        {/*      setPoints(pointManagerRef.current.getPoints());*/}
-        {/*      console.log("添加测试点位:", newPoint);*/}
-        {/*    }*/}
-        {/*  }}*/}
-        {/*  onMouseDown={e => e.stopPropagation()}*/}
-        {/*  style={{ marginLeft: '10px' }}*/}
-        {/*>*/}
-        {/*  添加测试点位*/}
-        {/*</button>*/}
       </div>
 
       <div
@@ -1621,7 +1586,7 @@ const PGMCanvasEditor: React.FC = () => {
         />
 
         {/* 创建折线模式提示 */}
-        {(pointManagerRef.current?.isCreatingLine() ?? false) && (
+        {(isCreatingLine?? false) && (
           <div
             style={{
               position: "absolute",
@@ -1662,7 +1627,7 @@ const PGMCanvasEditor: React.FC = () => {
           onClose={() => {
             setIsPointsDrawerOpen(false);
           }}
-          onAddPoint={handleAddPointFromDrawer}
+
           onDeletePoint={handleDeletePoint}
           onPointVisibilityChange={handlePointVisibilityChange}
           onPointSelect={handlePointSelect}
@@ -1674,42 +1639,59 @@ const PGMCanvasEditor: React.FC = () => {
         {contextMenu.visible && (
           <div
             style={{
-              position: "fixed",
+              position: 'fixed',
               top: contextMenu.y,
               left: contextMenu.x,
-              backgroundColor: "white",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+              backgroundColor: 'white',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
               zIndex: 1000,
-              minWidth: "120px",
+              minWidth: '120px',
             }}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
+            onClick={(e) => { e.stopPropagation(); }}
           >
             <div
               style={{
-                padding: "8px 12px",
-                cursor: "pointer",
-                borderBottom: "1px solid #eee",
-                fontSize: "14px",
+                padding: '8px 12px',
+                cursor: 'pointer',
+                borderBottom: '1px solid #eee',
+                fontSize: '14px',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f5f5f5")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
-              onClick={handleStartCreatingLine}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStartCreatingLine(LineDirection.UNIDIRECTIONAL);
+              }}
             >
-              创建折线
+              创建单向折线
             </div>
             <div
               style={{
-                padding: "8px 12px",
-                cursor: "pointer",
-                fontSize: "14px",
-                color: "#d32f2f",
+                padding: '8px 12px',
+                cursor: 'pointer',
+                borderBottom: '1px solid #eee',
+                fontSize: '14px',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f5f5f5")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStartCreatingLine(LineDirection.BIDIRECTIONAL);
+              }}
+            >
+              创建双向折线
+            </div>
+            <div
+              style={{
+                padding: '8px 12px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                color: '#d32f2f',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
               onClick={handleDeletePointFromMenu}
             >
               删除点位
