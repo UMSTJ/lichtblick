@@ -25,8 +25,10 @@ export const defaultConfig: VehicleControlConfig = {
   car_id: "map1.json",
   update_map: false,
   pass_mode: false,
-  nodeTopicName: "/nav_select",
-  nodeDatatype: "msg_interfaces/msg/NavSelectInterface",
+  // nodeTopicName: "/nav_select",
+  // nodeDatatype: "msg_interfaces/msg/NavSelectInterface",
+  nodeTopicName: "/clicked_point",
+  nodeDatatype: "geometry_msgs/msg/PointStamped",
   runTopicName: "/emergency_stop",
   runDatatype: "msg_interfaces/msg/EmergencyInterface",
   rfidSource: "/rfid_data",
@@ -82,32 +84,32 @@ function buildSettingsTree(
         },
       },
     },
-    source: {
-      label: "Source",
-      fields: {
-        rfid: {
-          label: "Topic",
-          input: "autocomplete",
-          error: topicError(config.rfidSource),
-          value: config.rfidSource,
-          items: topics.map((t) => t.name),
-        },
-        path: {
-          label: "Topic",
-          input: "autocomplete",
-          error: topicError(config.pathSource),
-          value: config.pathSource,
-          items: topics.map((t) => t.name),
-        },
-        battery: {
-          label: "Topic",
-          input: "autocomplete",
-          error: topicError(config.batterySource),
-          value: config.batterySource,
-          items: topics.map((t) => t.name),
-        },
-      },
-    },
+    // source: {
+    //   label: "Source",
+    //   fields: {
+    //     rfid: {
+    //       label: "Topic",
+    //       input: "autocomplete",
+    //       error: topicError(config.rfidSource),
+    //       value: config.rfidSource,
+    //       items: topics.map((t) => t.name),
+    //     },
+    //     path: {
+    //       label: "Topic",
+    //       input: "autocomplete",
+    //       error: topicError(config.pathSource),
+    //       value: config.pathSource,
+    //       items: topics.map((t) => t.name),
+    //     },
+    //     battery: {
+    //       label: "Topic",
+    //       input: "autocomplete",
+    //       error: topicError(config.batterySource),
+    //       value: config.batterySource,
+    //       items: topics.map((t) => t.name),
+    //     },
+    //   },
+    // },
     // control: {
     //   label: "地图切换",
     //   fields: {

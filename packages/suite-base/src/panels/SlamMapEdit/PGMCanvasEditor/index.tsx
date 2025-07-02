@@ -266,11 +266,12 @@ const PGMCanvasEditor: React.FC = () => {
     }
     const currentIp = getIpAddress(playerName);
     setIpAddr(currentIp);
-    // setIpAddr("192.243.117.147:9000")
   }, [playerName, setIpAddr]);
   // useEffect(() => {
   //   setIpAddr("192.243.117.147:9000")
+  //   console.log("IpAddress", ipAddr);
   // }, []);
+
 
   const getIpAddress = (name: string): string => {
     if (!name) {
@@ -378,16 +379,84 @@ const PGMCanvasEditor: React.FC = () => {
     };
 
     void downloadAndLoadMap();
-  }, [ipAddr, selectedMap]); // 依赖mapConfig，当配置变更时触发
+  }, [ipAddr, selectedMap]);
 
+  // 记录origin点
+  const originPointRef = useRef(null as null | Point);
+
+  // 初始化PointInteractionManager
+  useEffect(() => {
+    if (sceneRef.current && pgmData && ipAddr && selectedMap && layers.length > 0 && mapConfig) {
+      if (pointManagerRef.current) {
+        pointManagerRef.current.dispose();
+      }
+      pointManagerRef.current = new PointInteractionManager(
+        sceneRef.current,
+        mapConfig as MapConfig,
+        pgmData,
+        ipAddr,
+        selectedMap,
+        layers,
+      );
+      // 生成origin点
+      // const origin = mapConfig.origin;
+      const origin = Array.isArray(mapConfig.origin) ? mapConfig.origin : [0, 0, 0];
+
+      const resolution = mapConfig.resolution;
+      const worldX = 0;
+      const worldY = 0;
+      // const pixelX = (worldX - origin[0]) / resolution - 0.5;
+      // const pixelY = (worldY - origin[1]) / resolution - 0.5;
+      const pixelX = (worldX - (origin[0] ?? 0)) / resolution - 0.5;
+      const pixelY = (worldY - (origin[1] ?? 0)) / resolution - 0.5;
+      const pgmHeight = typeof pgmData.height === 'number' ? pgmData.height : 1;
+      const pgmWidth = typeof pgmData.width === 'number' ? pgmData.width : 1;
+      const uvX = pixelX / pgmWidth;
+      const uvY = pixelY / pgmHeight;
+      const mesh = layers[0]?.mesh;
+      if (!mesh) {return;}
+      const geometry = mesh.geometry;
+      geometry.computeBoundingBox();
+      const boundingBox = geometry.boundingBox;
+      if (!boundingBox) {return;}
+      const size = new THREE.Vector3();
+      boundingBox.getSize(size);
+      const localX = uvX * size.x + boundingBox.min.x;
+      const localY = -uvY * size.y - boundingBox.min.y;
+      const originPoint = {
+        id: -1,
+        name: "Origin",
+        x: localX,
+        y: localY,
+        worldX,
+        worldY,
+        visible: true,
+      };
+      originPointRef.current = originPoint;
+      pointManagerRef.current.setPoints([originPoint]);
+      setPoints(pointManagerRef.current.getPoints());
+    }
+  }, [pgmData, mapConfig, ipAddr, selectedMap, layers]);
+
+  // 封装一个合并origin点的setPoints
+  function setPointsWithOrigin(newPoints: Point[]) {
+    const originPoint = originPointRef.current;
+    let filtered = newPoints.filter(p => p.id !== -1 && p.name !== "Origin");
+    if (originPoint) {
+      filtered = [originPoint, ...filtered];
+    }
+    if (pointManagerRef.current) {
+      pointManagerRef.current.setPoints(filtered);
+      setPoints(pointManagerRef.current.getPoints());
+    }
+  }
+
+  // 下载点位时合并origin点
   const downloadPoints = async () => {
     if (pointManagerRef.current) {
       await pointManagerRef.current.downloadPoints();
-      setPoints(pointManagerRef.current.getPoints());
-      // pointManagerRef.current.setLines(pointManagerRef.current.getLines())
-      // 强制重新渲染所有线段
+      setPointsWithOrigin(pointManagerRef.current.getPoints());
       pointManagerRef.current.forceRenderLines();
-      // 添加延时手动渲染（确保状态更新完成）
       setTimeout(() => {
         if (rendererRef.current && sceneRef.current && cameraRef.current) {
           rendererRef.current.render(sceneRef.current, cameraRef.current);
@@ -976,7 +1045,7 @@ const PGMCanvasEditor: React.FC = () => {
     }
 
     pointManagerRef.current.addPointFromClick(e, cameraRef.current, canvasRef.current);
-    setPoints(pointManagerRef.current.getPoints());
+    setPointsWithOrigin(pointManagerRef.current.getPoints());
   };
 
   // 同步点位数据
@@ -990,7 +1059,7 @@ const PGMCanvasEditor: React.FC = () => {
   const handleDeletePoint = useCallback((idToDelete: number) => {
     if (pointManagerRef.current) {
       pointManagerRef.current.deletePoint(idToDelete);
-      setPoints(pointManagerRef.current.getPoints());
+      setPointsWithOrigin(pointManagerRef.current.getPoints());
     }
   }, []);
 
@@ -1446,28 +1515,6 @@ const PGMCanvasEditor: React.FC = () => {
 
   // 节流基础层画画错误提示
   const lastBaseLayerDrawErrorTime = useRef(0);
-
-  // 初始化PointInteractionManager
-  useEffect(() => {
-    if (sceneRef.current && pgmData && ipAddr && selectedMap && layers.length > 0) {
-      // 清理旧的管理器
-      if (pointManagerRef.current) {
-        pointManagerRef.current.dispose();
-      }
-
-      // 创建新的管理器
-      pointManagerRef.current = new PointInteractionManager(
-        sceneRef.current,
-        mapConfig as MapConfig,
-        pgmData,
-        ipAddr,
-        selectedMap,
-        layers,
-      );
-      // 同步点位数据
-      setPoints(pointManagerRef.current.getPoints());
-    }
-  }, [pgmData, mapConfig, ipAddr, selectedMap, layers]);
 
   // 同步layers变化到PointInteractionManager
   useEffect(() => {

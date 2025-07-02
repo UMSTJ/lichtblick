@@ -5,8 +5,8 @@
 
 import * as THREE from "three";
 
-import sendNotification from "@lichtblick/suite-base/util/sendNotification";
 import { LineDirection } from "@lichtblick/suite-base/panels/SlamMapEdit/PGMCanvasEditor";
+import sendNotification from "@lichtblick/suite-base/util/sendNotification";
 
 // 点位数据结构
 export interface Point {
@@ -252,13 +252,13 @@ export class PointInteractionManager {
 
   // 完成线段创建
   public finishCreatingLine(endPointId: number): void {
-    if (!this.#isCreatingLine || !this.#currentLineStartPointId) return;
+    if (!this.#isCreatingLine || !this.#currentLineStartPointId) {return;}
     // 不再push终点，因为已在handleRightClick中push
     const lineId = this.#lines.length > 0 ? Math.max(...this.#lines.map(l => l.id)) + 1 : 1;
     const newLine: Line = {
       id: lineId,
       startPointId: this.#currentLineStartPointId,
-      endPointId: endPointId,
+      endPointId,
       points: [...this.#currentLinePoints],
       visible: true,
       direction: this.#currentLineDirection
@@ -411,7 +411,7 @@ export class PointInteractionManager {
     const isOriginPoint = point.name === "Origin";
 
     // 为origin点使用特殊样式
-    const markerSize = isOriginPoint ? pointSize * 1.5 : pointSize; // origin点稍大
+    const markerSize = pointSize; // origin一样大
     const markerColor = isOriginPoint ? "#ff6600" : (highlight ? "#ff0000" : "#ffffff"); // origin点为橙色
     const strokeColor = isOriginPoint ? "#cc3300" : "#050215"; // origin点描边为深橙色
 
@@ -534,9 +534,11 @@ export class PointInteractionManager {
         block = false;
         const pointId = intersect.object.userData.id;
         const point = this.#points.find((p) => p.id === pointId);
+        console.log("point:", point);
         if (this.#isCreatingLine) {
           if (this.#lastLinePoint && point) {
             const v = new THREE.Vector3(point.x, point.y, 0.5);
+            console.log("v:", v);
             this.#currentLinePoints.push(v);
             this.updateCurrentLineMesh();
             this.finishCreatingLine(pointId);
@@ -626,7 +628,7 @@ export class PointInteractionManager {
               id: point.id,
               name: point.name,
               x: localX,
-              y: -localY,
+              y: localY,
               worldX: point.x,
               worldY: point.y,
               visible: true,
@@ -812,14 +814,18 @@ export class PointInteractionManager {
    */
   private textureToWorldCoords(pixelX: number, pixelY: number): { worldX: number; worldY: number } {
     const { origin, resolution } = this.#mapConfig;
-    const worldX = (origin[0] ?? 0) + (pixelX + 0.5) * resolution;
-    const worldY = (origin[1] ?? 0) + (pixelY - 0.5) * resolution;
+    const safeOrigin0 = Array.isArray(origin) && typeof origin[0] === 'number' ? origin[0] : 0;
+    const safeOrigin1 = Array.isArray(origin) && typeof origin[1] === 'number' ? origin[1] : 0;
+    const safeHeight = typeof this.#pgmData.height === 'number' ? this.#pgmData.height : 1;
+    const worldX = safeOrigin0 + (pixelX + 0.5) * resolution;
+    const worldY = safeOrigin1 + (safeHeight - pixelY - 0.5) * resolution;
     return { worldX, worldY };
   }
 
   /**
    * 世界坐标转纹理像素坐标
    */
+
 
   public addPointFromClick(
     event: React.MouseEvent<HTMLCanvasElement>,
@@ -854,7 +860,7 @@ export class PointInteractionManager {
     const worldToLocal = new THREE.Matrix4().copy(mesh.matrixWorld).invert();
     const localPoint = intersection.clone().applyMatrix4(worldToLocal);
     const { x: pixelX, y: pixelY } = this.uvToTextureCoords(localPoint, mesh);
-
+    console.log("pixelX:", pixelX, "pixelY:", pixelY);
     // 使用新方法转换为实际坐标（使用YAML参数）
     const { worldX, worldY } = this.textureToWorldCoords(pixelX, pixelY);
 
@@ -869,7 +875,7 @@ export class PointInteractionManager {
       name: `点${newId}`,
       visible: true,
     };
-    //console.log("newPoint:", newPoint);
+    console.log("newPoint:", newPoint);
     this.addPoint(newPoint);
   }
 
@@ -949,6 +955,7 @@ export class PointInteractionManager {
   public updateScene(scene: THREE.Scene): void {
     this.#scene = scene;
   }
+
 }
 
 // 防抖函数

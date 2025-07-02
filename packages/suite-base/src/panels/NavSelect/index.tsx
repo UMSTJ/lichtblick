@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
@@ -34,7 +34,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 import { useDataSourceInfo } from "@lichtblick/suite-base/PanelAPI";
-import { useMessageDataItem } from "@lichtblick/suite-base/components/MessagePathSyntax/useMessageDataItem";
+// import { useMessageDataItem } from "@lichtblick/suite-base/components/MessagePathSyntax/useMessageDataItem";
 import { MessagePipelineContext, useMessagePipeline } from "@lichtblick/suite-base/components/MessagePipeline";
 import Panel from "@lichtblick/suite-base/components/Panel";
 import PanelToolbar from "@lichtblick/suite-base/components/PanelToolbar";
@@ -46,6 +46,7 @@ import MapFilesTab from "@lichtblick/suite-base/panels/NavSelect/components/MapF
 import TextCard from "@lichtblick/suite-base/panels/NavSelect/components/TextCard";
 import { useVehicleControlSettings } from "@lichtblick/suite-base/panels/NavSelect/settings";
 import { VehicleControlConfig } from "@lichtblick/suite-base/panels/NavSelect/types";
+import { PLAYER_CAPABILITIES } from "@lichtblick/suite-base/players/constants";
 import { SaveConfig } from "@lichtblick/suite-base/types/panels";
 import sendNotification from "@lichtblick/suite-base/util/sendNotification"
 
@@ -74,9 +75,11 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   const rendererRef = useRef<THREE.WebGLRenderer | ReactNull>(ReactNull);
   const controlsRef = useRef<OrbitControls | ReactNull>(ReactNull);
   const resizeObserverRef = useRef<ResizeObserver | undefined>(undefined);
-  const batteryPercentageRef = useRef<number | undefined>(0);
+  // const batteryPercentageRef = useRef<number | undefined>(0);
   const animationFrameRef = useRef<number>();
-
+  const canPublish = useMessagePipeline((context) =>
+        context.playerState.capabilities.includes(PLAYER_CAPABILITIES.advertise),
+        );
 
   // const [imageUrl, setImageUrl] = useState<string | null>(null);
 
@@ -86,21 +89,22 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   const [mapName, setMapName] = useState<string>("");
   const [mapFiles, setMapFiles] = useState<string[]>([]);
   // const WORLD_WIDTH = 10;
-  const { nodeTopicName, nodeDatatype, pathSource, rfidSource, batterySource } = config;
+  // const { nodeTopicName, nodeDatatype, pathSource, rfidSource, batterySource } = config;
+  const { nodeTopicName, nodeDatatype } = config;
 
-  const rfidMessages = useMessageDataItem(rfidSource);
-  const pathMessages = useMessageDataItem(pathSource);
-  const batteryMessages = useMessageDataItem(batterySource);
-
-  const rfidObj = rfidMessages[rfidMessages.length - 1] as {
-    queriedData: { value: { data: string } }[];
-  };
-  const pathObj = pathMessages[pathMessages.length - 1] as {
-    queriedData: { value: { target_rfids: number[] } }[];
-  };
-  const batteryObj = batteryMessages[batteryMessages.length - 1] as {
-    queriedData: { value: { percentage: number } }[];
-  };
+  // const rfidMessages = useMessageDataItem(rfidSource);
+  // const pathMessages = useMessageDataItem(pathSource);
+  // const batteryMessages = useMessageDataItem(batterySource);
+  //
+  // const rfidObj = rfidMessages[rfidMessages.length - 1] as {
+  //   queriedData: { value: { data: string } }[];
+  // };
+  // const pathObj = pathMessages[pathMessages.length - 1] as {
+  //   queriedData: { value: { target_rfids: number[] } }[];
+  // };
+  // const batteryObj = batteryMessages[batteryMessages.length - 1] as {
+  //   queriedData: { value: { percentage: number } }[];
+  // };
 
   const interactionManagerRef = useRef<RFIDInteractionManager | undefined>(
     new RFIDInteractionManager(sceneRef.current!),
@@ -149,39 +153,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     [nodeTopicName, nodePublish],
   );
 
-  useEffect(() => {
-    try {
-      const rfid = rfidObj.queriedData[0]?.value?.data ?? "";
-      if (Number.parseInt(rfid) !== 0 && rfid !== "") {
-        interactionManagerRef.current?.setCurrentPosition(Number.parseInt(rfid));
-      }
-      interactionManagerRef.current?.animateCurrentPosition();
-
-      const path = pathObj.queriedData[0]?.value ? pathObj.queriedData[0].value.target_rfids : [];
-
-      interactionManagerRef.current?.highlightRoute(path);
-    } catch (error) {
-      //console.error("Failed to set end node:", error);
-    }
-  }, [rfidObj, pathObj]);
-
-  useEffect(() => {
-    try {
-      const battery = batteryObj.queriedData[0]?.value.percentage;
-
-      if (battery !== batteryPercentageRef.current) {
-        batteryPercentageRef.current = battery;
-      }
-    } catch (error) {
-      console.error("Failed to get battery percentage:", error);
-    }
-  }, [batteryObj]);
-
-
-
   // 初始化 Three.js
-  const [mapConfig, setMapConfig] = useState<any>(null);
-
   const initThreeJS = useCallback(() => {
     if (!map?.map || !map?.json || !mountRef.current || !map?.pgmData || !map?.mapConfig) {
       console.error("map/pgmData/mapConfig/mountRef.current is undefined");
@@ -233,25 +205,13 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     if (map.map instanceof THREE.DataTexture) {
       // 对于新的导航点数据格式，我们需要估算地图尺寸
       // 从导航点数据中计算边界框来确定地图尺寸
-      let mapWidth = map.pgmData.width /100;
-      let mapHeight = map.pgmData.height /100;
-
-      if (map.json.points && map.json.points.length > 0) {
-        const points = map.json.points;
-        const minX = Math.min(...points.map((p: any) => p.x));
-        const maxX = Math.max(...points.map((p: any) => p.x));
-        const minY = Math.min(...points.map((p: any) => p.y));
-        const maxY = Math.max(...points.map((p: any) => p.y));
-
-        const rangeX = maxX - minX;
-        const rangeY = maxY - minY;
-        const maxRange = Math.max(rangeX, rangeY);
-
-        // 设置地图尺寸，确保所有点都在可见范围内
-        mapWidth = maxRange * 1.0; // 添加20%的边距
-        mapHeight = maxRange * 1.0;
-      }
-
+      // let mapWidth = map.pgmData.width /100;
+      // let mapHeight = map.pgmData.height /100;
+      const mapWidth =  map.pgmData.width * map.mapConfig.resolution;
+      const mapHeight  = map.pgmData.height * map.mapConfig.resolution;
+      console.log("m" +
+        "apWidth:", mapWidth);
+      console.log("mapHeight:", mapHeight);
       const mapGeometry = new THREE.PlaneGeometry(mapWidth, mapHeight);
       const mapMaterial = new THREE.MeshBasicMaterial({ map: map.map });
       mapMaterial.needsUpdate = true;
@@ -265,8 +225,8 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
         pgmWidth: map.pgmData.width,
         pgmHeight: map.pgmData.height
       };
-      console.log("options", options);
-      console.log("map.map", map.map);
+      // console.log("options", options);
+      // console.log("map.map", map.map);
       interactionManagerRef.current = parseAndRenderNavPoints(map.json, scene, {
         width: mapWidth,
         height: mapHeight,
@@ -284,8 +244,6 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       };
       forceRefresh();
 
-      // 调试：打印scene.children
-      console.log("[调试] scene.children:", scene.children);
       if (scene.children.length <= 1) {
         sendNotification("未检测到点线对象，请检查数据或坐标范围", "", "user", "warn");
       }
@@ -319,7 +277,10 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   useEffect(() => {
     if (mountRef.current && map) {
       // 先清理旧的场景
-      if (rendererRef.current && mountRef.current.contains(rendererRef.current.domElement)) {
+      if (
+        rendererRef.current?.domElement &&
+        mountRef.current?.contains(rendererRef.current.domElement)
+      ) {
         mountRef.current.removeChild(rendererRef.current.domElement);
         rendererRef.current.dispose();
       }
@@ -355,63 +316,63 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       }
 
       try {
-        interactionManagerRef.current.handleClick(event, cameraRef.current, rendererRef.current);
+        console.log("canpublish", canPublish);
+        sendNotification(`canpublish: ${canPublish}`, "", "user", "info");
+        interactionManagerRef.current.handleClick(event, cameraRef.current, rendererRef.current,nodePublish);
 
-        const selectedRfidId = interactionManagerRef.current.getSelectedRfidId();
-        if (selectedRfidId) {
-          setEndNode(Number(selectedRfidId)).catch(console.error);
-        }
       } catch (error) {
         console.error("Click handling error:", error);
       }
     };
 
     // 右键点击事件处理
-    const handleRightClick = (event: MouseEvent) => {
-      event.preventDefault(); // 阻止默认右键菜单
+    // const handleRightClick = (event: MouseEvent) => {
+    //   event.preventDefault(); // 阻止默认右键菜单
 
-      if (!cameraRef.current || !rendererRef.current || !interactionManagerRef.current) {
-        return;
-      }
+    //   if (!cameraRef.current || !rendererRef.current || !interactionManagerRef.current) {
+    //     return;
+    //   }
 
-      try {
-        interactionManagerRef.current.handleClick(event, cameraRef.current, rendererRef.current);
-
-        const selectedRfidId = interactionManagerRef.current.getSelectedRfidId();
-        if (selectedRfidId) {
-          // 直接publish选中的点位
-          if (nodeTopicName) {
-            try {
-              nodePublish({ end_node: Number(selectedRfidId), pass_nodes: [] } as Record<string, unknown>);
-              sendNotification(`点位 ${selectedRfidId} 发送成功`, "", "user", "info");
-            } catch (error) {
-              console.error("Failed to publish RFID:", error);
-              const errorMessage = error instanceof Error ? error.message : '未知错误';
-              sendNotification(`点位 ${selectedRfidId} 发送失败: ${errorMessage}`, "", "user", "error");
-            }
-          } else {
-            sendNotification("发送失败：无效的topic名称", "", "user", "error");
-          }
-        }
-      } catch (error) {
-        console.error("Right click handling error:", error);
-        const errorMessage = error instanceof Error ? error.message : '未知错误';
-        sendNotification(`右键点击处理失败: ${errorMessage}`, "", "user", "error");
-      }
-    };
+    //   try {
+    //     interactionManagerRef.current.handleClick(event, cameraRef.current, rendererRef.current, nodePublish);
+    //     const selectedRfidId = interactionManagerRef.current.getSelectedRfidId();
+    //     if (selectedRfidId) {
+    //       // 直接publish选中的点位
+    //       if (nodeTopicName) {
+    //         try {
+    //           nodePublish({ end_node: Number(selectedRfidId), pass_nodes: [] } as Record<string, unknown>);
+    //           sendNotification(`点位 ${selectedRfidId} 发送成功`, "", "user", "info");
+    //         } catch (error) {
+    //           console.error("Failed to publish RFID:", error);
+    //           const errorMessage = error instanceof Error ? error.message : '未知错误';
+    //           sendNotification(`点位 ${selectedRfidId} 发送失败: ${errorMessage}`, "", "user", "error");
+    //         }
+    //       } else {
+    //         sendNotification("发送失败：无效的topic名称", "", "user", "error");
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error("Right click handling error:", error);
+    //     const errorMessage = error instanceof Error ? error.message : '未知错误';
+    //     sendNotification(`右键点击处理失败: ${errorMessage}`, "", "user", "error");
+    //   }
+    // };
 
     rendererRef.current.domElement.addEventListener("click", handleClick);
-    rendererRef.current.domElement.addEventListener("contextmenu", handleRightClick);
+    // rendererRef.current.domElement.addEventListener("contextmenu", handleRightClick);
 
     return () => {
       rendererRef.current?.domElement.removeEventListener("click", handleClick);
-      rendererRef.current?.domElement.removeEventListener("contextmenu", handleRightClick);
+      // rendererRef.current?.domElement.removeEventListener("contextmenu", handleRightClick);
     };
   }, [isSceneReady, setEndNode, map, nodeTopicName, nodePublish]);
 
   useEffect(() => {
     return () => {
-      if (rendererRef.current && mountRef.current) {
+      if (
+        rendererRef.current?.domElement &&
+        mountRef.current?.contains(rendererRef.current.domElement)
+      ) {
         mountRef.current.removeChild(rendererRef.current.domElement);
         rendererRef.current.dispose();
       }
@@ -527,13 +488,14 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     fetch(`http://${ipAddr}/mapServer/mapList`)
       .then(async res => await res.json())
       .then(list => {
-        setMapFiles(list);
-        setMapName(list[0] ?? "");
+        const newList = ["请选择地图", ...list];
+        setMapFiles(newList);
+        setMapName("请选择地图");
       })
       .catch(err => {
         console.error("获取地图列表失败:", err);
-        setMapFiles([]);
-        setMapName("");
+        setMapFiles(["请选择地图"]);
+        setMapName("请选择地图");
       });
   }, [ipAddr]);
 
@@ -593,7 +555,10 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   }
   // 2. 替换地图图片加载逻辑为PGM下载和解析
   useEffect(() => {
-    if (!ipAddr || !mapName) {return;}
+    if (!ipAddr || !mapName || mapName === "请选择地图") {
+      setMap(undefined);
+      return;
+    }
     Promise.all([
       fetch(`http://${ipAddr}/mapServer/download/pgmfile?mapname=${mapName}`).then(async res => await res.arrayBuffer()),
       fetch(`http://${ipAddr}/mapServer/download/navPoints?mapName=${mapName}`).then(async res => await res.json()),
@@ -613,21 +578,13 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       if (!pgmData) {throw new Error("PGM解析失败");}
       const { width, height, maxVal, data } = pgmData;
       const rgbaData = new Uint8Array(width * height * 4);
-      // for (let i = 0; i < data.length; i++) {
-      //   // @ts-ignore
-      //   const value = Math.floor((data[i] / (maxVal ?? 255)) * 255);
-      //   rgbaData[i * 4] = value;
-      //   rgbaData[i * 4 + 1] = value;
-      //   rgbaData[i * 4 + 2] = value;
-      //   rgbaData[i * 4 + 3] = 255;
-      // }
       data.forEach((value, index)=> {
         const convertValue = Math.floor((value / (maxVal ?? 255)) * 255);
         rgbaData[index * 4] = convertValue;
         rgbaData[index * 4 + 1] = convertValue;
         rgbaData[index * 4 + 2] = convertValue;
         rgbaData[index * 4 + 3] = 255;
-      })
+      });
       const texture = new THREE.DataTexture(
         rgbaData,
         width,
@@ -638,9 +595,9 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       texture.needsUpdate = true;
       // 解析YAML
       const downloadMapConfig = yaml.load(yamlText) as any;
-      setMapConfig(downloadMapConfig);
+      console.log("downloadMapConfig:", downloadMapConfig)
       // 使用新的导航点数据格式
-      setMap({ map: texture, json: navData, pgmData, mapConfig });
+      setMap({ map: texture, json: navData, pgmData, mapConfig: downloadMapConfig });
     }).catch(err => {
       console.error("获取PGM、导航点或YAML数据失败:", err);
       setMap(undefined);

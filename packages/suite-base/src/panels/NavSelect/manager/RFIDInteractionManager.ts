@@ -11,7 +11,11 @@
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
+
 import * as THREE from "three";
+
+// import { useMessagePipeline } from "@lichtblick/suite-base/components/MessagePipeline";
+import sendNotification from "@lichtblick/suite-base/util/sendNotification";
 
 // RFID 交互管理类
 
@@ -49,6 +53,34 @@ export class RFIDInteractionManager {
   #currentPositionMarker: THREE.Group | undefined = undefined;
   #currentPositionRfidId: number | undefined = undefined;
   #lastPathIds: number[] = [];
+  #points:{
+    x: number;
+    y: number;
+    id: number;
+    name: string;
+    orientation: { x: number; y: number; z: number; w: number };
+  }[] = []
+
+
+  public getPoints(): {
+    x: number;
+    y: number;
+    id: number;
+    name: string;
+    orientation: { x: number; y: number; z: number; w: number };
+  }[] {
+    return this.#points;
+  }
+
+  public setPoints(points:{
+    x: number;
+    y: number;
+    id: number;
+    name: string;
+    orientation: { x: number; y: number; z: number; w: number };
+  }[]): void {
+    this.#points = points;
+  }
 
   public constructor(
     scene: THREE.Scene,
@@ -97,46 +129,15 @@ export class RFIDInteractionManager {
   public resetPathColor(): void {
     // console.log("resetPathColor");
     // console.log("this.#lastPathIds", this.#lastPathIds);
+    if (this.#lastPathIds.length === 0) {
+      return;
+    }
     this.#lastPathIds.forEach((pathId) => {
       this.highlightPath(pathId, this.#deafultPathColor);
     });
     this.#lastPathIds = [];
   }
 
-  // 高亮一组 RFID 和它们之间的路径
-  public highlightRoute(
-    rfidSequence: number[],
-    pathColor: string = "#FF0000",
-    rfidColor: string = "#FFC5C5",
-  ): void {
-    // 重置之前的高亮状态
-    this.resetAllColors();
-
-    // 重置之前高亮的路径
-    this.resetPathColor();
-
-    // 高亮 RFID 点
-    rfidSequence.forEach((rfidId) => {
-      this.changeRfidColor(rfidId, rfidColor);
-    });
-
-    // 找到并高亮相连的路径
-    this.#pathGroups.forEach((pathGroup, pathId) => {
-      const { startRfid, endRfid } = pathGroup.userData;
-
-      // 检查这条路径是否连接序列中相邻的两个 RFID
-      for (let i = 0; i < rfidSequence.length - 1; i++) {
-        if (
-          (startRfid === rfidSequence[i] && endRfid === rfidSequence[i + 1]) ||
-          (endRfid === rfidSequence[i] && startRfid === rfidSequence[i + 1])
-        ) {
-          this.#lastPathIds.push(pathId);
-          this.highlightPath(pathId, pathColor);
-          break;
-        }
-      }
-    });
-  }
 
   // 改变 RFID 颜色的方法
   public changeRfidColor(rfidId: number, color: string = "#FFFF00"): void {
@@ -157,8 +158,14 @@ export class RFIDInteractionManager {
     }
   }
 
+
   // 处理点击事件
-  public handleClick(event: MouseEvent, camera: THREE.Camera, renderer: THREE.WebGLRenderer): void {
+  public handleClick(
+    event: MouseEvent,
+    camera: THREE.Camera,
+    renderer: THREE.WebGLRenderer,
+    nodePublish: (PointStamped:any) => void
+): void {
     const rect = renderer.domElement.getBoundingClientRect();
     this.#mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.#mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -167,19 +174,45 @@ export class RFIDInteractionManager {
     const intersects = this.#raycaster.intersectObjects(this.#scene.children, true);
 
     for (const intersect of intersects) {
-      let parent = intersect.object.parent;
-      while (parent) {
-        if (parent.userData.type === "rfid") {
-          // 调用颜色改变方法
-          if (typeof parent.userData.id === "number") {
-            this.changeRfidColor(parent.userData.id);
-          }
-          return;
+        let parent = intersect.object.parent;
+        while (parent) {
+            if (parent.userData.type === "rfid") {
+                if (typeof parent.userData.id === "number") {
+                    this.changeRfidColor(parent.userData.id);
+                    const selectedRfidId = parent.userData.id;
+                    if (selectedRfidId !== 0) {
+                        const clickNode = this.getPoints().find(point => point.id === selectedRfidId);
+                        console.log("clickNode", clickNode);
+
+                        // 创建符合 ROS2 标准的消息
+                        const header = {
+                            stamp: {
+                                sec: Math.floor(Date.now() / 1000),  // 当前时间秒数
+                                nsec: (Date.now() % 1000) * 1000000  // 当前时间纳秒部分
+                            },
+                            frame_id: "map"  // 默认坐标系，可根据需要调整
+                        };
+
+                        const point = {
+                            x: clickNode?.x ?? 0,  // 使用点击点的x坐标
+                            y: clickNode?.y ?? 0,  // 使用点击点的y坐标
+                            z: 0   // 使用点击点的z坐标
+                        };
+
+                        // 分别传递header和point
+                        console.log("header",header)
+                        console.log("point",point);
+                        nodePublish({header, point});
+
+                        sendNotification(`点位 ${selectedRfidId} 发送成功`, "", "user", "info");
+                    }
+                }
+                return;
+            }
+            parent = parent.parent;
         }
-        parent = parent.parent;
-      }
     }
-  }
+}
   // 设置当前位置
   public setCurrentPosition(rfidId: number): void {
     // console.log("setCurrentPosition", rfidId);
@@ -222,14 +255,7 @@ export class RFIDInteractionManager {
     this.#currentPositionRfidId = rfidId;
   }
 
-  // 移除当前位置标记
-  public removeCurrentPosition(): void {
-    if (this.#currentPositionMarker) {
-      this.#scene.remove(this.#currentPositionMarker);
-      this.#currentPositionMarker = undefined;
-      this.#currentPositionRfidId = undefined;
-    }
-  }
+
   // 可以添加一个动画效果
   public animateCurrentPosition(): void {
     if (!this.#currentPositionMarker) {
@@ -303,6 +329,9 @@ export class RFIDInteractionManager {
 
   // 重置所有 RFID 颜色
   public resetAllColors(): void {
+    if (this.#rfidPoints.size === 0) {
+      return;
+    }
     this.#rfidPoints.forEach((rfidMesh) => {
       if (rfidMesh.material instanceof THREE.MeshBasicMaterial) {
         rfidMesh.material.color.set(this.#defaultColor);
@@ -382,13 +411,6 @@ export const parseAndRenderNavPoints = (
     mesh: THREE.Mesh | null;
   }> = {},
 ): RFIDInteractionManager | undefined => {
-  // if (!jsonData.points || !jsonData.edges) {
-  //   return;
-  // }
-  // console.log("options", options);
-  // console.log("jsonData", jsonData);
-  // console.log("mapSize", mapSize);
-
   const {
     origin = [0, 0],
     resolution = 1,
@@ -398,13 +420,13 @@ export const parseAndRenderNavPoints = (
   } = options;
   // 创建交互管理器
   const interactionManager = new RFIDInteractionManager(scene, "#ffffff", "#000000");
-  const rfidSize = 0.12; // 放大400%
-
+  const rfidSize = 0.12/8/resolution;
+  interactionManager.setPoints(jsonData.points)
   // 辅助函数：世界坐标转本地坐标
-  function worldToLocal(worldX: number, worldY: number) {
+  function worldToLocal(worldX: number, worldY: number,pgmHeight:number) {
     // 1. 世界坐标转像素坐标
     const pixelX = (worldX - (origin[0] ?? 0)) / resolution - 0.5;
-    const pixelY = (worldY - (origin[1] ?? 0)) / resolution - 0.5;
+    const pixelY = pgmHeight- (worldY - (origin[1] ?? 0)) / resolution - 0.5;
     // 2. 归一化
     const uvX = pixelX / pgmWidth;
     const uvY = pixelY / pgmHeight;
@@ -426,82 +448,84 @@ export const parseAndRenderNavPoints = (
   }
 
   // 渲染导航点
-  jsonData.points.forEach((point) => {
-    const { x, y } = worldToLocal(point.x, point.y);
-    // 创建RFID点几何体
-    const geometry = new THREE.CircleGeometry(rfidSize, 32);
-    const material = new THREE.MeshBasicMaterial({
-      color: "#ffffff",
-      transparent: true,
-      opacity: 0.8,
-      side: THREE.DoubleSide,
-    });
-    const rfidPoint = new THREE.Mesh(geometry, material);
-    rfidPoint.position.set(x, y, 0.01);
-
-    // 创建边框
-    const strokeGeometry = new THREE.CircleGeometry(rfidSize * 1.1, 32);
-    const strokeMaterial = new THREE.MeshBasicMaterial({
-      color: "#050215",
-      transparent: false,
-      opacity: 0.8,
-      side: THREE.DoubleSide,
-    });
-    const strokeCircle = new THREE.Mesh(strokeGeometry, strokeMaterial);
-    strokeCircle.position.set(x, y, 0.005);
-
-    // 创建文字标签
-    const createTextSprite = (text: string, color = "#003C80FF", fontSize = 12) => {
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      if (!context) {
-        return undefined;
-      }
-      canvas.width = 256;
-      canvas.height = 256;
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      context.font = `${fontSize * 6 }px Arial`;
-      context.textAlign = "center";
-      context.textBaseline = "middle";
-      context.fillStyle = color;
-      context.fillText(text, canvas.width / 2, canvas.height / 2);
-      const texture = new THREE.Texture(canvas);
-      texture.needsUpdate = true;
-      const spriteMaterial = new THREE.SpriteMaterial({
-        map: texture,
+  if(jsonData.points.length > 0){
+    jsonData.points.forEach((point) => {
+      const { x, y } = worldToLocal(point.x, point.y,pgmHeight);
+      // 创建RFID点几何体
+      const geometry = new THREE.CircleGeometry(rfidSize, 32);
+      const material = new THREE.MeshBasicMaterial({
+        color: "#ffffff",
         transparent: true,
+        opacity: 0.8,
+        side: THREE.DoubleSide,
       });
-      const sprite = new THREE.Sprite(spriteMaterial);
-      sprite.scale.set(0.5 * 2, 0.5 * 2, 1);
-      return sprite;
-    };
-    const textSprite = createTextSprite(point.id.toString(), "#003C80FF", 12);
-    if (textSprite) {
-      textSprite.position.x = x;
-      textSprite.position.y = y + 0.001 * 2;
-      textSprite.position.z = 0.011;
-    }
-    // 创建RFID组
-    const rfidGroup = new THREE.Group();
-    rfidGroup.add(rfidPoint);
-    rfidGroup.add(strokeCircle);
-    if (textSprite) {
-      rfidGroup.add(textSprite);
-    }
-    rfidGroup.userData = {
-      id: point.id,
-      type: "rfid",
-    };
-    scene.add(rfidGroup);
-    // 注册RFID点到交互管理器
-    interactionManager.registerRfidPoint(point.id, rfidPoint);
-  });
+      const rfidPoint = new THREE.Mesh(geometry, material);
+      rfidPoint.position.set(x, y, 0.01);
+
+      // 创建边框
+      const strokeGeometry = new THREE.CircleGeometry(rfidSize * 1.1, 32);
+      const strokeMaterial = new THREE.MeshBasicMaterial({
+        color: "#050215",
+        transparent: false,
+        opacity: 0.8,
+        side: THREE.DoubleSide,
+      });
+      const strokeCircle = new THREE.Mesh(strokeGeometry, strokeMaterial);
+      strokeCircle.position.set(x, y, 0.005);
+
+      // 创建文字标签
+      const createTextSprite = (text: string, color = "#003C80FF", fontSize = 12) => {
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        if (!context) {
+          return undefined;
+        }
+        canvas.width = 256;
+        canvas.height = 256;
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.font = `${fontSize * 6 }px Arial`;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillStyle = color;
+        context.fillText(text, canvas.width / 2, canvas.height / 2);
+        const texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        const spriteMaterial = new THREE.SpriteMaterial({
+          map: texture,
+          transparent: true,
+        });
+        const sprite = new THREE.Sprite(spriteMaterial);
+        sprite.scale.set(0.5 * 2, 0.5 * 2, 1);
+        return sprite;
+      };
+      const textSprite = createTextSprite(point.id.toString(), "#003C80FF", 12);
+      if (textSprite) {
+        textSprite.position.x = x;
+        textSprite.position.y = y + 0.001 * 2;
+        textSprite.position.z = 0.011;
+      }
+      // 创建RFID组
+      const rfidGroup = new THREE.Group();
+      rfidGroup.add(rfidPoint);
+      rfidGroup.add(strokeCircle);
+      if (textSprite) {
+        rfidGroup.add(textSprite);
+      }
+      rfidGroup.userData = {
+        id: point.id,
+        type: "rfid",
+      };
+      scene.add(rfidGroup);
+      // 注册RFID点到交互管理器
+      interactionManager.registerRfidPoint(point.id, rfidPoint);
+    });
+  }
 
   // 渲染origin点（左下角）
   if (origin.length >= 2) {
     const oxVal = 0;
     const oyVal = 0;
-    const { x: ox, y: oy } = worldToLocal(oxVal, oyVal);
+    const { x: ox, y: oy } = worldToLocal(oxVal, oyVal,pgmHeight);
     const originSize = rfidSize * 1.5;
     // 主圆
     const originGeometry = new THREE.CircleGeometry(originSize, 32);
@@ -554,39 +578,41 @@ export const parseAndRenderNavPoints = (
   }
 
   // 渲染路径边
-  jsonData.edges.forEach((edge) => {
-    const group = new THREE.Group();
-    // 创建路径线段
-    const points: THREE.Vector3[] = [];
-    if (edge.points.length > 0) {
-      edge.points.forEach((pt) => {
-        const {x, y } = worldToLocal(pt.worldx ?? 0, pt.worldy ?? 0)
-        points.push(new THREE.Vector3(x, y, 0.05));
+  if(jsonData.edges.length > 0){
+    jsonData.edges.forEach((edge) => {
+      const group = new THREE.Group();
+      // 创建路径线段
+      const points: THREE.Vector3[] = [];
+      if (edge.points.length > 0) {
+        edge.points.forEach((pt) => {
+          const {x, y } = worldToLocal(pt.worldx ?? 0, pt.worldy ?? 0,pgmHeight)
+          points.push(new THREE.Vector3(x, y, 0.05));
+        });
+      }
+      // 样式区分
+      const isBidirectional = (edge as any).lang === 1;
+      const lineColor = isBidirectional ? 0x0066ff : 0x00ff00;
+      const lineWidth = isBidirectional ? 3 : 2;
+      // 创建线段几何体
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineBasicMaterial({
+        color: lineColor,
+        linewidth: lineWidth,
+        opacity: 0.8,
+        transparent: true,
       });
-    }
-    // 样式区分
-    const isBidirectional = (edge as any).lang === 1;
-    const lineColor = isBidirectional ? 0x0066ff : 0x00ff00;
-    const lineWidth = isBidirectional ? 3 : 2;
-    // 创建线段几何体
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    const material = new THREE.LineBasicMaterial({
-      color: lineColor,
-      linewidth: lineWidth,
-      opacity: 0.8,
-      transparent: true,
+      const line = new THREE.Line(geometry, material);
+      group.add(line);
+      group.userData = {
+        id: edge.id,
+        type: "path",
+        startRfid: edge.nodeStart,
+        endRfid: edge.nodeEnd,
+      };
+      scene.add(group);
+      interactionManager.registerPath(edge.id, group);
     });
-    const line = new THREE.Line(geometry, material);
-    group.add(line);
-    group.userData = {
-      id: edge.id,
-      type: "path",
-      startRfid: edge.nodeStart,
-      endRfid: edge.nodeEnd,
-    };
-    scene.add(group);
-    interactionManager.registerPath(edge.id, group);
-  });
+  }
   return interactionManager;
 };
 
