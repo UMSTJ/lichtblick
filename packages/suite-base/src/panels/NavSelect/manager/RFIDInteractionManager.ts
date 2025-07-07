@@ -448,7 +448,7 @@ export const parseAndRenderNavPoints = (
   }
 
   // 渲染导航点
-  if(jsonData.points.length > 0){
+  if(jsonData.points != null && jsonData.points.length > 0){
     jsonData.points.forEach((point) => {
       const { x, y } = worldToLocal(point.x, point.y,pgmHeight);
       // 创建RFID点几何体
@@ -522,7 +522,7 @@ export const parseAndRenderNavPoints = (
   }
 
   // 渲染origin点（左下角）
-  if (origin.length >= 2) {
+  if (origin != null && origin.length >= 2) {
     const oxVal = 0;
     const oyVal = 0;
     const { x: ox, y: oy } = worldToLocal(oxVal, oyVal,pgmHeight);
@@ -578,7 +578,7 @@ export const parseAndRenderNavPoints = (
   }
 
   // 渲染路径边
-  if(jsonData.edges.length > 0){
+  if(jsonData.edges != null && jsonData.edges.length > 0){
     jsonData.edges.forEach((edge) => {
       const group = new THREE.Group();
       // 创建路径线段
