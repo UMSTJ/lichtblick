@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-FileCopyrightText: Copyright (C) 2024-2025  UMS , Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 // This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,7 +12,7 @@ import { initReactI18next } from "react-i18next";
 import * as en from "./en";
 import * as zh from "./zh";
 
-export const translations = { en ,zh };
+export const translations = { en, zh };
 
 export type Language = keyof typeof translations;
 

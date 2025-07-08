@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-FileCopyrightText: Copyright (C) 2024-2025  UMS , Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 // This Source Code Form is subject to the terms of the Mozilla Public
@@ -44,7 +44,10 @@ import { formatTime } from "@lichtblick/suite-base/util/formatTime";
 import { formatTimeRaw } from "@lichtblick/suite-base/util/time";
 
 const MESSAGE_RATES = [1, 3, 5, 10, 15, 20, 30, 60];
-const LANGUAGE_OPTIONS: { key: Language; value: string }[] = [{ key: "en", value: "English" },{ key: "zh", value: "简体中文" }];
+const LANGUAGE_OPTIONS: { key: Language; value: string }[] = [
+  { key: "en", value: "English" },
+  { key: "zh", value: "简体中文" },
+];
 
 const useStyles = makeStyles()((theme) => ({
   autocompleteInput: {

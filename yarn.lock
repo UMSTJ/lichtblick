@@ -9486,6 +9486,7 @@ __metadata:
     eslint-plugin-es: 4.1.0
     eslint-plugin-file-progress: 1.4.0
     eslint-plugin-filenames: 1.3.2
+    eslint-plugin-header: 3.1.1
     eslint-plugin-import: 2.31.0
     eslint-plugin-jest: 27.6.3
     eslint-plugin-prettier: 5.1.3
@@ -12755,6 +12756,15 @@ __metadata:
   peerDependencies:
     eslint: "*"
   checksum: 4048e9dfa9b22cf424edd5928832ce2b4a20dd10825eea7f13747e2cca2ce5fc9084da6a5f236fa17edce253ee36ccfb084cca61403775419dc1524c25b5ce5f
+  languageName: node
+  linkType: hard
+
+"eslint-plugin-header@npm:3.1.1":
+  version: 3.1.1
+  resolution: "eslint-plugin-header@npm:3.1.1"
+  peerDependencies:
+    eslint: ">=7.7.0"
+  checksum: 2353e4ba011be81d5c27fbd79929e18dce118d7673a2f717b1ac5a0bceb33e06ec9a7c80a01dddc5804df75e2cc8eb475d268cd1abef5eab5088ede62e5ad246
   languageName: node
   linkType: hard
 
