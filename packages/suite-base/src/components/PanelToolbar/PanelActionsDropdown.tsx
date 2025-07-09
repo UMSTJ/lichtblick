@@ -238,10 +238,6 @@ function PanelActionsDropdownComponent({ isUnknownPanel }: Props): React.JSX.Ele
           aria-haspopup="true"
           aria-expanded={submenuOpen ? "true" : undefined}
           onClick={handleSubmenuClick}
-          onClick={(event: React.MouseEvent<HTMLElement>) => {
-            event.stopPropagation(); // 阻止事件冒泡，防止主菜单关闭
-            setSubmenuAnchorEl(event.currentTarget); // 设置子菜单的锚点以显示它
-          }}
           onMouseEnter={handleSubmenuMouseEnter}
         >
           {t("changePanel")}
