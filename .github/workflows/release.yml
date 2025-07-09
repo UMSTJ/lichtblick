@@ -87,23 +87,33 @@ jobs:
       - name: Set up Android SDK & NDK
         if: matrix.os == 'ubuntu-latest'
         run: |
-          # 下载并解压 Android 命令行工具
+          # 设置ANDROID_HOME变量，方便后续使用
+          ANDROID_HOME=$HOME/android-sdk
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+
+          # 1. 创建标准的 command-line tools 路径
+          mkdir -p $ANDROID_HOME/cmdline-tools
+
+          # 2. 下载并解压
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip commandlinetools-linux-11076708_latest.zip -d $HOME/android-sdk
+          unzip commandlinetools-linux-11076708_latest.zip
           rm commandlinetools-linux-11076708_latest.zip
 
-          # 设置环境变量
-          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          # 3. 将解压后的 `cmdline-tools` 目录移动到标准位置并重命名为 `latest`
+          #    这是最关键的修正步骤
+          mv cmdline-tools $ANDROID_HOME/cmdline-tools/latest
 
-          # 接受许可证并安装必要的包 (platform-tools, build-tools, platforms, ndk)
-          # 注意：这里的平台和 NDK 版本可以根据你的项目需求进行修改
+          # 4. 现在路径是正确的，可以安全地添加到 GITHUB_PATH
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+
+          # 5. 接受许可证并安装必要的包
           yes | sdkmanager --licenses > /dev/null
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           sdkmanager "ndk;26.1.10909125"
 
-          # 设置 NDK 环境变量 (Tauri 使用 ANDROID_NDK_ROOT)
-          echo "ANDROID_NDK_ROOT=$HOME/android-sdk/ndk/26.1.10909125" >> $GITHUB_ENV
+          # 6. 设置 NDK 环境变量
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
 
       - name: Enable corepack
         run: corepack enable yarn
