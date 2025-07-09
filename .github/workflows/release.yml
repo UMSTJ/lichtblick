@@ -89,8 +89,6 @@ jobs:
           ANDROID_HOME=$HOME/android-sdk
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
 
-          unset ANDROID_SDK_ROOT || true
-
           # 下载并解压
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip commandlinetools-linux-11076708_latest.zip
@@ -153,6 +151,7 @@ jobs:
       - name: Build Android version
         if: matrix.os == 'ubuntu-latest'
         run: |
+          unset ANDROID_SDK_ROOT || true
           yarn run package:android
           cp src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk dist/
 
