@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
 /* eslint-disable react/forbid-component-props */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
-// SPDX-License-Identifier: MPL-2.0
+
 
 
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
@@ -106,6 +108,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   //   queriedData: { value: { percentage: number } }[];
   // };
 
+
   const interactionManagerRef = useRef<RFIDInteractionManager | undefined>(
     new RFIDInteractionManager(sceneRef.current!),
   );
@@ -136,9 +139,9 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     const host = addressPart.split(":")[0] ?? "";
     return `${host}:9000`;
   }
-  useEffect(() => {
-    setIpAddr("192.243.117.147:9000");
-  }, []);
+  // useEffect(() => {
+  //   setIpAddr("192.243.117.147:9000");
+  // }, []);
 
 
 
@@ -482,20 +485,66 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     };
   }, [mountRef, cameraRef, rendererRef, debouncedResize, resizeObserverRef, map]);
 
+  // 获取位置状态信息并自动设置地图
   useEffect(() => {
-    console.log("ipAddr", ipAddr);
     if (!ipAddr) {return;}
-    fetch(`http://${ipAddr}/mapServer/mapList`)
+
+    // 获取位置状态信息
+    fetch(`http://${ipAddr}/api/location/status`)
       .then(async res => await res.json())
-      .then(list => {
-        const newList = ["请选择地图", ...list];
-        setMapFiles(newList);
-        setMapName("请选择地图");
+      .then(async data => {
+        console.log("位置状态信息:", data);
+        const currentMap = data?.positioningService?.currentMap;
+
+        if (currentMap && currentMap !== "N/A") {
+          console.log("检测到当前地图:", currentMap);
+          // 先获取地图列表，然后设置当前地图
+          await fetch(`http://${ipAddr}/mapServer/mapList`)
+            .then(async res => await res.json())
+            .then(list => {
+
+
+              // 检查当前地图是否在可用地图列表中
+              if (list.includes(currentMap)) {
+                setMapName(currentMap);
+                sendNotification(`自动切换到地图: ${currentMap}`, "", "user", "info");
+                const newList = ["当前地图", ...list];
+                setMapFiles(newList);
+                // setMapName("当前地图");
+              } else {
+                const newList = ["请选择地图", ...list];
+                setMapFiles(newList);
+                setMapName("请选择地图");
+                sendNotification(`当前地图 ${currentMap} 不在可用地图列表中`, "", "user", "warn");
+              }
+            }); return;
+        } else {
+
+          // 如果没有有效的当前地图，只获取地图列表
+          await fetch(`http://${ipAddr}/mapServer/mapList`)
+            .then(async res => await res.json())
+            .then(list => {
+              const newList = ["请选择地图", ...list];
+              setMapFiles(newList);
+              setMapName("请选择地图");
+            }); return;
+        }
       })
       .catch(err => {
-        console.error("获取地图列表失败:", err);
-        setMapFiles(["请选择地图"]);
-        setMapName("请选择地图");
+        console.error("获取位置状态信息失败:", err);
+        // 如果获取位置状态失败，回退到原来的逻辑
+        fetch(`http://${ipAddr}/mapServer/mapList`)
+          .then(async res => await res.json())
+          .then(list => {
+            const newList = ["请选择地图", ...list];
+            setMapFiles(newList);
+            setMapName("请选择地图");
+          })
+          .catch(mapErr => {
+            console.error("获取地图列表失败:", mapErr);
+            setMapFiles(["请选择地图"]);
+            setMapName("请选择地图");
+          });
       });
   }, [ipAddr]);
 
@@ -559,7 +608,11 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       setMap(undefined);
       return;
     }
-    Promise.all([
+    if (mapName === "当前地图") {
+      sendNotification(`当前地图加载失败, 请选择其他地图或重新打开`, "", "user", "info");
+
+    }
+    void Promise.all([
       fetch(`http://${ipAddr}/mapServer/download/pgmfile?mapname=${mapName}`).then(async res => await res.arrayBuffer()),
       fetch(`http://${ipAddr}/mapServer/download/navPoints?mapName=${mapName}`).then(async res => await res.json()),
       fetch(`http://${ipAddr}/mapServer/download/yamlfile?mapName=${mapName}`).then(async res => await res.text())

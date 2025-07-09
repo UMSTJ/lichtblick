@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
+// SPDX-License-Identifier: MPL-2.0
+
+import { Box } from "@mui/material";
 import * as yaml from "js-yaml";
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import * as THREE from "three";
@@ -319,6 +323,233 @@ const PGMCanvasEditor: React.FC = () => {
         console.error("获取地图列表失败:", err);
       });
   }, [ipAddr]);
+
+
+  // 记录origin点
+  const originPointRef = useRef(null as null | Point);
+
+  // 初始化PointInteractionManager
+  useEffect(() => {
+    if (sceneRef.current && pgmData && ipAddr && selectedMap && layers.length > 0 && mapConfig) {
+      if (pointManagerRef.current) {
+        pointManagerRef.current.dispose();
+      }
+      pointManagerRef.current = new PointInteractionManager(
+        sceneRef.current,
+        mapConfig as MapConfig,
+        pgmData,
+        ipAddr,
+        selectedMap,
+        layers,
+      );
+      // 生成origin点
+      // const origin = mapConfig.origin;
+      const origin = Array.isArray(mapConfig.origin) ? mapConfig.origin : [0, 0, 0];
+
+      const resolution = mapConfig.resolution;
+      const worldX = 0;
+      const worldY = 0;
+      // const pixelX = (worldX - origin[0]) / resolution - 0.5;
+      // const pixelY = (worldY - origin[1]) / resolution - 0.5;
+      const pixelX = (worldX - (origin[0] ?? 0)) / resolution - 0.5;
+      const pixelY = (worldY - (origin[1] ?? 0)) / resolution - 0.5;
+      const pgmHeight = typeof pgmData.height === 'number' ? pgmData.height : 1;
+      const pgmWidth = typeof pgmData.width === 'number' ? pgmData.width : 1;
+      const uvX = pixelX / pgmWidth;
+      const uvY = pixelY / pgmHeight;
+      const mesh = layers[0]?.mesh;
+      if (!mesh) {return;}
+      const geometry = mesh.geometry;
+      geometry.computeBoundingBox();
+      const boundingBox = geometry.boundingBox;
+      if (!boundingBox) {return;}
+      const size = new THREE.Vector3();
+      boundingBox.getSize(size);
+      const localX = uvX * size.x + boundingBox.min.x;
+      const localY = -uvY * size.y - boundingBox.min.y;
+      const originPoint = {
+        id: 1,
+        name: "Origin",
+        x: localX,
+        y: localY,
+        worldX,
+        worldY,
+        visible: true,
+      };
+      originPointRef.current = originPoint;
+      pointManagerRef.current.setPoints([originPoint]);
+      setPoints(pointManagerRef.current.getPoints());
+    }
+  }, [pgmData, mapConfig, ipAddr, selectedMap, layers]);
+
+  // 封装一个合并origin点的setPoints
+  function setPointsWithOrigin(newPoints: Point[]) {
+    const originPoint = originPointRef.current;
+    let filtered = newPoints.filter(p => p.id !== -1 && p.name !== "Origin");
+    if (originPoint) {
+      filtered = [originPoint, ...filtered];
+    }
+    if (pointManagerRef.current) {
+      pointManagerRef.current.setPoints(filtered);
+      setPoints(pointManagerRef.current.getPoints());
+    }
+  }
+
+  // 下载点位时合并origin点
+  const downloadPoints = async () => {
+    if (pointManagerRef.current) {
+      await pointManagerRef.current.downloadPoints();
+      setPointsWithOrigin(pointManagerRef.current.getPoints());
+      pointManagerRef.current.forceRenderLines(); //
+      setTimeout(() => {
+        if (rendererRef.current && sceneRef.current && cameraRef.current) {
+          rendererRef.current.render(sceneRef.current, cameraRef.current);
+        }
+      }, 100);
+    }
+  };
+  // 选中地图后加载 YAML
+  useEffect(() => {
+    if (!selectedMap) {
+      return;
+    }
+
+    const fetchYaml = async () => {
+      try {
+        const yamlRes = await fetch(
+          `http://${ipAddr}/mapServer/download/yamlfile?mapname=${selectedMap}`,
+        );
+        const yamlText = await yamlRes.text();
+        const loadedMapConfig = yaml.load(yamlText) as ROSMapConfig;
+
+        setMapConfig(loadedMapConfig);
+      } catch (err) {
+        console.error("加载 YAML 失败:", err);
+      }
+    };
+    void fetchYaml();
+  }, [ipAddr, selectedMap, setMapConfig]);
+
+  // 下载maskMap.pgm并作为新图层添加
+  const onDownloadMaskMap = useCallback(async () => {
+    if (!selectedMap) {
+      return;
+    }
+    if ( !ipAddr || !sceneRef.current) {
+      sendNotification("请先选择地图", "", "user", "error");
+      return;
+    }
+    try {
+      // 先移除所有非base层
+      setLayers((prev) => {
+        const baseLayer = prev.find(l => l.id === "base");
+        if (!baseLayer) {return prev;}
+        // 移除非base层的mesh
+        prev.forEach(l => {
+          if (l.id !== "base") {
+            sceneRef.current!.remove(l.mesh);
+            l.mesh.geometry.dispose();
+            (l.mesh.material as THREE.Material).dispose();
+          }
+        });
+        return [baseLayer];
+      });
+      const url = `http://${ipAddr}/mapServer/download/${selectedMap}/maskMap.pgm`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        sendNotification(
+          `下载maskMap失败: ${response.status} ${response.statusText}`,
+          "",
+          "user",
+          "error",
+        );
+        return;
+      }
+      const buffer = await response.arrayBuffer();
+      // 解析PGM
+      let maskPGM: PGMImage | undefined;
+      // 尝试P2和P5
+      const decoder = new TextDecoder("ascii");
+      const headerSnippet = decoder.decode(new Uint8Array(buffer).slice(0, 15));
+      const magic = headerSnippet.trim().split(/\s+/)[0];
+      if (magic === "P2") {
+        maskPGM = parsePGM(decoder.decode(buffer));
+      } else if (magic === "P5") {
+        maskPGM = parsePGMBuffer(buffer);
+      } else {
+        sendNotification("未知PGM格式", "", "user", "error");
+        return;
+      }
+      if (!maskPGM) {
+        sendNotification("maskMap.pgm解析失败", "", "user", "error");
+        return;
+      }
+      // 创建新图层
+      const rgbaData = new Uint8Array(maskPGM.width * maskPGM.height * 4);
+
+      const maxVal = maskPGM.maxVal;
+
+      for (let y = 0; y < maskPGM.height; y++) {
+        for (let x = 0; x < maskPGM.width; x++) {
+          const srcIdx = (maskPGM.height - 1 - y) * maskPGM.width + x; // 倒序
+          const dstIdx = (y * maskPGM.width + x) * 4;
+          const value = Math.floor(((maskPGM.data[srcIdx] ?? 0) / maxVal) * 255);
+          rgbaData[dstIdx] = value; // Unnecessary conditional, value is always truthy.
+          rgbaData[dstIdx + 1] = value;
+          rgbaData[dstIdx + 2] = value;
+          rgbaData[dstIdx + 3] = value < 255 ? 255 : 0;
+        }
+      }
+
+      const newTex = new THREE.DataTexture(
+        rgbaData,
+        maskPGM.width,
+        maskPGM.height,
+        THREE.RGBAFormat,
+        THREE.UnsignedByteType,
+      );
+      newTex.generateMipmaps = false;
+      newTex.flipY = false;
+      newTex.needsUpdate = true;
+      const material = new THREE.MeshBasicMaterial({
+        map: newTex,
+        transparent: true,
+        opacity: 1,
+        toneMapped: false,
+        depthTest: true,
+        depthWrite: true,
+        side: THREE.DoubleSide,
+      });
+      const imageAspect = maskPGM.width / maskPGM.height;
+      const planeWidth = 2;
+      const planeHeight = planeWidth / imageAspect;
+      const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+      const newMesh = new THREE.Mesh(geometry, material);
+      // 设置z和renderOrder
+      const newLayerIndex = layers.length;
+      newMesh.renderOrder = newLayerIndex;
+      newMesh.position.z = newLayerIndex * 0.1;
+      sceneRef.current.add(newMesh);
+      const newLayer = {
+        id: `maskMap-${Date.now()}`,
+        name: `MaskMap ${newLayerIndex}`,
+        visible: true,
+        texture: newTex,
+        mesh: newMesh,
+      };
+      setLayers((prev) => [...prev, newLayer]);
+      setSelectedLayerId(newLayer.id);
+      sendNotification("maskMap.pgm下载并添加为新图层成功", "", "user", "info");
+    } catch (err) {
+      sendNotification(
+        `下载maskMap异常: ${err instanceof Error ? err.message : "未知错误"}`,
+        "",
+        "user",
+        "error",
+      );
+    }
+  }, [selectedMap, ipAddr, sceneRef, layers]);
+
   // 从接口下载PGM文件的逻辑
   useEffect(() => {
     const downloadAndLoadMap = async () => {
@@ -372,119 +603,20 @@ const PGMCanvasEditor: React.FC = () => {
         }
         setPoints([]);
         //setLines([]); // 同时清除线段数据
+
+        // 等待一次事件循环，确保 setPGMData 后渲染
+        await new Promise(resolve => setTimeout(resolve, 0));
+        // 依赖 PGM 渲染完成后再调用
+        await onDownloadMaskMap();
+        await downloadPoints();   // 暂时不下载点位
       } catch (error) {
         console.error("地图下载加载错误:", error);
         // 处理错误情况
       }
     };
 
-    void downloadAndLoadMap();
+    downloadAndLoadMap();
   }, [ipAddr, selectedMap]);
-
-  // 记录origin点
-  const originPointRef = useRef(null as null | Point);
-
-  // 初始化PointInteractionManager
-  useEffect(() => {
-    if (sceneRef.current && pgmData && ipAddr && selectedMap && layers.length > 0 && mapConfig) {
-      if (pointManagerRef.current) {
-        pointManagerRef.current.dispose();
-      }
-      pointManagerRef.current = new PointInteractionManager(
-        sceneRef.current,
-        mapConfig as MapConfig,
-        pgmData,
-        ipAddr,
-        selectedMap,
-        layers,
-      );
-      // 生成origin点
-      // const origin = mapConfig.origin;
-      const origin = Array.isArray(mapConfig.origin) ? mapConfig.origin : [0, 0, 0];
-
-      const resolution = mapConfig.resolution;
-      const worldX = 0;
-      const worldY = 0;
-      // const pixelX = (worldX - origin[0]) / resolution - 0.5;
-      // const pixelY = (worldY - origin[1]) / resolution - 0.5;
-      const pixelX = (worldX - (origin[0] ?? 0)) / resolution - 0.5;
-      const pixelY = (worldY - (origin[1] ?? 0)) / resolution - 0.5;
-      const pgmHeight = typeof pgmData.height === 'number' ? pgmData.height : 1;
-      const pgmWidth = typeof pgmData.width === 'number' ? pgmData.width : 1;
-      const uvX = pixelX / pgmWidth;
-      const uvY = pixelY / pgmHeight;
-      const mesh = layers[0]?.mesh;
-      if (!mesh) {return;}
-      const geometry = mesh.geometry;
-      geometry.computeBoundingBox();
-      const boundingBox = geometry.boundingBox;
-      if (!boundingBox) {return;}
-      const size = new THREE.Vector3();
-      boundingBox.getSize(size);
-      const localX = uvX * size.x + boundingBox.min.x;
-      const localY = -uvY * size.y - boundingBox.min.y;
-      const originPoint = {
-        id: -1,
-        name: "Origin",
-        x: localX,
-        y: localY,
-        worldX,
-        worldY,
-        visible: true,
-      };
-      originPointRef.current = originPoint;
-      pointManagerRef.current.setPoints([originPoint]);
-      setPoints(pointManagerRef.current.getPoints());
-    }
-  }, [pgmData, mapConfig, ipAddr, selectedMap, layers]);
-
-  // 封装一个合并origin点的setPoints
-  function setPointsWithOrigin(newPoints: Point[]) {
-    const originPoint = originPointRef.current;
-    let filtered = newPoints.filter(p => p.id !== -1 && p.name !== "Origin");
-    if (originPoint) {
-      filtered = [originPoint, ...filtered];
-    }
-    if (pointManagerRef.current) {
-      pointManagerRef.current.setPoints(filtered);
-      setPoints(pointManagerRef.current.getPoints());
-    }
-  }
-
-  // 下载点位时合并origin点
-  const downloadPoints = async () => {
-    if (pointManagerRef.current) {
-      await pointManagerRef.current.downloadPoints();
-      setPointsWithOrigin(pointManagerRef.current.getPoints());
-      pointManagerRef.current.forceRenderLines();
-      setTimeout(() => {
-        if (rendererRef.current && sceneRef.current && cameraRef.current) {
-          rendererRef.current.render(sceneRef.current, cameraRef.current);
-        }
-      }, 100);
-    }
-  };
-  // 选中地图后加载 YAML
-  useEffect(() => {
-    if (!selectedMap) {
-      return;
-    }
-
-    const fetchYaml = async () => {
-      try {
-        const yamlRes = await fetch(
-          `http://${ipAddr}/mapServer/download/yamlfile?mapname=${selectedMap}`,
-        );
-        const yamlText = await yamlRes.text();
-        const loadedMapConfig = yaml.load(yamlText) as ROSMapConfig;
-
-        setMapConfig(loadedMapConfig);
-      } catch (err) {
-        console.error("加载 YAML 失败:", err);
-      }
-    };
-    void fetchYaml();
-  }, [ipAddr, selectedMap, setMapConfig]);
 
   // 添加导出点位函数
   const exportPoints = useCallback(async () => {
@@ -1262,108 +1394,7 @@ const PGMCanvasEditor: React.FC = () => {
     }
   };
 
-  // 下载maskMap.pgm并作为新图层添加
-  const onDownloadMaskMap = useCallback(async () => {
-    if (!selectedMap || !ipAddr || !sceneRef.current) {
-      sendNotification("请先选择地图", "", "user", "error");
-      return;
-    }
-    try {
-      const url = `http://${ipAddr}/mapServer/download/${selectedMap}/maskMap.pgm`;
-      const response = await fetch(url);
-      if (!response.ok) {
-        sendNotification(
-          `下载maskMap失败: ${response.status} ${response.statusText}`,
-          "",
-          "user",
-          "error",
-        );
-        return;
-      }
-      const buffer = await response.arrayBuffer();
-      // 解析PGM
-      let maskPGM: PGMImage | undefined;
-      // 尝试P2和P5
-      const decoder = new TextDecoder("ascii");
-      const headerSnippet = decoder.decode(new Uint8Array(buffer).slice(0, 15));
-      const magic = headerSnippet.trim().split(/\s+/)[0];
-      if (magic === "P2") {
-        maskPGM = parsePGM(decoder.decode(buffer));
-      } else if (magic === "P5") {
-        maskPGM = parsePGMBuffer(buffer);
-      } else {
-        sendNotification("未知PGM格式", "", "user", "error");
-        return;
-      }
-      if (!maskPGM) {
-        sendNotification("maskMap.pgm解析失败", "", "user", "error");
-        return;
-      }
-      // 创建新图层
-      const rgbaData = new Uint8Array(maskPGM.width * maskPGM.height * 4);
 
-      const maxVal = maskPGM.maxVal;
-
-      for (let y = 0; y < maskPGM.height; y++) {
-        for (let x = 0; x < maskPGM.width; x++) {
-          const srcIdx = (maskPGM.height - 1 - y) * maskPGM.width + x; // 倒序
-          const dstIdx = (y * maskPGM.width + x) * 4;
-          const value = Math.floor(((maskPGM.data[srcIdx] ?? 0) / maxVal) * 255);
-          rgbaData[dstIdx] = value; // Unnecessary conditional, value is always truthy.
-          rgbaData[dstIdx + 1] = value;
-          rgbaData[dstIdx + 2] = value;
-          rgbaData[dstIdx + 3] = value < 255 ? 255 : 0;
-        }
-      }
-
-      const newTex = new THREE.DataTexture(
-        rgbaData,
-        maskPGM.width,
-        maskPGM.height,
-        THREE.RGBAFormat,
-        THREE.UnsignedByteType,
-      );
-      newTex.generateMipmaps = false;
-      newTex.flipY = false;
-      newTex.needsUpdate = true;
-      const material = new THREE.MeshBasicMaterial({
-        map: newTex,
-        transparent: true,
-        opacity: 1,
-        toneMapped: false,
-        depthTest: true,
-        depthWrite: true,
-        side: THREE.DoubleSide,
-      });
-      const imageAspect = maskPGM.width / maskPGM.height;
-      const planeWidth = 2;
-      const planeHeight = planeWidth / imageAspect;
-      const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
-      const newMesh = new THREE.Mesh(geometry, material);
-      // 设置z和renderOrder
-      const newLayerIndex = layers.length;
-      newMesh.renderOrder = newLayerIndex;
-      newMesh.position.z = newLayerIndex * 0.1;
-      sceneRef.current.add(newMesh);
-      const newLayer = {
-        id: `maskMap-${Date.now()}`,
-        name: `MaskMap ${newLayerIndex}`,
-        visible: true,
-        texture: newTex,
-        mesh: newMesh,
-      };
-      setLayers((prev) => [...prev, newLayer]);
-      setSelectedLayerId(newLayer.id);
-      sendNotification("maskMap.pgm下载并添加为新图层成功", "", "user", "info");
-    } catch (err) {
-      sendNotification(
-        `下载maskMap异常: ${err instanceof Error ? err.message : "未知错误"}`,
-        "",
-        "user",
-        "error",
-      );
-    }
-  }, [selectedMap, ipAddr, sceneRef, layers]);
 
   // PointsDrawer相关处理函数
   const handlePointSelect = useCallback((id: number) => {
@@ -1565,14 +1596,47 @@ const PGMCanvasEditor: React.FC = () => {
         isPointsPanelOpen={isPointsDrawerOpen}
         onDownloadMaskMap={onDownloadMaskMap}
         onCancelCreatingLine={handleCancelCreatingLine}
-      />
-      <div>
-        <label htmlFor="map-select">选择地图：</label>
+        pointManagerRef = {pointManagerRef}
+      >
+        <div
+          style={{
+            marginLeft: 0, // 去掉左侧 margin
+            paddingLeft: 0, // 去掉左侧 padding
+            minWidth: 180,
+            display: 'flex',
+            alignItems: 'center',
+            height: 40, // 与工具栏高度一致
+          }}
+        >
+        <label
+          htmlFor="map-select"
+          style={{
+            marginRight: 6,
+            color: '#333',
+            fontSize: 13,
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            userSelect: 'none',
+          }}
+        >
+          选择地图：
+        </label>
         <select
           id="map-select"
           value={selectedMap}
-          onChange={(e) => {
-            setSelectedMap(e.target.value);
+          onChange={(e) => { setSelectedMap(e.target.value); }}
+          style={{
+            minWidth: 100,
+            height: 32,
+            borderRadius: 6,
+            border: '1px solid #ccc',
+            padding: '0 8px',
+            fontSize: 14,
+            outline: 'none',
+            background: '#fff',
+            color: '#222',
+            boxSizing: 'border-box',
+            verticalAlign: 'middle',
           }}
         >
           <option value="">请选择</option>
@@ -1583,6 +1647,7 @@ const PGMCanvasEditor: React.FC = () => {
           ))}
         </select>
       </div>
+      </DrawingToolbar>
 
       <div
         style={{
@@ -1698,7 +1763,7 @@ const PGMCanvasEditor: React.FC = () => {
             }}
             onClick={(e) => { e.stopPropagation(); }}
           >
-            <div
+            {/* <div
               style={{
                 padding: '8px 12px',
                 cursor: 'pointer',
@@ -1729,7 +1794,7 @@ const PGMCanvasEditor: React.FC = () => {
               }}
             >
               创建双向折线
-            </div>
+            </div> */}
             <div
               style={{
                 padding: '8px 12px',

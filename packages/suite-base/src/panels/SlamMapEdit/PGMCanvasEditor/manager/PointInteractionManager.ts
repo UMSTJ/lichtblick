@@ -639,53 +639,53 @@ export class PointInteractionManager {
         this.setPoints(formattedPoints);
         // console.log(`点位下载成功！共下载 ${formattedPoints.length} 个点位`);
       }
+      // 暂时不使用线段
+      // // 处理线段数据（必须在点位数据设置之后）
+      // if (data.edges && Array.isArray(data.edges)) {
+      //   // console.log("原始线段数据:", data.edges);
+      //   const formattedLines: Line[] = data.edges
+      //     .map(
+      //       (edge: {
+      //         id: number;
+      //         nodeStart: number;
+      //         nodeEnd: number;
+      //         lang?: number; // 方向字段可选
+      //         points: { x: number; y: number }[];
+      //       }) => {
+      //         // 创建线段点数组
+      //         const linePoints: THREE.Vector3[] = [];
+      //         // 添加中间点（如果有的话）
+      //         if (edge.points && Array.isArray(edge.points)) {
+      //           // console.log(`处理线段 ${edge.id} 的中间点，数量:`, edge.points.length);
+      //           edge.points.forEach((point: { x: number; y: number }) => {
+      //             linePoints.push(new THREE.Vector3(point.x, point.y, 0.5));
+      //           });
+      //         } else {
+      //           // console.log(`线段 ${edge.id} 没有中间点数据`);
+      //         }
 
-      // 处理线段数据（必须在点位数据设置之后）
-      if (data.edges && Array.isArray(data.edges)) {
-        // console.log("原始线段数据:", data.edges);
-        const formattedLines: Line[] = data.edges
-          .map(
-            (edge: {
-              id: number;
-              nodeStart: number;
-              nodeEnd: number;
-              lang?: number; // 方向字段可选
-              points: { x: number; y: number }[];
-            }) => {
-              // 创建线段点数组
-              const linePoints: THREE.Vector3[] = [];
-              // 添加中间点（如果有的话）
-              if (edge.points && Array.isArray(edge.points)) {
-                // console.log(`处理线段 ${edge.id} 的中间点，数量:`, edge.points.length);
-                edge.points.forEach((point: { x: number; y: number }) => {
-                  linePoints.push(new THREE.Vector3(point.x, point.y, 0.5));
-                });
-              } else {
-                // console.log(`线段 ${edge.id} 没有中间点数据`);
-              }
+      //         const result = {
+      //           id: edge.id,
+      //           startPointId: edge.nodeStart,
+      //           endPointId: edge.nodeEnd,
+      //           points: linePoints,
+      //           visible: true,
+      //           direction: edge.lang !== undefined ? edge.lang : LineDirection.UNIDIRECTIONAL
+      //         };
 
-              const result = {
-                id: edge.id,
-                startPointId: edge.nodeStart,
-                endPointId: edge.nodeEnd,
-                points: linePoints,
-                visible: true,
-                direction: edge.lang !== undefined ? edge.lang : LineDirection.UNIDIRECTIONAL
-              };
+      //         this.#lines.push(result);
+      //         this.createLineMesh(result);
 
-              this.#lines.push(result);
-              this.createLineMesh(result);
-
-              // console.log(`线段 ${edge.id} 处理完成，点数:`, linePoints.length);
-              return result;
-            },
-          )
-          .filter(Boolean);
-        this.setLines(formattedLines);
-        // console.log(`线段下载成功！共下载 ${formattedLines.length} 条线段`);
-      } else {
-        //console.log("没有线段数据或线段数据格式不正确");
-      }
+      //         // console.log(`线段 ${edge.id} 处理完成，点数:`, linePoints.length);
+      //         return result;
+      //       },
+      //     )
+      //     .filter(Boolean);
+      //   this.setLines(formattedLines);
+      //   // console.log(`线段下载成功！共下载 ${formattedLines.length} 条线段`);
+      // } else {
+      //   //console.log("没有线段数据或线段数据格式不正确");
+      // }
 
       // sendNotification(`地图数据下载成功！共下载 ${totalPoints} 个点位，${totalEdges} 条线段`, "", "user", "info");
     } catch (error) {
@@ -701,11 +701,36 @@ export class PointInteractionManager {
 
   // 导出线段数据
   public async exportEdges(): Promise<void> {
+    const mapName = this.#selectedMap;
     if (!this.#mapConfig || !this.#lines || this.#lines.length === 0) {
-      sendNotification("导出失败：没有可导出的线段数据", "", "user", "error");
+      const payload = {
+        mapName,
+        edges: []
+      }
+      try {
+        const url = `http://${this.#ipAddr}/mapServer/save/edges`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          throw new Error(`保存失败: ${response.status} ${response.statusText}`);
+        }
+        sendNotification(`线段导出成功！共导出 0 条线段`, "", "user", "info");
+      } catch (error) {
+        console.error("保存线段失败:", error);
+        sendNotification(
+          `线段导出失败：${error instanceof Error ? error.message : "未知错误"}`,
+          "",
+          "user",
+          "error",
+        );
+      }
       return;
     }
-    const mapName = this.#selectedMap;
     const payload = {
       mapName,
       edges: this.#lines.map((line) => {
@@ -797,7 +822,7 @@ export class PointInteractionManager {
       }
       sendNotification(`点位导出成功！共导出 ${this.#points.length} 个点位`, "", "user", "info");
       // 点位导出成功后自动导出线段
-      await this.exportEdges();
+      // await this.exportEdges(); // 暂时不导出线段
     } catch (error) {
       console.error("保存点位失败:", error);
       sendNotification(
