@@ -55,7 +55,7 @@ export const openCode = (ip: string) => {
 };
 
 const isTauriEnvironment = (): boolean => {
-  return false;
+  return true;
 };
 const UdpMessageComponent: React.FC = () => {
   const [udpIp, setUdpIp] = useState<string[]>(["127.0.0.1"]);
@@ -107,7 +107,7 @@ const UdpMessageComponent: React.FC = () => {
         }
       };
       void setupTauriListener();
-    } else if (window.electron.ipcRenderer) {
+    } else if (window.electron) {
       // Electron 环境
       const handleUdpMessage = (_event: IpcRendererEvent, message: string) => {
         // Electron 环境也可能需要从 message 中提取纯 IP

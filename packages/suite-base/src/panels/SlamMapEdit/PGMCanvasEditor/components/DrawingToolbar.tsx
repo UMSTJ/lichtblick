@@ -5,7 +5,6 @@
 import {
   DrawImage24Regular,
   Save24Regular,
-  ColorLine24Regular,
   Layer24Regular,
   BoxArrowUpRegular,
   ChevronUp24Regular,
@@ -15,7 +14,7 @@ import {
   AddCircle24Filled,
   Location24Regular,
 } from "@fluentui/react-icons";
-import { Eraser24Regular,Pen24Regular } from "@fluentui/react-icons";
+import { Eraser24Regular, Pen24Regular } from "@fluentui/react-icons";
 import {
   AppBar,
   Toolbar,
@@ -122,7 +121,6 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
   onPointsDrawerToggle,
   isPointsPanelOpen,
   onDownloadMaskMap,
-  onCancelCreatingLine,
   children,
   pointManagerRef,
 }) => {
@@ -130,16 +128,16 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
   const [mode, setMode] = useState<"drawing" | "point" | "delete" | "none">("none");
   useEffect(() => {
     if (mode === "none") {
-      if(drawing){
+      if (drawing) {
         toggleDrawing();
       }
-      if( drawPoint ) {
+      if (drawPoint) {
         toggleDrawPoint();
       }
-      if( isPointsPanelOpen){
+      if (isPointsPanelOpen) {
         onPointsDrawerToggle();
       }
-      if( isLayerPanelOpen){
+      if (isLayerPanelOpen) {
         onLayerDrawerToggle();
       }
     }
@@ -147,11 +145,10 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
       // if( !drawing ) {
       //   toggleDrawing();
       // }
-      if( !drawPoint ) {
+      if (!drawPoint) {
         toggleDrawPoint();
       }
       // loadPoints();
-
     }
     if (mode === "drawing") {
       // if( !drawing ) {
@@ -162,13 +159,19 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
     if (mode === "delete") {
       // if( !drawing ) {
       //   toggleDrawing();
-
       // }
-
       // onDownloadMaskMap();
     }
-  }, [drawPoint, drawing, loadPoints, mode, onBrushColorChange, onDownloadMaskMap, toggleDrawPoint, toggleDrawing]);
-
+  }, [
+    drawPoint,
+    drawing,
+    loadPoints,
+    mode,
+    onBrushColorChange,
+    onDownloadMaskMap,
+    toggleDrawPoint,
+    toggleDrawing,
+  ]);
 
   const toggleExpand = () => {
     // if( isExpanded ) {
@@ -191,19 +194,18 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
     onBrushSizeChange(newValue as number);
   };
 
-  const handleColorChange = (_event: Event, newValue: number | number[]) => {
-    onBrushColorChange(newValue as number);
-  };
+  // const handleColorChange = (_event: Event, newValue: number | number[]) => {
+  //   onBrushColorChange(newValue as number);
+  // };
 
   // 当工具栏最小化时显示的锚钉
   const renderAnchor = () => (
     <AnchorContainer>
       <Tooltip title="展开工具栏">
-      <ToolButton onClick={toggleExpand}>
-        <Pin24Regular />
-        <Typography variant="caption">展开工具栏</Typography>
-      </ToolButton>
-
+        <ToolButton onClick={toggleExpand}>
+          <Pin24Regular />
+          <Typography variant="caption">展开工具栏</Typography>
+        </ToolButton>
       </Tooltip>
     </AnchorContainer>
   );
@@ -215,52 +217,71 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, width: "100%" }}>
           {/* 左侧插槽：地图选择器 */}
           {Boolean(children) && (
-            <Box sx={{ mr: 2, minWidth: 180, display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ mr: 2, minWidth: 180, display: "flex", alignItems: "center" }}>
               {children}
             </Box>
           )}
           {/* 文件/编辑操作区 */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          {mode === "point" && <Tooltip title={`添加点位模式：${drawing ? "开启" : "关闭"}`}>
-              <ToolButton onClick={toggleDrawing} sx={{ backgroundColor: drawing ? "#e0e0e0" : "transparent" }}>
-                <Box display="flex" flexDirection="column" alignItems="center">
-                  <AddCircle24Filled />
-                  <Typography variant="caption">添加</Typography>
-                </Box>
-              </ToolButton>
-            </Tooltip>}
-            {mode === "point" && drawPoint && <Tooltip title="点位管理">
-              <ToolButton onClick={onPointsDrawerToggle} sx={{ backgroundColor: isPointsPanelOpen ? "#e0e0e0" : "transparent" }}>
-                <Box display="flex" flexDirection="column" alignItems="center">
-                  <Location24Regular />
-                  <Typography variant="caption">点位</Typography>
-                </Box>
-              </ToolButton>
-            </Tooltip>}
-            {mode === "drawing" && <Tooltip title={`画刷模式：${drawing ? "开启" : "关闭"}`}>
-              <ToolButton onClick={
-                () => {
-                  toggleDrawing();
-                  onBrushColorChange(0);
-                }
-              } sx={{ backgroundColor: (!drawing || brushColor === 255) ?  "transparent" :"#e0e0e0"}}>
-                <Box display="flex" flexDirection="column" alignItems="center">
-                  <DrawImage24Regular />
-                  <Typography variant="caption">画刷</Typography>
-                </Box>
-              </ToolButton>
-            </Tooltip>}
-            {mode === "drawing" && <Tooltip title={`擦除模式：${drawing ? "开启" : "关闭"}`}>
-              <ToolButton onClick={
-                () => {
-                  onBrushColorChange(255);
-              }} sx={{ backgroundColor: brushColor === 255 ?  "#e0e0e0" : "transparent"}}>
-                <Box display="flex" flexDirection="column" alignItems="center">
-                  <Eraser24Regular />
-                  <Typography variant="caption">擦除</Typography>
-                </Box>
-              </ToolButton>
-            </Tooltip>}
+            {mode === "point" && (
+              <Tooltip title={`添加点位模式：${drawing ? "开启" : "关闭"}`}>
+                <ToolButton
+                  onClick={toggleDrawing}
+                  sx={{ backgroundColor: drawing ? "#e0e0e0" : "transparent" }}
+                >
+                  <Box display="flex" flexDirection="column" alignItems="center">
+                    <AddCircle24Filled />
+                    <Typography variant="caption">添加</Typography>
+                  </Box>
+                </ToolButton>
+              </Tooltip>
+            )}
+            {mode === "point" && drawPoint && (
+              <Tooltip title="点位管理">
+                <ToolButton
+                  onClick={onPointsDrawerToggle}
+                  sx={{ backgroundColor: isPointsPanelOpen ? "#e0e0e0" : "transparent" }}
+                >
+                  <Box display="flex" flexDirection="column" alignItems="center">
+                    <Location24Regular />
+                    <Typography variant="caption">点位</Typography>
+                  </Box>
+                </ToolButton>
+              </Tooltip>
+            )}
+            {mode === "drawing" && (
+              <Tooltip title={`画刷模式：${drawing ? "开启" : "关闭"}`}>
+                <ToolButton
+                  onClick={() => {
+                    toggleDrawing();
+                    onBrushColorChange(0);
+                  }}
+                  sx={{
+                    backgroundColor: !drawing || brushColor === 255 ? "transparent" : "#e0e0e0",
+                  }}
+                >
+                  <Box display="flex" flexDirection="column" alignItems="center">
+                    <DrawImage24Regular />
+                    <Typography variant="caption">画刷</Typography>
+                  </Box>
+                </ToolButton>
+              </Tooltip>
+            )}
+            {mode === "drawing" && (
+              <Tooltip title={`擦除模式：${drawing ? "开启" : "关闭"}`}>
+                <ToolButton
+                  onClick={() => {
+                    onBrushColorChange(255);
+                  }}
+                  sx={{ backgroundColor: brushColor === 255 ? "#e0e0e0" : "transparent" }}
+                >
+                  <Box display="flex" flexDirection="column" alignItems="center">
+                    <Eraser24Regular />
+                    <Typography variant="caption">擦除</Typography>
+                  </Box>
+                </ToolButton>
+              </Tooltip>
+            )}
 
             {/* <Tooltip title="下载掩码图（MaskMap）">
               <ToolButton onClick={onDownloadMaskMap}>
@@ -284,34 +305,41 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
 
           {/* 绘图工具区 */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {mode === "none" && (
+              <Tooltip title="添加导航点">
+                <ToolButton
+                  onClick={() => {
+                    loadPoints();
+                    setMode("point");
+                  }}
+                  sx={{ backgroundColor: drawing ? "#e0e0e0" : "transparent" }}
+                >
+                  <Box display="flex" flexDirection="column" alignItems="center">
+                    <AddCircle24Filled />
+                    <Typography variant="caption">添加导航点</Typography>
+                  </Box>
+                </ToolButton>
+              </Tooltip>
+            )}
 
-            {mode === "none" && <Tooltip title="添加导航点">
-              <ToolButton onClick={
-                () => {
-                  loadPoints();
-                  setMode("point"); }
-              } sx={{ backgroundColor: drawing ? "#e0e0e0" : "transparent" }}>
-                <Box display="flex" flexDirection="column" alignItems="center">
-                  <AddCircle24Filled />
-                  <Typography variant="caption">添加导航点</Typography>
-                </Box>
-              </ToolButton>
-            </Tooltip>}
-
-            {mode === "none" && <Tooltip title="绘制虚拟墙">
-              <ToolButton onClick={
-                () => {
-                  onDownloadMaskMap();
-                  onBrushColorChange(0);
-                  pointManagerRef.current?.setPoints([]);
-                  setMode("drawing"); }
-              } sx={{ backgroundColor: drawing ? "#e0e0e0" : "transparent" }}>
-                <Box display="flex" flexDirection="column" alignItems="center">
-                  <Pen24Regular />
-                  <Typography variant="caption">绘制虚拟墙</Typography>
-                </Box>
-              </ToolButton>
-            </Tooltip>}
+            {mode === "none" && (
+              <Tooltip title="绘制虚拟墙">
+                <ToolButton
+                  onClick={() => {
+                    onDownloadMaskMap();
+                    onBrushColorChange(0);
+                    pointManagerRef.current?.setPoints([]);
+                    setMode("drawing");
+                  }}
+                  sx={{ backgroundColor: drawing ? "#e0e0e0" : "transparent" }}
+                >
+                  <Box display="flex" flexDirection="column" alignItems="center">
+                    <Pen24Regular />
+                    <Typography variant="caption">绘制虚拟墙</Typography>
+                  </Box>
+                </ToolButton>
+              </Tooltip>
+            )}
 
             {/* {mode === "none" && <Tooltip title="删除障碍物">
               <ToolButton onClick={
@@ -328,8 +356,6 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
               </ToolButton>
             </Tooltip>} */}
 
-
-
             {/* {drawing && <Tooltip title={`切换点/线模式：${drawPoint ? "点" : "线"}`}>
               <ToolButton onClick={toggleDrawPoint} sx={{ backgroundColor: drawPoint ? "#e0e0e0" : "transparent" }}>
                 <Box display="flex" flexDirection="column" alignItems="center">
@@ -339,22 +365,29 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
               </ToolButton>
             </Tooltip>
             } */}
-            {mode === "drawing" && !drawPoint && <Tooltip title={`调整画刷粗细：${brushSize}`}>
-              <ToolButton onClick={handleBrushSizeClick}>
-                <Box display="flex" flexDirection="column" alignItems="center">
-                  <LineHorizontal124Regular />
-                  <Typography variant="caption">粗细</Typography>
-                </Box>
-              </ToolButton>
-            </Tooltip>}
-            {mode === "drawing" && !drawPoint && <Tooltip title="图层管理">
-              <ToolButton onClick={onLayerDrawerToggle} sx={{ backgroundColor: isLayerPanelOpen ? "#e0e0e0" : "transparent" }}>
-                <Box display="flex" flexDirection="column" alignItems="center">
-                  <Layer24Regular />
-                  <Typography variant="caption">图层</Typography>
-                </Box>
-              </ToolButton>
-            </Tooltip>}
+            {mode === "drawing" && !drawPoint && (
+              <Tooltip title={`调整画刷粗细：${brushSize}`}>
+                <ToolButton onClick={handleBrushSizeClick}>
+                  <Box display="flex" flexDirection="column" alignItems="center">
+                    <LineHorizontal124Regular />
+                    <Typography variant="caption">粗细</Typography>
+                  </Box>
+                </ToolButton>
+              </Tooltip>
+            )}
+            {mode === "drawing" && !drawPoint && (
+              <Tooltip title="图层管理">
+                <ToolButton
+                  onClick={onLayerDrawerToggle}
+                  sx={{ backgroundColor: isLayerPanelOpen ? "#e0e0e0" : "transparent" }}
+                >
+                  <Box display="flex" flexDirection="column" alignItems="center">
+                    <Layer24Regular />
+                    <Typography variant="caption">图层</Typography>
+                  </Box>
+                </ToolButton>
+              </Tooltip>
+            )}
 
             {/* {mode === "drawing" && !drawPoint && <Tooltip title="调整画刷颜色">
               <ToolButton>
@@ -393,12 +426,12 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
             />} */}
             {/* {mode === "drawing"  && !drawPoint && <Typography variant="body2" sx={{ minWidth: 32, color: "black" }}>{brushColor}</Typography>} */}
           </Box>
-          {mode === "drawing" && !drawPoint && <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />}
+          {mode === "drawing" && !drawPoint && (
+            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+          )}
 
           {/* 图层/点位区 */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-
-
             {/* {drawing && drawPoint && (
               <Tooltip title="取消折线创建">
                 <ToolButton onClick={onCancelCreatingLine} sx={{ backgroundColor: "#ffebee", color: "#d32f2f", "&:hover": { backgroundColor: "#ffcdd2" } }}>
@@ -409,31 +442,43 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
                 </ToolButton>
               </Tooltip>
             )} */}
-            {mode === "drawing" && !drawPoint && <Tooltip title="保存当前PGM文件">
-              <ToolButton onClick={savePGM}>
-                <Box display="flex" flexDirection="column" alignItems="center">
-                  <Save24Regular />
-                  <Typography variant="caption">保存</Typography>
-                </Box>
-              </ToolButton>
-            </Tooltip>}
-             {drawPoint && <Tooltip title="导出点位数据">
-              <ToolButton onClick={onExportPoints}>
-                <Box display="flex" flexDirection="column" alignItems="center">
-                  <BoxArrowUpRegular />
-                  <Typography variant="caption">保存点位</Typography>
-                </Box>
-              </ToolButton>
-            </Tooltip>}
+            {mode === "drawing" && !drawPoint && (
+              <Tooltip title="保存当前PGM文件">
+                <ToolButton onClick={savePGM}>
+                  <Box display="flex" flexDirection="column" alignItems="center">
+                    <Save24Regular />
+                    <Typography variant="caption">保存</Typography>
+                  </Box>
+                </ToolButton>
+              </Tooltip>
+            )}
+            {drawPoint && (
+              <Tooltip title="导出点位数据">
+                <ToolButton onClick={onExportPoints}>
+                  <Box display="flex" flexDirection="column" alignItems="center">
+                    <BoxArrowUpRegular />
+                    <Typography variant="caption">保存点位</Typography>
+                  </Box>
+                </ToolButton>
+              </Tooltip>
+            )}
             {mode !== "none" && (
               <Tooltip title="返回">
-                <ToolButton onClick={
-                  () => {
+                <ToolButton
+                  onClick={() => {
                     loadPoints();
-                    setMode("none"); }
-                } sx={{ backgroundColor: "#ffebee", color: "#d32f2f", "&:hover": { backgroundColor: "#ffcdd2" } }}>
+                    setMode("none");
+                  }}
+                  sx={{
+                    backgroundColor: "#ffebee",
+                    color: "#d32f2f",
+                    "&:hover": { backgroundColor: "#ffcdd2" },
+                  }}
+                >
                   <Box display="flex" flexDirection="column" alignItems="center">
-                    <Typography variant="h6" sx={{ lineHeight: 1 }}>✕</Typography>
+                    <Typography variant="h6" sx={{ lineHeight: 1 }}>
+                      ✕
+                    </Typography>
                     <Typography variant="caption">返回</Typography>
                   </Box>
                 </ToolButton>
@@ -442,7 +487,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
           </Box>
 
           {/* 右侧最小化按钮固定最右侧 */}
-          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ ml: "auto", display: "flex", alignItems: "center" }}>
             <Tooltip title={isExpanded ? "收起工具栏" : "展开工具栏"}>
               <ToolButton onClick={toggleExpand}>
                 <Box display="flex" flexDirection="column" alignItems="center">
