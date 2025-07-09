@@ -11,7 +11,6 @@ env:
   NEW_VERSION: ""
 
 jobs:
-  # 第一步：提升版本号并提交更改
   version:
     name: Bump version
     runs-on: macos-latest
@@ -22,7 +21,16 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4.1.1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # 需要拉取所有历史记录来分析提交信息
+          fetch-depth: 0
+
+      # 新增步骤：根据提交信息计算下一个版本和升级类型
+      - name: Get next version
+        id: next_version
+        uses: tj-actions/next-version@v41 # 使用 action 来分析
+        with:
+          # 可选：如果你使用 main 作为默认分支，这行可以不写
+          default_branch: "main"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4.0.3
@@ -38,18 +46,30 @@ jobs:
       - name: Bump version and set output
         id: version_bump
         run: |
-          yarn version minor
-          yarn workspace @lichtblick/suite version minor
+          # 使用上一步计算出的升级类型 (patch, minor, major)
+          BUMP_TYPE=${{ steps.next_version.outputs.bump }}
+
+          echo "Calculated bump type: $BUMP_TYPE"
+
+          # 如果没有新的 fix 或 feat，BUMP_TYPE 可能为空，默认为 patch
+          if [ -z "$BUMP_TYPE" ]; then
+            echo "No version bump detected, defaulting to patch."
+            BUMP_TYPE="patch"
+          fi
+
+          yarn version $BUMP_TYPE
+          yarn workspace @lichtblick/suite version $BUMP_TYPE
 
           NEW_VERSION_VALUE=$(node -p "require('./package.json').version")
           echo "new_version=${NEW_VERSION_VALUE}" >> $GITHUB_ENV
           echo "new_version=${NEW_VERSION_VALUE}" >> $GITHUB_OUTPUT
 
+      # 后续步骤（Commit and push 等）保持不变...
       - name: Commit and push version bump
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json packages/suite/package.json yarn.lock
+          git add .
           git commit -m "chore: Bump version to v${{ env.new_version }} [skip ci]"
           git tag "v${{ env.new_version }}"
           git push origin main --tags
@@ -91,28 +111,32 @@ jobs:
           ANDROID_HOME=$HOME/android-sdk
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
 
-          # 1. 创建标准的 command-line tools 路径
-          mkdir -p $ANDROID_HOME/cmdline-tools
-
-          # 2. 下载并解压
+          # 下载并解压
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip commandlinetools-linux-11076708_latest.zip
           rm commandlinetools-linux-11076708_latest.zip
 
-          # 3. 将解压后的 `cmdline-tools` 目录移动到标准位置并重命名为 `latest`
-          #    这是最关键的修正步骤
-          mv cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          # --- 核心修正部分 ---
+          # 1. 创建目标目录
+          mkdir -p $ANDROID_HOME/cmdline-tools/latest
 
-          # 4. 现在路径是正确的，可以安全地添加到 GITHUB_PATH
+          # 2. 移动解压后的 *内容* (使用 /* 通配符) 到目标目录
+          mv cmdline-tools/* $ANDROID_HOME/cmdline-tools/latest/
+
+          # 3. 删除空的源目录，保持整洁
+          rmdir cmdline-tools
+          # --- 修正结束 ---
+
+          # 现在路径是正确的，可以安全地添加到 GITHUB_PATH
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
 
-          # 5. 接受许可证并安装必要的包
+          # 接受许可证并安装必要的包
           yes | sdkmanager --licenses > /dev/null
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           sdkmanager "ndk;26.1.10909125"
 
-          # 6. 设置 NDK 环境变量
+          # 设置 NDK 环境变量
           echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
 
       - name: Enable corepack
