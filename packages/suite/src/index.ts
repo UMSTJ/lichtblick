@@ -682,6 +682,14 @@ export type SettingsTreeFieldToggleNumber = {
   options: number[] | Array<{ label: string; value: undefined | number }>;
 };
 
+export type SettingsTreeFieldSlider = {
+  input: "slider";
+  value?: number;
+  min?: number;
+  max?: number;
+  step?: number;
+};
+
 export type SettingsTreeFieldVec3 = {
   input: "vec3";
   value?: [undefined | number, undefined | number, undefined | number];
@@ -717,6 +725,7 @@ export type SettingsTreeFieldValue =
   | SettingsTreeFieldString
   | SettingsTreeFieldToggleString
   | SettingsTreeFieldToggleNumber
+  | SettingsTreeFieldSlider
   | SettingsTreeFieldVec3
   | SettingsTreeFieldVec2;
 
