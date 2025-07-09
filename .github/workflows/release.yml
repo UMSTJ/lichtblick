@@ -83,7 +83,6 @@ jobs:
         with:
           distribution: "temurin"
           java-version: "17"
-
       - name: Set up Android SDK & NDK
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -91,28 +90,32 @@ jobs:
           ANDROID_HOME=$HOME/android-sdk
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
 
-          # 1. 创建标准的 command-line tools 路径
-          mkdir -p $ANDROID_HOME/cmdline-tools
-
-          # 2. 下载并解压
+          # 下载并解压
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip commandlinetools-linux-11076708_latest.zip
           rm commandlinetools-linux-11076708_latest.zip
 
-          # 3. 将解压后的 `cmdline-tools` 目录移动到标准位置并重命名为 `latest`
-          #    这是最关键的修正步骤
-          mv cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          # --- 核心修正部分 ---
+          # 1. 创建目标目录
+          mkdir -p $ANDROID_HOME/cmdline-tools/latest
 
-          # 4. 现在路径是正确的，可以安全地添加到 GITHUB_PATH
+          # 2. 移动解压后的 *内容* (使用 /* 通配符) 到目标目录
+          mv cmdline-tools/* $ANDROID_HOME/cmdline-tools/latest/
+
+          # 3. 删除空的源目录，保持整洁
+          rmdir cmdline-tools
+          # --- 修正结束 ---
+
+          # 现在路径是正确的，可以安全地添加到 GITHUB_PATH
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
 
-          # 5. 接受许可证并安装必要的包
+          # 接受许可证并安装必要的包
           yes | sdkmanager --licenses > /dev/null
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           sdkmanager "ndk;26.1.10909125"
 
-          # 6. 设置 NDK 环境变量
+          # 设置 NDK 环境变量
           echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
 
       - name: Enable corepack
