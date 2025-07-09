@@ -6,8 +6,7 @@ on:
       - main # Trigger on push to main branch
 
 permissions:
-  contents: write # 必需：允许 git push
-  actions: write # 保留：允许触发其他 workflow
+  actions: write
 
 jobs:
   bump:
