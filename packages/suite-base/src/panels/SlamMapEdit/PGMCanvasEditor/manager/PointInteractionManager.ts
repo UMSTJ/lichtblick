@@ -381,6 +381,14 @@ export class PointInteractionManager {
     this.renderPoints();
   }
 
+  public clearPoints(): void {
+    // 清理现有标记
+    this.#pointMarkers.forEach((marker) => {
+      this.#scene.remove(marker);
+    });
+    this.#pointMarkers.clear();
+  }
+
   // 渲染所有点位
   private renderPoints(): void {
     // 清理现有标记

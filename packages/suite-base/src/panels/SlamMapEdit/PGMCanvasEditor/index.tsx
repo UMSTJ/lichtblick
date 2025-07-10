@@ -25,10 +25,7 @@ import {
   MapConfig,
   PGMImage,
 } from "./manager/PointInteractionManager";
-import {
-  parsePGM,
-  parsePGMBuffer,
-} from "@lichtblick/suite-base/panels/SlamMapEdit/PGMCanvasEditor/pgmParser";
+import { parsePGM, parsePGMBuffer } from "@lichtblick/suite-base/panels/SlamMapEdit/PGMCanvasEditor/pgmParser";
 
 // 地图配置接口
 interface ROSMapConfig {
@@ -43,22 +40,9 @@ interface ROSMapConfig {
 // 线段方向枚举
 export enum LineDirection {
   UNIDIRECTIONAL = 0, // 单向
-  BIDIRECTIONAL = 1, // 双向
+  BIDIRECTIONAL = 1   // 双向
 }
 
-function createPGMFromData(image: PGMImage): string {
-  const { width, height, maxVal, data } = image;
-  const header = `P2\n${width} ${height}\n${maxVal}\n`;
-  let body = "";
-
-  data.forEach((index, value) => {
-    body += value.toString() + (index % width === width - 1 ? "\n" : " ");
-  });
-  // for (let i = 0; i < data.length; i++) {
-  //   body += data[i] + (i % width === width - 1 ? "\n" : " ");
-  // }
-  return header + body;
-}
 const selectPlayerName = (ctx: MessagePipelineContext) => ctx.playerState.name;
 const PGMCanvasEditor: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | undefined>(undefined);
@@ -75,14 +59,14 @@ const PGMCanvasEditor: React.FC = () => {
   const [layers, setLayers] = useState<Layer[]>([]);
   const [selectedLayerId, setSelectedLayerId] = useState<string>();
   const [isLayerDrawerOpen, setIsLayerDrawerOpen] = useState(false);
-  const [isCreatingLine, setIsCreatingLine] = useState(false);
+  // const [isCreatingLine, setIsCreatingLine] = useState(false);
 
-  useEffect(() => {
-    const manager = pointManagerRef.current;
-    if (manager) {
-      manager.setCreatingLineChangeListener(setIsCreatingLine);
-    }
-  }, []);
+  // useEffect(() => {
+  //   const manager = pointManagerRef.current;
+  //   if (manager) {
+  //     manager.setCreatingLineChangeListener(setIsCreatingLine);
+  //   }
+  // }, [])
   // const [showedBaseLayerDrawError, setShowedBaseLayerDrawError] = useState(false);
 
   const [pgmData, setPGMData] = useState<PGMImage | undefined>(undefined);
@@ -139,6 +123,7 @@ const PGMCanvasEditor: React.FC = () => {
   //   console.log("IpAddress", ipAddr);
   // }, []);
 
+
   const getIpAddress = (name: string): string => {
     if (!name) {
       return "";
@@ -186,6 +171,7 @@ const PGMCanvasEditor: React.FC = () => {
       });
   }, [ipAddr]);
 
+
   // 记录origin点
   const originPointRef = useRef(null as null | Point);
 
@@ -214,20 +200,16 @@ const PGMCanvasEditor: React.FC = () => {
       // const pixelY = (worldY - origin[1]) / resolution - 0.5;
       const pixelX = (worldX - (origin[0] ?? 0)) / resolution - 0.5;
       const pixelY = (worldY - (origin[1] ?? 0)) / resolution - 0.5;
-      const pgmHeight = typeof pgmData.height === "number" ? pgmData.height : 1;
-      const pgmWidth = typeof pgmData.width === "number" ? pgmData.width : 1;
+      const pgmHeight = typeof pgmData.height === 'number' ? pgmData.height : 1;
+      const pgmWidth = typeof pgmData.width === 'number' ? pgmData.width : 1;
       const uvX = pixelX / pgmWidth;
       const uvY = pixelY / pgmHeight;
       const mesh = layers[0]?.mesh;
-      if (!mesh) {
-        return;
-      }
+      if (!mesh) {return;}
       const geometry = mesh.geometry;
       geometry.computeBoundingBox();
       const boundingBox = geometry.boundingBox;
-      if (!boundingBox) {
-        return;
-      }
+      if (!boundingBox) {return;}
       const size = new THREE.Vector3();
       boundingBox.getSize(size);
       const localX = uvX * size.x + boundingBox.min.x;
@@ -250,7 +232,7 @@ const PGMCanvasEditor: React.FC = () => {
   // 封装一个合并origin点的setPoints
   function setPointsWithOrigin(newPoints: Point[]) {
     const originPoint = originPointRef.current;
-    let filtered = newPoints.filter((p) => p.id !== -1 && p.name !== "Origin");
+    let filtered = newPoints.filter(p => p.id !== -1 && p.name !== "Origin");
     if (originPoint) {
       filtered = [originPoint, ...filtered];
     }
@@ -300,19 +282,17 @@ const PGMCanvasEditor: React.FC = () => {
     if (!selectedMap) {
       return;
     }
-    if (!ipAddr || !sceneRef.current) {
+    if ( !ipAddr || !sceneRef.current) {
       sendNotification("请先选择地图", "", "user", "error");
       return;
     }
     try {
       // 先移除所有非base层
       setLayers((prev) => {
-        const baseLayer = prev.find((l) => l.id === "base");
-        if (!baseLayer) {
-          return prev;
-        }
+        const baseLayer = prev.find(l => l.id === "base");
+        if (!baseLayer) {return prev;}
         // 移除非base层的mesh
-        prev.forEach((l) => {
+        prev.forEach(l => {
           if (l.id !== "base") {
             sceneRef.current!.remove(l.mesh);
             l.mesh.geometry.dispose();
@@ -395,7 +375,7 @@ const PGMCanvasEditor: React.FC = () => {
       // 设置z和renderOrder
       const newLayerIndex = layers.length;
       newMesh.renderOrder = newLayerIndex;
-      newMesh.position.z = newLayerIndex * 0.1;
+      newMesh.position.z = 0.4;
       sceneRef.current.add(newMesh);
       const newLayer = {
         id: `maskMap-${Date.now()}`,
@@ -472,10 +452,10 @@ const PGMCanvasEditor: React.FC = () => {
         //setLines([]); // 同时清除线段数据
 
         // 等待一次事件循环，确保 setPGMData 后渲染
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await new Promise(resolve => setTimeout(resolve, 0));
         // 依赖 PGM 渲染完成后再调用
         await onDownloadMaskMap();
-        await downloadPoints(); // 暂时不下载点位
+        await downloadPoints();   // 暂时不下载点位
       } catch (error) {
         console.error("地图下载加载错误:", error);
         // 处理错误情况
@@ -550,7 +530,7 @@ const PGMCanvasEditor: React.FC = () => {
 
       // 调整渲染顺序
       newMesh.renderOrder = prev.length;
-      newMesh.position.z = prev.length * 0.1;
+      newMesh.position.z = Math.max(prev.length * 1, 2.2);
       sceneRef.current!.add(newMesh);
 
       const newLayer = {
@@ -1047,12 +1027,12 @@ const PGMCanvasEditor: React.FC = () => {
     setPointsWithOrigin(pointManagerRef.current.getPoints());
   };
 
-  // 同步点位数据
-  useEffect(() => {
-    if (pointManagerRef.current) {
-      setPoints(pointManagerRef.current.getPoints());
-    }
-  }, []);
+  // // 同步点位数据
+  // useEffect(() => {
+  //   if (pointManagerRef.current) {
+  //     setPoints(pointManagerRef.current.getPoints());
+  //   }
+  // }, []);
 
   // 修改点删除逻辑
   const handleDeletePoint = useCallback((idToDelete: number) => {
@@ -1120,10 +1100,10 @@ const PGMCanvasEditor: React.FC = () => {
     const minY = Math.max(0, textureY - brushSize);
     const maxY = Math.min(pgmData.height - 1, textureY + brushSize);
     // 修改纹理更新方式
-    const imageData = tex.image.data;
+    // const imageData = tex.image.data;
     // 7. 边界检查与绘制
-    // const data = tex.image.data;
-    const data = new Uint8Array(imageData.buffer); // 创建可写副本
+    const data = tex.image.data;
+    // const data = new Uint8Array(imageData.buffer); // 创建可写副本
     for (let px = minX; px <= maxX; px++) {
       for (let py = minY; py <= maxY; py++) {
         const dx = px - textureX;
@@ -1142,11 +1122,12 @@ const PGMCanvasEditor: React.FC = () => {
     }
 
     // 8. 强制更新纹理
-    tex.image = new ImageData(
-      new Uint8ClampedArray(data.buffer),
-      tex.image.width,
-      tex.image.height,
-    );
+    // tex.image = new ImageData(
+    //   new Uint8ClampedArray(data.buffer),
+    //   tex.image.width,
+    //   tex.image.height,
+    // );
+    // tex.image.data.set(data);
     tex.needsUpdate = true;
 
     // 9. 更新笔刷预览位置
@@ -1176,87 +1157,78 @@ const PGMCanvasEditor: React.FC = () => {
   }, []);
 
   const savePGM = async () => {
-    if (!pgmData || !sceneRef.current || layers.length === 0) {
+    if (!pgmData) {
+      sendNotification("保存失败：地图数据未加载", "", "user", "error");
       return;
     }
 
-    // 只合成非base层数据，底图全白
-    const mergedData = new Uint8Array(pgmData.data.length);
-    mergedData.fill(pgmData.maxVal); // 全白底图
-    const sortedLayers = [...layers]
-      .filter((layer) => layer.id !== "base")
-      .sort((a, b) => a.mesh.renderOrder - b.mesh.renderOrder);
+    const { width, height } = pgmData;
 
-    sortedLayers.forEach((layer) => {
-      if (!layer.visible) {
-        return;
-      }
+    // 1. 筛选出所有可见的、非'base'的图层
+    const drawableLayers = layers.filter((l) => l.id !== "base" && l.visible);
 
-      const textureData = new Uint8Array(layer.texture.image.data.buffer);
-      textureData.forEach((value, i) => {
-        if (i % 4 !== 0) {
-          return;
-        } // 只处理 R 通道
+    if (drawableLayers.length === 0) {
+      sendNotification("没有可保存的绘制图层", "", "user", "info");
+      return;
+    }
 
-        const alpha = textureData[i + 3];
-        if (alpha == undefined) {
-          return;
+    // 2. 创建一个以255（白色）填充的PGM数据缓存
+    const finalPgmData = new Uint8Array(width * height);
+    finalPgmData.fill(255); // PGM的空白区域通常是白色
+
+    // 3. 按照图层顺序，将绘制内容合并到缓存中，并翻转Y轴
+    for (const layer of drawableLayers) {
+      const textureData = layer.texture.image.data; // RGBA Uint8Array
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          // PGM目标索引 (y从上到下)
+          const destIdx = y * width + x;
+
+          // 源纹理数据中的y坐标需要翻转 (y从下到上)
+          const srcY = height - 1 - y;
+          const srcIdx = (srcY * width + x) * 4;
+
+          const alpha = textureData[srcIdx + 3];
+
+          // 如果像素的alpha通道为255，说明这里被绘制过
+          if (alpha === 255) {
+            // 对于灰度图，R、G、B值相同，取R值即可
+            const grayValue = textureData[srcIdx]!;
+            finalPgmData[destIdx] = grayValue;
+          }
         }
-        if (alpha < 1) {
-          return;
-        } // 跳过完全透明的像素
+      }
+    }
 
-        const x = (i / 4) % pgmData.width;
-        const y = Math.floor(i / 4 / pgmData.width);
-        const pgmIndex = (pgmData.height - 1 - y) * pgmData.width + x;
+    // 4. 生成PGM文件字符串
+    const header = `P2\n${width} ${height}\n255\n`;
+    let body = "";
+    for (let i = 0; i < finalPgmData.length; i++) {
+      body += (finalPgmData[i] ?? 0) + ((i + 1) % width === 0 ? "\n" : " ");
+    }
+    const pgmString = header + body;
 
-        const gray = Math.round((value / 255) * pgmData.maxVal);
-        mergedData[pgmIndex] = gray;
-      });
-    });
-
-    const updatedPGM: PGMImage = {
-      ...pgmData,
-      data: mergedData,
-    };
-
-    // 将 PGM 转为字符串并 Blob
-    const pgmString = createPGMFromData(updatedPGM);
+    // 5. 上传
     const blob = new Blob([pgmString], { type: "application/octet-stream" });
-
     const mapName = selectedMap;
-
     try {
       const response = await fetch(
         `http://${ipAddr}/mapServer/save/maskMap?mapName=${encodeURIComponent(mapName)}`,
         {
           method: "POST",
-          headers: {
-            // 不设置 Content-Type，让浏览器自动处理边界
-          },
+          headers: {},
           body: blob,
         },
       );
 
       if (!response.ok) {
-        sendNotification(
-          `PGM上传失败: ${response.status} ${response.statusText}`,
-          "",
-          "user",
-          "error",
-        );
+        sendNotification(`PGM上传失败: ${response.status} ${response.statusText}`, "", "user", "error");
         throw new Error(`上传失败: ${response.status} ${response.statusText}`);
       }
-
       sendNotification("PGM上传成功！", "", "user", "info");
-      //console.log("PGM上传成功");
     } catch (error) {
-      sendNotification(
-        `PGM上传失败: ${error instanceof Error ? error.message : "未知错误"}`,
-        "",
-        "user",
-        "error",
-      );
+      sendNotification(`PGM上传失败: ${error instanceof Error ? error.message : "未知错误"}`, "", "user", "error");
       console.error("上传PGM失败:", error);
     }
   };
@@ -1279,6 +1251,8 @@ const PGMCanvasEditor: React.FC = () => {
       setPoints(pointManagerRef.current.getPoints());
     }
   }, []);
+
+
 
   const handleRefreshPoints = useCallback(() => {
     void downloadPoints();
@@ -1426,6 +1400,40 @@ const PGMCanvasEditor: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sceneRef.current, pointManagerRef.current]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    const pManager = pointManagerRef.current;
+    const renderer = rendererRef.current;
+    const scene = sceneRef.current;
+    const animationId = animationFrameRef.current;
+
+    return () => {
+      if (pManager) {
+        pManager.dispose();
+      }
+      if (scene) {
+        // Traverse and dispose of all materials and geometries to prevent memory leaks
+        scene.traverse((object) => {
+          if (object instanceof THREE.Mesh || object instanceof THREE.Line) {
+            object.geometry.dispose();
+            if (object.material instanceof THREE.Material) {
+              object.material.dispose();
+            } else if (Array.isArray(object.material)) {
+              object.material.forEach((material) => material.dispose());
+            }
+          }
+        });
+        scene.clear();
+      }
+      if (renderer) {
+        renderer.dispose();
+      }
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+  }, []);
+
   return (
     <div
       ref={containerRef as React.MutableRefObject<HTMLDivElement>}
@@ -1459,59 +1467,57 @@ const PGMCanvasEditor: React.FC = () => {
         isPointsPanelOpen={isPointsDrawerOpen}
         onDownloadMaskMap={onDownloadMaskMap}
         onCancelCreatingLine={handleCancelCreatingLine}
-        pointManagerRef={pointManagerRef}
+        pointManagerRef = {pointManagerRef}
       >
         <div
           style={{
             marginLeft: 0, // 去掉左侧 margin
             paddingLeft: 0, // 去掉左侧 padding
             minWidth: 180,
-            display: "flex",
-            alignItems: "center",
+            display: 'flex',
+            alignItems: 'center',
             height: 40, // 与工具栏高度一致
           }}
         >
-          <label
-            htmlFor="map-select"
-            style={{
-              marginRight: 6,
-              color: "#333",
-              fontSize: 13,
-              fontWeight: 500,
-              whiteSpace: "nowrap",
-              userSelect: "none",
-            }}
-          >
-            选择地图：
-          </label>
-          <select
-            id="map-select"
-            value={selectedMap}
-            onChange={(e) => {
-              setSelectedMap(e.target.value);
-            }}
-            style={{
-              minWidth: 100,
-              height: 32,
-              borderRadius: 6,
-              border: "1px solid #ccc",
-              padding: "0 8px",
-              fontSize: 14,
-              outline: "none",
-              background: "#fff",
-              color: "#222",
-              boxSizing: "border-box",
-              verticalAlign: "middle",
-            }}
-          >
-            <option value="">请选择</option>
-            {mapList.map((map) => (
-              <option key={map} value={map}>
-                {map}
-              </option>
-            ))}
-          </select>
-        </div>
+        <label
+          htmlFor="map-select"
+          style={{
+            marginRight: 6,
+            color: '#333',
+            fontSize: 13,
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            userSelect: 'none',
+          }}
+        >
+          选择地图：
+        </label>
+        <select
+          id="map-select"
+          value={selectedMap}
+          onChange={(e) => { setSelectedMap(e.target.value); }}
+          style={{
+            minWidth: 100,
+            height: 32,
+            borderRadius: 6,
+            border: '1px solid #ccc',
+            padding: '0 8px',
+            fontSize: 14,
+            outline: 'none',
+            background: '#fff',
+            color: '#222',
+            boxSizing: 'border-box',
+            verticalAlign: 'middle',
+          }}
+        >
+          <option value="">请选择</option>
+          {mapList.map((map) => (
+            <option key={map} value={map}>
+              {map}
+            </option>
+          ))}
+        </select>
+      </div>
       </DrawingToolbar>
 
       <div
@@ -1563,7 +1569,7 @@ const PGMCanvasEditor: React.FC = () => {
         />
 
         {/* 创建折线模式提示 */}
-        {(isCreatingLine ?? false) && (
+        {/* {(isCreatingLine?? false) && (
           <div
             style={{
               position: "absolute",
@@ -1582,7 +1588,7 @@ const PGMCanvasEditor: React.FC = () => {
           >
             折线创建模式 - 右键点击空白处添加点，点击点位完成
           </div>
-        )}
+        )} */}
 
         <LayerDrawer
           open={isLayerDrawerOpen}
@@ -1604,6 +1610,7 @@ const PGMCanvasEditor: React.FC = () => {
           onClose={() => {
             setIsPointsDrawerOpen(false);
           }}
+
           onDeletePoint={handleDeletePoint}
           onPointVisibilityChange={handlePointVisibilityChange}
           onPointSelect={handlePointSelect}
@@ -1615,19 +1622,17 @@ const PGMCanvasEditor: React.FC = () => {
         {contextMenu.visible && (
           <div
             style={{
-              position: "fixed",
+              position: 'fixed',
               top: contextMenu.y,
               left: contextMenu.x,
-              backgroundColor: "white",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+              backgroundColor: 'white',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
               zIndex: 1000,
-              minWidth: "120px",
+              minWidth: '120px',
             }}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
+            onClick={(e) => { e.stopPropagation(); }}
           >
             {/* <div
               style={{
@@ -1663,13 +1668,13 @@ const PGMCanvasEditor: React.FC = () => {
             </div> */}
             <div
               style={{
-                padding: "8px 12px",
-                cursor: "pointer",
-                fontSize: "14px",
-                color: "#d32f2f",
+                padding: '8px 12px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                color: '#d32f2f',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f5f5f5")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
               onClick={handleDeletePointFromMenu}
             >
               删除点位

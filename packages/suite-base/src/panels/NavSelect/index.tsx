@@ -1,10 +1,3 @@
-// SPDX-FileCopyrightText: Copyright (C) 2023-2025 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
-// SPDX-License-Identifier: MPL-2.0
-
-/* eslint-disable react/forbid-component-props */
-/* eslint-disable no-restricted-syntax */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
@@ -44,6 +37,7 @@ import {
   parsePGM,
   parsePGMBuffer,
 } from "@lichtblick/suite-base/panels/SlamMapEdit/PGMCanvasEditor/pgmParser";
+import { useMessageDataItem } from "@lichtblick/suite-base/components/MessagePathSyntax/useMessageDataItem";
 
 type Props = {
   config: VehicleControlConfig;
@@ -65,10 +59,6 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   const resizeObserverRef = useRef<ResizeObserver | undefined>(undefined);
   // const batteryPercentageRef = useRef<number | undefined>(0);
   const animationFrameRef = useRef<number>();
-  const canPublish = useMessagePipeline((context) =>
-    context.playerState.capabilities.includes(PLAYER_CAPABILITIES.advertise),
-  );
-
   // const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const [isSceneReady, setIsSceneReady] = useState(false);
@@ -79,6 +69,31 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   // const WORLD_WIDTH = 10;
   // const { nodeTopicName, nodeDatatype, pathSource, rfidSource, batterySource } = config;
   const { nodeTopicName, nodeDatatype } = config;
+
+  const [currentPosition, setCurrentPosition] = useState<string>("无位置");
+  const poseMessages = useMessageDataItem(`/pcl_pose.pose.position`);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log("poseMessages", poseMessages);
+      if (poseMessages && poseMessages.length > 0) {
+        console.log("poseMessages.length", poseMessages.length);
+        const latestMessage = poseMessages[poseMessages.length - 1];
+        if (latestMessage?.queriedData && latestMessage.queriedData.length > 0) {
+          const position = latestMessage.queriedData[0]?.value as { x: number; y: number; z: number };
+          if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+            const posStr = `x: ${position.x.toFixed(2)}\ny: ${position.y.toFixed(2)}`;
+            setCurrentPosition(posStr);
+            return;
+          }
+        }
+      }
+      setCurrentPosition("无位置");
+    }, 500);
+
+    return () => { clearInterval(interval); };
+  }, [poseMessages]);
+
 
   // const rfidMessages = useMessageDataItem(rfidSource);
   // const pathMessages = useMessageDataItem(pathSource);
@@ -310,8 +325,6 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       }
 
       try {
-        console.log("canpublish", canPublish);
-        sendNotification(`canpublish: ${canPublish}`, "", "user", "info");
         interactionManagerRef.current.handleClick(
           event,
           cameraRef.current,
@@ -673,17 +686,18 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
                 height: "auto",
                 zIndex: 999,
                 right: "10px",
+                bottom: "10px",
                 display: "flex",
                 justifyContent: "center",
                 flexDirection: "column",
-                top: "50px",
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                padding: "8px",
+                borderRadius: "4px",
+                color: "white",
               }}
             >
-              <TextCard
-                text={
-                  interactionManagerRef.current?.getCurrentPositionRfidId()?.toString() ?? "无位置"
-                }
-              />
+              <div style={{ fontWeight: "bold", borderBottom: "1px solid rgba(255, 255, 255, 0.5)", paddingBottom: "4px", marginBottom: "4px" }}>当前位置</div>
+              <pre style={{ margin: 0, fontFamily: "monospace" }}>{currentPosition}</pre>
             </div>
           </>
         )}
