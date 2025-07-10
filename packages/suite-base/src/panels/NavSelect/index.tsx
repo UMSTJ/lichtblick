@@ -5,39 +5,21 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 
-
-
-// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
-// SPDX-License-Identifier: MPL-2.0
-
-/* eslint-disable react-hooks/exhaustive-deps */
-// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
-// SPDX-License-Identifier: MPL-2.0
-
-/* eslint-disable @typescript-eslint/use-unknown-in-catch-callback-variable */
-// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
-// SPDX-License-Identifier: MPL-2.0
-
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
-// SPDX-License-Identifier: MPL-2.0
-
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 // SPDX-FileCopyrightText: Copyright (C) 2023-2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)<lichtblick@bmwgroup.com>
 // SPDX-License-Identifier: MPL-2.0
 
 import { Stack } from "@mui/material";
-// import { Card } from "antd";
-// import { use } from "cytoscape";
-import yaml from 'js-yaml';
+import yaml from "js-yaml";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 import { useDataSourceInfo } from "@lichtblick/suite-base/PanelAPI";
 // import { useMessageDataItem } from "@lichtblick/suite-base/components/MessagePathSyntax/useMessageDataItem";
-import { MessagePipelineContext, useMessagePipeline } from "@lichtblick/suite-base/components/MessagePipeline";
+import {
+  MessagePipelineContext,
+  useMessagePipeline,
+} from "@lichtblick/suite-base/components/MessagePipeline";
 import Panel from "@lichtblick/suite-base/components/Panel";
 import PanelToolbar from "@lichtblick/suite-base/components/PanelToolbar";
 import useCallbackWithToast from "@lichtblick/suite-base/hooks/useCallbackWithToast";
@@ -50,7 +32,7 @@ import { useVehicleControlSettings } from "@lichtblick/suite-base/panels/NavSele
 import { VehicleControlConfig } from "@lichtblick/suite-base/panels/NavSelect/types";
 import { PLAYER_CAPABILITIES } from "@lichtblick/suite-base/players/constants";
 import { SaveConfig } from "@lichtblick/suite-base/types/panels";
-import sendNotification from "@lichtblick/suite-base/util/sendNotification"
+import sendNotification from "@lichtblick/suite-base/util/sendNotification";
 
 import {
   parseAndRenderNavPoints,
@@ -58,6 +40,10 @@ import {
   debounce,
 } from "./manager/RFIDInteractionManager";
 import { defaultConfig } from "./settings";
+import {
+  parsePGM,
+  parsePGMBuffer,
+} from "@lichtblick/suite-base/panels/SlamMapEdit/PGMCanvasEditor/pgmParser";
 
 type Props = {
   config: VehicleControlConfig;
@@ -80,8 +66,8 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   // const batteryPercentageRef = useRef<number | undefined>(0);
   const animationFrameRef = useRef<number>();
   const canPublish = useMessagePipeline((context) =>
-        context.playerState.capabilities.includes(PLAYER_CAPABILITIES.advertise),
-        );
+    context.playerState.capabilities.includes(PLAYER_CAPABILITIES.advertise),
+  );
 
   // const [imageUrl, setImageUrl] = useState<string | null>(null);
 
@@ -108,7 +94,6 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   //   queriedData: { value: { percentage: number } }[];
   // };
 
-
   const interactionManagerRef = useRef<RFIDInteractionManager | undefined>(
     new RFIDInteractionManager(sceneRef.current!),
   );
@@ -132,18 +117,20 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     }
   }, [playerName]);
   function getIpAddress(name: string): string {
-    if (!name) {return "";}
+    if (!name) {
+      return "";
+    }
     let addressPart = name.startsWith("ws://") ? name.substring(5) : name;
     const firstSpaceIndex = addressPart.indexOf(" ");
-    if (firstSpaceIndex !== -1) {addressPart = addressPart.substring(0, firstSpaceIndex);}
+    if (firstSpaceIndex !== -1) {
+      addressPart = addressPart.substring(0, firstSpaceIndex);
+    }
     const host = addressPart.split(":")[0] ?? "";
     return `${host}:9000`;
   }
   // useEffect(() => {
   //   setIpAddr("192.243.117.147:9000");
   // }, []);
-
-
 
   const setEndNode = useCallbackWithToast(
     (rfidEnd: number) => {
@@ -210,10 +197,9 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       // 从导航点数据中计算边界框来确定地图尺寸
       // let mapWidth = map.pgmData.width /100;
       // let mapHeight = map.pgmData.height /100;
-      const mapWidth =  map.pgmData.width * map.mapConfig.resolution;
-      const mapHeight  = map.pgmData.height * map.mapConfig.resolution;
-      console.log("m" +
-        "apWidth:", mapWidth);
+      const mapWidth = map.pgmData.width * map.mapConfig.resolution;
+      const mapHeight = map.pgmData.height * map.mapConfig.resolution;
+      console.log("m" + "apWidth:", mapWidth);
       console.log("mapHeight:", mapHeight);
       const mapGeometry = new THREE.PlaneGeometry(mapWidth, mapHeight);
       const mapMaterial = new THREE.MeshBasicMaterial({ map: map.map });
@@ -226,20 +212,25 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
         origin: map.mapConfig.origin,
         resolution: map.mapConfig.resolution,
         pgmWidth: map.pgmData.width,
-        pgmHeight: map.pgmData.height
+        pgmHeight: map.pgmData.height,
       };
       // console.log("options", options);
       // console.log("map.map", map.map);
-      interactionManagerRef.current = parseAndRenderNavPoints(map.json, scene, {
-        width: mapWidth,
-        height: mapHeight,
-      }, options);
+      interactionManagerRef.current = parseAndRenderNavPoints(
+        map.json,
+        scene,
+        {
+          width: mapWidth,
+          height: mapHeight,
+        },
+        options,
+      );
 
       // 强制刷新所有Group/Line，解决Three.js渲染bug
       const forceRefresh = () => {
         // 只处理Group和Line
-        const objs = scene.children.filter(obj => obj.type === "Group" || obj.type === "Line");
-        objs.forEach(obj => {
+        const objs = scene.children.filter((obj) => obj.type === "Group" || obj.type === "Line");
+        objs.forEach((obj) => {
           scene.remove(obj);
           scene.add(obj);
         });
@@ -321,8 +312,12 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       try {
         console.log("canpublish", canPublish);
         sendNotification(`canpublish: ${canPublish}`, "", "user", "info");
-        interactionManagerRef.current.handleClick(event, cameraRef.current, rendererRef.current,nodePublish);
-
+        interactionManagerRef.current.handleClick(
+          event,
+          cameraRef.current,
+          rendererRef.current,
+          nodePublish,
+        );
       } catch (error) {
         console.error("Click handling error:", error);
       }
@@ -487,12 +482,14 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
 
   // 获取位置状态信息并自动设置地图
   useEffect(() => {
-    if (!ipAddr) {return;}
+    if (!ipAddr) {
+      return;
+    }
 
     // 获取位置状态信息
     fetch(`http://${ipAddr}/api/location/status`)
-      .then(async res => await res.json())
-      .then(async data => {
+      .then(async (res) => await res.json())
+      .then(async (data) => {
         console.log("位置状态信息:", data);
         const currentMap = data?.positioningService?.currentMap;
 
@@ -500,10 +497,8 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
           console.log("检测到当前地图:", currentMap);
           // 先获取地图列表，然后设置当前地图
           await fetch(`http://${ipAddr}/mapServer/mapList`)
-            .then(async res => await res.json())
-            .then(list => {
-
-
+            .then(async (res) => await res.json())
+            .then((list) => {
               // 检查当前地图是否在可用地图列表中
               if (list.includes(currentMap)) {
                 setMapName(currentMap);
@@ -517,30 +512,31 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
                 setMapName("请选择地图");
                 sendNotification(`当前地图 ${currentMap} 不在可用地图列表中`, "", "user", "warn");
               }
-            }); return;
+            });
+          return;
         } else {
-
           // 如果没有有效的当前地图，只获取地图列表
           await fetch(`http://${ipAddr}/mapServer/mapList`)
-            .then(async res => await res.json())
-            .then(list => {
+            .then(async (res) => await res.json())
+            .then((list) => {
               const newList = ["请选择地图", ...list];
               setMapFiles(newList);
               setMapName("请选择地图");
-            }); return;
+            });
+          return;
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("获取位置状态信息失败:", err);
         // 如果获取位置状态失败，回退到原来的逻辑
         fetch(`http://${ipAddr}/mapServer/mapList`)
-          .then(async res => await res.json())
-          .then(list => {
+          .then(async (res) => await res.json())
+          .then((list) => {
             const newList = ["请选择地图", ...list];
             setMapFiles(newList);
             setMapName("请选择地图");
           })
-          .catch(mapErr => {
+          .catch((mapErr) => {
             console.error("获取地图列表失败:", mapErr);
             setMapFiles(["请选择地图"]);
             setMapName("请选择地图");
@@ -548,60 +544,6 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       });
   }, [ipAddr]);
 
-  // 1. 复制PGM解析函数
-  function parsePGMBuffer(buffer: ArrayBuffer): { width: number; height: number; maxVal: number; data: Uint8Array } | undefined {
-    try {
-      const bytes = new Uint8Array(buffer);
-      const decoder = new TextDecoder("ascii");
-      let header = "";
-      let i = 0;
-      while (i < bytes.length && header.split('\n').filter(line => line.trim() !== '').length < 3) {
-        header += decoder.decode(bytes.slice(i, i + 1));
-        i++;
-      }
-      const lines = header
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter((line) => line.length > 0 && !line.startsWith("#"));
-      if (lines[0] !== "P5") {return undefined;}
-      const dimensions = lines[1]?.split(/\s+/).map(Number);
-      if (!dimensions || dimensions.length !== 2) {return undefined;}
-      const [width, height] = dimensions;
-      const maxVal = parseInt(lines[2] ?? "0", 10);
-      if (
-        typeof width !== "number" || typeof height !== "number" || typeof maxVal !== "number" ||
-        isNaN(width) || isNaN(height) || isNaN(maxVal) || width <= 0 || height <= 0 || maxVal <= 0
-      ) {return undefined;}
-      const pixelData = bytes.slice(i, i + width * height);
-      if (pixelData.length !== width * height) {return undefined;}
-      return { width, height, maxVal, data: pixelData };
-    } catch { return undefined; }
-  }
-  function parsePGM(data: string): { width: number; height: number; maxVal: number; data: Uint8Array } | undefined {
-    try {
-      const lines = data.split(/\r?\n/).filter((line) => line.trim() !== "" && !line.startsWith("#"));
-      if (lines[0] !== "P2") {return undefined;}
-      const dimensions = lines[1]?.split(/\s+/).map(Number);
-      if (!dimensions || dimensions.length !== 2) {return undefined;}
-      const [width, height] = dimensions;
-      const maxVal = parseInt(lines[2] ?? "0", 10);
-      if (
-        typeof width !== "number" || typeof height !== "number" || typeof maxVal !== "number" ||
-        isNaN(width) || isNaN(height) || isNaN(maxVal)
-      ) {return undefined;}
-      const pixelData = new Uint8Array(width * height);
-      let pixelIndex = 0;
-      for (let i = 3; i < lines.length && pixelIndex < width * height; i++) {
-        const values = lines[i]?.trim().split(/\s+/).map((v) => parseInt(v, 10)) ?? [];
-        for (const val of values) {
-          if (pixelIndex >= width * height) {break;}
-          pixelData[pixelIndex++] = val;
-        }
-      }
-      if (pixelIndex !== width * height) {return undefined;}
-      return { width, height, maxVal, data: pixelData };
-    } catch { return undefined; }
-  }
   // 2. 替换地图图片加载逻辑为PGM下载和解析
   useEffect(() => {
     if (!ipAddr || !mapName || mapName === "请选择地图") {
@@ -610,51 +552,62 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     }
     if (mapName === "当前地图") {
       sendNotification(`当前地图加载失败, 请选择其他地图或重新打开`, "", "user", "info");
-
     }
     void Promise.all([
-      fetch(`http://${ipAddr}/mapServer/download/pgmfile?mapname=${mapName}`).then(async res => await res.arrayBuffer()),
-      fetch(`http://${ipAddr}/mapServer/download/navPoints?mapName=${mapName}`).then(async res => await res.json()),
-      fetch(`http://${ipAddr}/mapServer/download/yamlfile?mapName=${mapName}`).then(async res => await res.text())
-    ]).then(([buffer, navData, yamlText]) => {
-      const decoder = new TextDecoder("ascii");
-      const headerSnippet = decoder.decode(new Uint8Array(buffer).slice(0, 15));
-      const magic = headerSnippet.trim().split(/\s+/)[0];
-      let pgmData: { width: number; height: number; maxVal: number; data: Uint8Array } | undefined;
-      if (magic === "P2") {
-        pgmData = parsePGM(decoder.decode(buffer));
-      } else if (magic === "P5") {
-        pgmData = parsePGMBuffer(buffer);
-      } else {
-        throw new Error("未知PGM格式");
-      }
-      if (!pgmData) {throw new Error("PGM解析失败");}
-      const { width, height, maxVal, data } = pgmData;
-      const rgbaData = new Uint8Array(width * height * 4);
-      data.forEach((value, index)=> {
-        const convertValue = Math.floor((value / (maxVal ?? 255)) * 255);
-        rgbaData[index * 4] = convertValue;
-        rgbaData[index * 4 + 1] = convertValue;
-        rgbaData[index * 4 + 2] = convertValue;
-        rgbaData[index * 4 + 3] = 255;
+      fetch(`http://${ipAddr}/mapServer/download/pgmfile?mapname=${mapName}`).then(
+        async (res) => await res.arrayBuffer(),
+      ),
+      fetch(`http://${ipAddr}/mapServer/download/navPoints?mapName=${mapName}`).then(
+        async (res) => await res.json(),
+      ),
+      fetch(`http://${ipAddr}/mapServer/download/yamlfile?mapName=${mapName}`).then(
+        async (res) => await res.text(),
+      ),
+    ])
+      .then(([buffer, navData, yamlText]) => {
+        const decoder = new TextDecoder("ascii");
+        const headerSnippet = decoder.decode(new Uint8Array(buffer).slice(0, 15));
+        const magic = headerSnippet.trim().split(/\s+/)[0];
+        let pgmData:
+          | { width: number; height: number; maxVal: number; data: Uint8Array }
+          | undefined;
+        if (magic === "P2") {
+          pgmData = parsePGM(decoder.decode(buffer));
+        } else if (magic === "P5") {
+          pgmData = parsePGMBuffer(buffer);
+        } else {
+          throw new Error("未知PGM格式");
+        }
+        if (!pgmData) {
+          throw new Error("PGM解析失败");
+        }
+        const { width, height, maxVal, data } = pgmData;
+        const rgbaData = new Uint8Array(width * height * 4);
+        data.forEach((value, index) => {
+          const convertValue = Math.floor((value / (maxVal ?? 255)) * 255);
+          rgbaData[index * 4] = convertValue;
+          rgbaData[index * 4 + 1] = convertValue;
+          rgbaData[index * 4 + 2] = convertValue;
+          rgbaData[index * 4 + 3] = 255;
+        });
+        const texture = new THREE.DataTexture(
+          rgbaData,
+          width,
+          height,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+        );
+        texture.needsUpdate = true;
+        // 解析YAML
+        const downloadMapConfig = yaml.load(yamlText) as any;
+        console.log("downloadMapConfig:", downloadMapConfig);
+        // 使用新的导航点数据格式
+        setMap({ map: texture, json: navData, pgmData, mapConfig: downloadMapConfig });
+      })
+      .catch((err) => {
+        console.error("获取PGM、导航点或YAML数据失败:", err);
+        setMap(undefined);
       });
-      const texture = new THREE.DataTexture(
-        rgbaData,
-        width,
-        height,
-        THREE.RGBAFormat,
-        THREE.UnsignedByteType
-      );
-      texture.needsUpdate = true;
-      // 解析YAML
-      const downloadMapConfig = yaml.load(yamlText) as any;
-      console.log("downloadMapConfig:", downloadMapConfig)
-      // 使用新的导航点数据格式
-      setMap({ map: texture, json: navData, pgmData, mapConfig: downloadMapConfig });
-    }).catch(err => {
-      console.error("获取PGM、导航点或YAML数据失败:", err);
-      setMap(undefined);
-    });
   }, [ipAddr, mapName]);
 
   return (
@@ -739,7 +692,9 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   );
 };
 
-export default Panel(Object.assign(React.memo(NavSelectPanel), {
-  panelType: "NavSelectPanel",
-  defaultConfig
-}));
+export default Panel(
+  Object.assign(React.memo(NavSelectPanel), {
+    panelType: "NavSelectPanel",
+    defaultConfig,
+  }),
+);

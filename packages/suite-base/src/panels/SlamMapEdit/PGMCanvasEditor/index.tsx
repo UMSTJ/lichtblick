@@ -25,6 +25,10 @@ import {
   MapConfig,
   PGMImage,
 } from "./manager/PointInteractionManager";
+import {
+  parsePGM,
+  parsePGMBuffer,
+} from "@lichtblick/suite-base/panels/SlamMapEdit/PGMCanvasEditor/pgmParser";
 
 // 地图配置接口
 interface ROSMapConfig {
@@ -40,146 +44,6 @@ interface ROSMapConfig {
 export enum LineDirection {
   UNIDIRECTIONAL = 0, // 单向
   BIDIRECTIONAL = 1, // 双向
-}
-
-export function parsePGMBuffer(buffer: ArrayBuffer): PGMImage | undefined {
-  try {
-    const bytes = new Uint8Array(buffer);
-    const decoder = new TextDecoder("ascii");
-
-    let header = "";
-    let i = 0;
-
-    // 读取 header 直到出现 3 个换行（magic number, dimensions, maxVal）
-    while (i < bytes.length && header.split("\n").filter((line) => line.trim() !== "").length < 3) {
-      header += decoder.decode(bytes.slice(i, i + 1));
-      i++;
-    }
-
-    const lines: string[] = header
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter((line) => line.length > 0 && !line.startsWith("#"));
-
-    if (lines[0] !== "P5") {
-      console.error("Invalid PGM format: Expected P5.");
-      console.error(lines[0]);
-      return undefined;
-    }
-    if (lines.length < 3) {
-      console.error("Invalid header values in PGM.");
-      return undefined;
-    }
-    if (lines[1] == undefined || lines[2] == undefined) {
-      console.error("Invalid PGM format1.");
-      return undefined;
-    }
-
-    const [width, height] = lines[1].split(/\s+/).map(Number);
-
-    const maxVal = parseInt(lines[2], 10);
-
-    if (
-      width == undefined ||
-      height == undefined ||
-      isNaN(width) ||
-      isNaN(height) ||
-      isNaN(maxVal) ||
-      width <= 0 ||
-      height <= 0 ||
-      maxVal <= 0
-    ) {
-      console.error("Invalid header values in PGM.");
-      return undefined;
-    }
-
-    // 剩下的是像素数据
-
-    const pixelData = bytes.slice(i, i + width * height);
-
-    if (pixelData.length !== width * height) {
-      console.error("Pixel data size mismatch.");
-      return undefined;
-    }
-
-    return {
-      width,
-      height,
-      maxVal,
-      data: pixelData,
-    };
-  } catch (error) {
-    console.error("PGM P5 parsing error:", error);
-    return undefined;
-  }
-}
-// PGM 解析函数
-export function parsePGM(data: string): PGMImage | undefined {
-  try {
-    const lines = data.split(/\r?\n/).filter((line) => line.trim() !== "" && !line.startsWith("#"));
-    if (lines[0] !== "P2") {
-      console.error("Invalid PGM formatP2.");
-      return undefined;
-    }
-
-    // 使用更高效的方式解析头部信息
-    if (lines[1] == undefined || lines[2] == undefined) {
-      console.error("Invalid PGM format1.");
-      return undefined;
-    }
-    const dimensions = lines[1].split(/\s+/).map(Number);
-    if (dimensions.length !== 2) {
-      return undefined;
-    }
-
-    const [width, height] = dimensions;
-
-    const maxVal = parseInt(lines[2], 10);
-    if (
-      width == undefined ||
-      height == undefined ||
-      isNaN(width) ||
-      isNaN(height) ||
-      isNaN(maxVal) ||
-      width <= 0 ||
-      height <= 0 ||
-      maxVal <= 0
-    ) {
-      console.error("Invalid PGM format2.");
-      return undefined;
-    }
-
-    // 一次性处理像素数据
-
-    const pixelData = new Uint8Array(width * height);
-    let pixelIndex = 0;
-
-    // 从第4行开始处理像素数据
-
-    lines.slice(3).forEach((value) => {
-      const values = value
-        .toString()
-        .trim()
-        .split(/\s+/)
-        .map((v) => parseInt(v, 10));
-      for (const val of values) {
-        if (pixelIndex >= width * height) {
-          break;
-        }
-        pixelData[pixelIndex++] = val;
-      }
-    });
-
-    if (pixelIndex !== width * height) {
-      console.error("Invalid PGM format4.");
-      return undefined;
-    }
-
-    return { width, height, maxVal, data: pixelData };
-  } catch (error) {
-    console.error("PGM parsing error:", error);
-    return undefined;
-  }
 }
 
 function createPGMFromData(image: PGMImage): string {

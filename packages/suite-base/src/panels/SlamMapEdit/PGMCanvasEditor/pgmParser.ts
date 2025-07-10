@@ -1,164 +1,131 @@
-// pgmParser.ts
+import { PGMImage } from "@lichtblick/suite-base/panels/SlamMapEdit/PGMCanvasEditor/manager/PointInteractionManager";
 
-export interface PGMImage {
-  width: number;
-  height: number;
-  maxVal: number;
-  data: Uint8Array;
+export function parsePGMBuffer(buffer: ArrayBuffer): PGMImage | undefined {
+  try {
+    const bytes = new Uint8Array(buffer);
+    const decoder = new TextDecoder("ascii");
+
+    // 1. 使用正则表达式高效、准确地解析头部
+    // 这样可以正确处理任何类型的空白字符组合
+    // 我们先解码文件开头的一小部分，假设头部不会过长
+    const headerChunk = decoder.decode(bytes.slice(0, 128)); // 解码一个合理的头部块大小
+    const headerRegex = /^P5\s+(\d+)\s+(\d+)\s+(\d+)\s/;
+    const match = headerChunk.match(headerRegex);
+
+    if (!match) {
+      console.error("无效的 PGM P5 头部格式。");
+      return undefined;
+    }
+
+    // 2. 从正则表达式的匹配结果中提取数值
+    const width = parseInt(match[1] ?? "0", 10);
+    const height = parseInt(match[2] ?? "0", 10);
+    const maxVal = parseInt(match[3] ?? "0", 10);
+
+    if (width <= 0 || height <= 0 || maxVal <= 0) {
+      console.error("无效的头部数值 (宽度、高度或最大值)。");
+      return undefined;
+    }
+
+    // 3. 确定二进制像素数据的精确起始位置
+    // 正则表达式完全匹配的字符串长度 (match[0].length) 就是头部的精确字节数
+    const dataOffset = match[0].length;
+
+    // 4. 准确地截取二进制像素数据
+    const expectedDataLength = width * height;
+    const rawPixelData = bytes.slice(dataOffset, dataOffset + expectedDataLength);
+
+    if (rawPixelData.length !== expectedDataLength) {
+      console.error(
+        `像素数据大小不匹配。期望 ${expectedDataLength} 字节, 实际找到 ${rawPixelData.length} 字节。`,
+      );
+      return undefined;
+    }
+
+    // 5. *** 添加二值化处理 ***
+    // 创建一个新的数组来存储处理后的数据
+    // 逻辑：等于 0 的像素保持为 0 (黑色)，所有其他值变为 maxVal (白色)
+    const processedPixelData = new Uint8Array(expectedDataLength);
+    for (let i = 0; i < expectedDataLength; i++) {
+      processedPixelData[i] = rawPixelData[i] === 0 ? 0 : maxVal;
+    }
+
+    return {
+      width,
+      height,
+      maxVal,
+      data: processedPixelData, // 返回处理后的数据
+    };
+  } catch (error) {
+    console.error("PGM P5 解析错误:", error);
+    return undefined;
+  }
 }
-
-/**
- * 将 Uint8Array 转换为字符串
- */
-function arrayToString(array: Uint8Array): string {
-  return new TextDecoder("utf-8").decode(array);
-}
-
-/**
- * 解析 P2 (ASCII) 格式的 PGM 文件（从 Uint8Array）
- */
-export function parsePGMFromBinary(array: Uint8Array): PGMImage | null {
-  const data = arrayToString(array);
-  return parsePGMFromString(data);
-}
-
-/**
- * 解析 P2 (ASCII) 格式的 PGM 文件（从字符串）
- */
-export function parsePGMFromString(data: string): PGMImage | null {
-  const lines = data.split(/\r?\n/).filter((line) => line.trim() !== "" && !line.startsWith("#"));
-
-  if (lines[0] !== "P2") {
-    alert("仅支持 P2（ASCII）PGM 格式");
-    return null;
-  }
-
-  let ptr = 1;
-
-  // 读取宽高
-  let width = 0,
-    height = 0;
-  while (ptr < lines.length) {
-    const [w, h] = lines[ptr].split(/\s+/).map(Number);
-    if (!isNaN(w) && !isNaN(h)) {
-      width = w;
-      height = h;
-      ptr++;
-      break;
+// PGM 解析函数
+export function parsePGM(data: string): PGMImage | undefined {
+  try {
+    const lines = data.split(/\r?\n/).filter((line) => line.trim() !== "" && !line.startsWith("#"));
+    if (lines[0] !== "P2") {
+      console.error("Invalid PGM formatP2.");
+      return undefined;
     }
-    ptr++;
-  }
 
-  if (width <= 0 || height <= 0) {
-    alert("无法读取图像尺寸");
-    return null;
-  }
-
-  // 读取最大灰度值
-  let maxVal = 0;
-  while (ptr < lines.length) {
-    const val = parseInt(lines[ptr], 10);
-    if (!isNaN(val)) {
-      maxVal = val;
-      ptr++;
-      break;
+    // 使用更高效的方式解析头部信息
+    if (lines[1] == undefined || lines[2] == undefined) {
+      console.error("Invalid PGM format1.");
+      return undefined;
     }
-    ptr++;
-  }
-
-  if (maxVal <= 0) {
-    alert("无效的最大灰度值");
-    return null;
-  }
-
-  // 剩下的就是像素数据，每个值一行
-  const pixelData: number[] = [];
-  for (let i = ptr; i < lines.length; i++) {
-    const val = parseInt(lines[i], 10);
-    if (!isNaN(val)) {
-      pixelData.push(val);
+    const dimensions = lines[1].split(/\s+/).map(Number);
+    if (dimensions.length !== 2) {
+      return undefined;
     }
-  }
 
-  if (pixelData.length !== width * height) {
-    alert(`像素数量不匹配：期望 ${width * height}，实际 ${pixelData.length}`);
-    return null;
-  }
+    const [width, height] = dimensions;
 
-  return {
-    width,
-    height,
-    maxVal,
-    data: new Uint8Array(pixelData),
-  };
-}
-
-/**
- * 解析 P2 (ASCII) 格式的 PGM 文件
- */
-export function parsePGM(data: string): PGMImage | null {
-  const lines = data.split(/\r?\n/).filter((line) => line.trim() !== "" && !line.startsWith("#"));
-  if (lines[0] !== "P2") {
-    return null;
-  }
-
-  let ptr = 1;
-  let width = 0,
-    height = 0,
-    maxVal = 0;
-
-  while (ptr < lines.length) {
-    const [w, h] = lines[ptr].split(/\s+/).map(Number);
-    if (!isNaN(w) && !isNaN(h)) {
-      width = w;
-      height = h;
-      ptr++;
-      break;
+    const maxVal = parseInt(lines[2], 10);
+    if (
+      width == undefined ||
+      height == undefined ||
+      isNaN(width) ||
+      isNaN(height) ||
+      isNaN(maxVal) ||
+      width <= 0 ||
+      height <= 0 ||
+      maxVal <= 0
+    ) {
+      console.error("Invalid PGM format2.");
+      return undefined;
     }
-    ptr++;
-  }
 
-  while (ptr < lines.length) {
-    const val = parseInt(lines[ptr], 10);
-    if (!isNaN(val)) {
-      maxVal = val;
-      ptr++;
-      break;
+    // 一次性处理像素数据
+
+    const pixelData = new Uint8Array(width * height);
+    let pixelIndex = 0;
+
+    // 从第4行开始处理像素数据
+
+    lines.slice(3).forEach((value) => {
+      const values = value
+        .toString()
+        .trim()
+        .split(/\s+/)
+        .map((v) => parseInt(v, 10));
+      for (const val of values) {
+        if (pixelIndex >= width * height) {
+          break;
+        }
+        pixelData[pixelIndex++] = val === 0 ? 0 : maxVal;
+      }
+    });
+
+    if (pixelIndex !== width * height) {
+      console.error("Invalid PGM format4.");
+      return undefined;
     }
-    ptr++;
+
+    return { width, height, maxVal, data: pixelData };
+  } catch (error) {
+    console.error("PGM parsing error:", error);
+    return undefined;
   }
-
-  const pixelData: number[] = [];
-  for (let i = ptr; i < lines.length; i++) {
-    const val = parseInt(lines[i], 10);
-    if (!isNaN(val)) {
-      pixelData.push(val);
-    }
-  }
-
-  if (pixelData.length !== width * height) {
-    return null;
-  }
-
-  return {
-    width,
-    height,
-    maxVal,
-    data: new Uint8Array(pixelData),
-  };
-}
-/**
- * 将编辑后的图像数据重新保存为 P2 格式的字符串
- */
-export function createPGMFromData(image: PGMImage): string {
-  const { width, height, maxVal, data } = image;
-
-  let pgmStr = `P2\n${width} ${height}\n${maxVal}\n`;
-
-  // 每个像素单独一行
-  for (let i = 0; i < data.length; i++) {
-    pgmStr += `${data[i]}\n`;
-  }
-
-  return pgmStr;
 }

@@ -13,7 +13,7 @@ import {
   DataSourceArgs,
   usePlayerSelection,
 } from "@lichtblick/suite-base/context/PlayerSelectionContext";
-import { ElectronAPI } from "@lichtblick/suite-desktop/src/preload"; // 确保正确导入 ElectronAPI
+import { ElectronAPI } from "@lichtblick/suite-desktop/src/preload";
 
 // 声明 Electron API 类型
 declare global {
@@ -72,13 +72,9 @@ const UdpMessageComponent: React.FC = () => {
       const setupTauriListener = async () => {
         try {
           await startUdp("9999");
-          // 将 listen 返回的函数赋值给 unlistenTauri
-          unlistenTauri = await listen("udp_message_received", (event: TauriEvent<any>) => {
-            // 假设 payload 结构为 { data: string, sourceAddress: string }
-            // sourceAddress 可能包含 IP 和端口，例如 "192.168.1.100:12345"
-            // 我们需要从中提取 IP 地址
-            const rawSourceAddress = event.payload?.sourceAddress || event.payload?.data; // 根据实际情况选择
 
+          unlistenTauri = await listen("udp_message_received", (event: TauriEvent<any>) => {
+            const rawSourceAddress = event.payload?.sourceAddress || event.payload?.data;
             if (rawSourceAddress && typeof rawSourceAddress === "string") {
               const ipAddress = rawSourceAddress.split(":")[0];
               if (ipAddress === "undefined" || ipAddress === "" || ipAddress == null) {
@@ -94,7 +90,7 @@ const UdpMessageComponent: React.FC = () => {
                     "Current IPs:",
                     prevUdpIp,
                   );
-                  return prevUdpIp; // IP 已存在，不更新状态
+                  return prevUdpIp;
                 } else {
                   console.log("Received new UDP message (IP):", ipAddress, "Adding to:", prevUdpIp);
                   return [...prevUdpIp, ipAddress]; // 添加新的 IP
@@ -110,7 +106,6 @@ const UdpMessageComponent: React.FC = () => {
     } else if (window.electron) {
       // Electron 环境
       const handleUdpMessage = (_event: IpcRendererEvent, message: string) => {
-        // Electron 环境也可能需要从 message 中提取纯 IP
         const ipAddress = message.split(":")[0];
         if (ipAddress === "undefined" || ipAddress === "" || ipAddress == null) {
           return;
@@ -134,7 +129,7 @@ const UdpMessageComponent: React.FC = () => {
     return () => {
       if (unlistenTauri) {
         unlistenTauri();
-        //invoke("stop_udp_listener"); // 停止 Tauri 的 UDP 监听器
+        invoke("stop_udp_listener");
         // 可以选择在这里调用 stop_udp_listener
         // if (tauriInvoke) {
         //   tauriInvoke('stop_udp_listener').catch(console.error);
