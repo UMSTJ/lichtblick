@@ -61,6 +61,10 @@ export class RFIDInteractionManager {
     orientation: { x: number; y: number; z: number; w: number };
   }[] = []
 
+  // 添加worldToLocal方法的类型声明
+  public worldToLocal: (worldX: number, worldY: number, pgmHeight: number) => { x: number; y: number } = () => {
+    throw new Error("worldToLocal 方法尚未实现");
+  };
 
   public getPoints(): {
     x: number;
@@ -255,7 +259,6 @@ export class RFIDInteractionManager {
     this.#currentPositionRfidId = rfidId;
   }
 
-
   // 可以添加一个动画效果
   public animateCurrentPosition(): void {
     if (!this.#currentPositionMarker) {
@@ -423,10 +426,10 @@ export const parseAndRenderNavPoints = (
   const rfidSize = 0.12/8/resolution;
   interactionManager.setPoints(jsonData.points)
   // 辅助函数：世界坐标转本地坐标
-  function worldToLocal(worldX: number, worldY: number,pgmHeight:number) {
+  function worldToLocal(worldX: number, worldY: number, pgmHeight: number) {
     // 1. 世界坐标转像素坐标
     const pixelX = (worldX - (origin[0] ?? 0)) / resolution - 0.5;
-    const pixelY = pgmHeight- (worldY - (origin[1] ?? 0)) / resolution - 0.5;
+    const pixelY = pgmHeight - (worldY - (origin[1] ?? 0)) / resolution - 0.5;
     // 2. 归一化
     const uvX = pixelX / pgmWidth;
     const uvY = pixelY / pgmHeight;
@@ -447,6 +450,8 @@ export const parseAndRenderNavPoints = (
     }
   }
 
+  // 将worldToLocal函数赋值给interactionManager实例
+  interactionManager.worldToLocal = worldToLocal;
   // 渲染导航点
   if(jsonData.points != null && jsonData.points.length > 0){
     jsonData.points.forEach((point) => {
@@ -527,54 +532,52 @@ export const parseAndRenderNavPoints = (
     const oyVal = 0;
     const { x: ox, y: oy } = worldToLocal(oxVal, oyVal,pgmHeight);
     const originSize = rfidSize * 1.5;
-    // 主圆
-    const originGeometry = new THREE.CircleGeometry(originSize, 32);
-    const originMaterial = new THREE.MeshBasicMaterial({
-      color: "#ff6600",
-      transparent: false,
-      opacity: 0.9,
-      side: THREE.DoubleSide,
-    });
-    const originCircle = new THREE.Mesh(originGeometry, originMaterial);
-    originCircle.position.set(ox, oy, 0.02);
-    // 描边
-    const strokeGeometry = new THREE.CircleGeometry(originSize * 1.1, 32);
-    const strokeMaterial = new THREE.MeshBasicMaterial({
-      color: "#cc3300",
-      transparent: false,
-      opacity: 0.9,
-      side: THREE.DoubleSide,
-    });
-    const strokeCircle = new THREE.Mesh(strokeGeometry, strokeMaterial);
-    strokeCircle.position.set(ox, oy, 0.015);
-    // 文字"O"
-    const canvas = document.createElement("canvas");
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.font = `bold ${12 * 6}px Arial`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = "#cc3300";
-      ctx.shadowColor = "rgba(255,255,255,0.8)";
-      ctx.shadowBlur = 8;
-      ctx.fillText("O", canvas.width / 2, canvas.height / 2);
-      const texture = new THREE.Texture(canvas);
-      texture.needsUpdate = true;
-      const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
-      const textSprite = new THREE.Sprite(spriteMaterial);
-      textSprite.scale.set(1.0, 1.0, 1); // 比普通点大
-      textSprite.position.set(ox, oy + 0.001, 0.03);
-      // 组合
-      const group = new THREE.Group();
-      group.add(originCircle);
-      group.add(strokeCircle);
-      group.add(textSprite);
-      group.userData = { id: -1, type: "origin" };
-      scene.add(group);
+    // 创建五角星形状
+    const starShape = new THREE.Shape();
+    const outerRadius = originSize;
+    const innerRadius = originSize * 0.4;
+    const numPoints = 5;
+    for (let i = 0; i < numPoints * 2; i++) {
+      const angle = (i * Math.PI) / numPoints;
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      const x = Math.cos(angle - Math.PI / 2) * radius;
+      const y = Math.sin(angle - Math.PI / 2) * radius;
+      if (i === 0) {
+        starShape.moveTo(x, y);
+      } else {
+        starShape.lineTo(x, y);
+      }
     }
+    starShape.closePath();
+    // 主五角星
+    const starGeometry = new THREE.ShapeGeometry(starShape);
+    const starMaterial = new THREE.MeshBasicMaterial({
+      color: "#ff0000",
+      transparent: false,
+      opacity: 0.9,
+      side: THREE.DoubleSide,
+    });
+    const starMesh = new THREE.Mesh(starGeometry, starMaterial);
+    starMesh.position.set(ox, oy, 0.02);
+    starMesh.rotation.z = Math.PI; // 旋转180度
+    // 描边
+    const strokeMaterial = new THREE.LineBasicMaterial({
+      color: "#cc3300",
+      linewidth: 2,
+      opacity: 0.9,
+      transparent: false,
+    });
+    const starPoints = starShape.getPoints();
+    const strokeGeometry = new THREE.BufferGeometry().setFromPoints(starPoints.map(p => new THREE.Vector3(p.x, p.y, 0)));
+    const strokeLine = new THREE.Line(strokeGeometry, strokeMaterial);
+    strokeLine.position.set(ox, oy, 0.025);
+    strokeLine.rotation.z = Math.PI; // 旋转180度
+    // 组合
+    const group = new THREE.Group();
+    group.add(starMesh);
+    group.add(strokeLine);
+    group.userData = { id: -1, type: "origin" };
+    scene.add(group);
   }
 
   // 渲染路径边

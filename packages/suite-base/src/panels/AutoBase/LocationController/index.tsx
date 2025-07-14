@@ -244,7 +244,7 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp, disp
           }}
           disabled={loading.signal || !backendIp || locationStatus?.positioningService.atStartPoint}
         >
-          在起始点
+          初始化定位
         </Button>
         {/* <Button
             variant="outlined"

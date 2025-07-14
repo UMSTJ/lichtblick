@@ -87,7 +87,7 @@ interface NavigationStatusStyle {
 
 const navigationStatusStyles: Record<NavigationStatus, NavigationStatusStyle> = {
   [NavigationStatus.NOT_STARTED]: { label: "未开始导航", colorKey: "grey", colorShade: 500 },
-  [NavigationStatus.STARTED]: { label: "开始导航", colorKey: "success", colorShade: "main" },
+  [NavigationStatus.STARTED]: { label: "正在导航", colorKey: "success", colorShade: "main" },
   [NavigationStatus.CANCELLED]: { label: "取消导航", colorKey: "warning", colorShade: "main" },
   [NavigationStatus.FINISHED]: { label: "导航完成", colorKey: "success", colorShade: "main" },
 };
