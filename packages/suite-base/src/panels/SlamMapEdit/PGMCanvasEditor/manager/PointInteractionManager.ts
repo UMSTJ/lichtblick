@@ -607,7 +607,7 @@ export class PointInteractionManager {
 
             // 计算出像素坐标
             const pixelX = (point.x - (origin[0] ?? 0)) / resolution - 0.5;
-            const pixelY = this.#pgmData.height - (point.y - (origin[1] ?? 0)) / resolution - 0.5;
+            const pixelY = (point.y - (origin[1] ?? 0)) / resolution - 0.5;
 
             // 归一化像素到 [0, 1]
             const uvX = pixelX / this.#pgmData.width;
@@ -849,9 +849,8 @@ export class PointInteractionManager {
     const { origin, resolution } = this.#mapConfig;
     const safeOrigin0 = Array.isArray(origin) && typeof origin[0] === 'number' ? origin[0] : 0;
     const safeOrigin1 = Array.isArray(origin) && typeof origin[1] === 'number' ? origin[1] : 0;
-    const safeHeight = typeof this.#pgmData.height === 'number' ? this.#pgmData.height : 1;
     const worldX = safeOrigin0 + (pixelX + 0.5) * resolution;
-    const worldY = safeOrigin1 + (safeHeight - pixelY - 0.5) * resolution;
+    const worldY = safeOrigin1 + (pixelY + 0.5) * resolution;
     return { worldX, worldY };
   }
 

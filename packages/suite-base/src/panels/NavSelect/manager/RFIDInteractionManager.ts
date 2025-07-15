@@ -429,7 +429,7 @@ export const parseAndRenderNavPoints = (
   function worldToLocal(worldX: number, worldY: number, pgmHeight: number) {
     // 1. 世界坐标转像素坐标
     const pixelX = (worldX - (origin[0] ?? 0)) / resolution - 0.5;
-    const pixelY = pgmHeight - (worldY - (origin[1] ?? 0)) / resolution - 0.5;
+    const pixelY = (worldY - (origin[1] ?? 0)) / resolution - 0.5;
     // 2. 归一化
     const uvX = pixelX / pgmWidth;
     const uvY = pixelY / pgmHeight;
@@ -439,7 +439,7 @@ export const parseAndRenderNavPoints = (
       const size = new THREE.Vector3();
       boundingBox.getSize(size);
       const localX = uvX * size.x + boundingBox.min.x;
-      const localY = (1 - uvY) * size.y + boundingBox.min.y;
+      const localY = uvY * size.y + boundingBox.min.y;
       return { x: localX, y: localY };
     } else {
       // fallback: 映射到[-mapWidth/2, mapWidth/2]

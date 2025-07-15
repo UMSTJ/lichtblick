@@ -64,6 +64,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   const [map, setMap] = useState<SandTableMap | undefined>(undefined);
   const [mapRef, setMapRef] = useState<SandTableMap| undefined>(undefined);
   const [mapName, setMapName] = useState<string>("");
+  const [refreshKey, setRefreshKey] = useState<number>(0);
   // const WORLD_WIDTH = 10;
   // const { nodeTopicName, nodeDatatype, pathSource, rfidSource, batterySource } = config;
   const { nodeTopicName, nodeDatatype } = config;
@@ -622,13 +623,25 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     };
   }, [mountRef, cameraRef, rendererRef, debouncedResize, resizeObserverRef, map]);
 
-  // 获取位置状态并设置地图的函数
+      // 获取位置状态并设置地图的函数
   const refreshMapStatus = useCallback(async () => {
     if (!ipAddr) {
       return;
     }
 
     try {
+      console.log("开始强制刷新地图...");
+      // 先清除当前地图，强制触发重新渲染
+      setMap(undefined);
+      setIsSceneReady(false);
+
+      // 增加刷新键，确保即使地图名称相同也能触发重新加载
+      setRefreshKey(prev => {
+        const newKey = prev + 1;
+        console.log(`刷新键更新: ${prev} -> ${newKey}`);
+        return newKey;
+      });
+
       // 获取位置状态信息
       const statusRes = await fetch(`http://${ipAddr}/api/location/status`);
       const statusData = await statusRes.json();
@@ -651,6 +664,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
         }
       } else {
         setMapName("请选择地图");
+        sendNotification(`尚未选择地图`, "", "user", "info");
       }
     } catch (err) {
       console.error("获取地图状态失败:", err);
@@ -666,6 +680,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
 
   // 2. 替换地图图片加载逻辑为PGM下载和解析
   useEffect(() => {
+    console.log(`地图加载 useEffect 触发 - ipAddr: ${ipAddr}, mapName: ${mapName}, refreshKey: ${refreshKey}`);
     if (!ipAddr || !mapName || mapName === "请选择地图") {
       setMap(undefined);
       return;
@@ -738,6 +753,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
           THREE.RGBAFormat,
           THREE.UnsignedByteType,
         );
+        texture.flipY = true;
         texture.needsUpdate = true;
 
         // 创建 mask 的纹理
@@ -757,7 +773,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
           THREE.RGBAFormat,
           THREE.UnsignedByteType,
         );
-        maskTexture.flipY = true; // 翻转Y轴
+        // maskTexture.flipY = false; // 翻转Y轴
         maskTexture.needsUpdate = true;
 
         // 解析YAML
@@ -776,7 +792,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
         console.error("获取PGM、导航点或YAML数据失败:", err);
         setMap(undefined);
       });
-  }, [ipAddr, mapName]);
+  }, [ipAddr, mapName, refreshKey]);
 
   return (
     <Stack>

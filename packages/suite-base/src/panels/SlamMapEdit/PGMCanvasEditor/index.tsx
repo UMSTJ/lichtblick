@@ -213,7 +213,7 @@ const PGMCanvasEditor: React.FC = () => {
       const size = new THREE.Vector3();
       boundingBox.getSize(size);
       const localX = uvX * size.x + boundingBox.min.x;
-      const localY = -uvY * size.y - boundingBox.min.y;
+      const localY = uvY * size.y + boundingBox.min.y;
       const originPoint = {
         id: 1,
         name: "Origin",
@@ -356,7 +356,8 @@ const PGMCanvasEditor: React.FC = () => {
         THREE.UnsignedByteType,
       );
       newTex.generateMipmaps = false;
-      newTex.flipY = false;
+      // newTex.flipY = false;
+      newTex.flipY = true;
       newTex.needsUpdate = true;
       const material = new THREE.MeshBasicMaterial({
         map: newTex,
@@ -512,7 +513,8 @@ const PGMCanvasEditor: React.FC = () => {
         THREE.UnsignedByteType,
       );
       newTex.generateMipmaps = false;
-      newTex.flipY = false;
+      // newTex.flipY = false;
+      newTex.flipY = true;
       newTex.needsUpdate = true;
 
       const mat = new THREE.MeshBasicMaterial({
@@ -898,15 +900,6 @@ const PGMCanvasEditor: React.FC = () => {
       });
 
       try {
-        // const ltexture = new THREE.DataTexture(
-        //   rgbaData,
-        //   pgm.width,
-        //   pgm.height,
-        //   THREE.RGBAFormat,
-        //   THREE.UnsignedByteType,
-        // );
-        // ltexture.flipY = true; // 添加这行
-        // ltexture.needsUpdate = true;
         const ltexture = new THREE.DataTexture(
           rgbaData,
           pgm.width,
@@ -915,7 +908,9 @@ const PGMCanvasEditor: React.FC = () => {
           THREE.UnsignedByteType,
         );
         ltexture.generateMipmaps = false; // 禁用mipmap
-        ltexture.flipY = false; // 关闭默认的Y轴翻转
+        ltexture.flipY = true; // 关闭默认的Y轴翻转
+        // ltexture.flipY = false; // 关闭默认的Y轴翻转
+
         ltexture.needsUpdate = true;
 
         const material = new THREE.MeshBasicMaterial({
