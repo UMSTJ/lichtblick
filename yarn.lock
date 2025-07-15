@@ -6931,6 +6931,127 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tauri-apps/cli-darwin-arm64@npm:2.6.2":
+  version: 2.6.2
+  resolution: "@tauri-apps/cli-darwin-arm64@npm:2.6.2"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/cli-darwin-x64@npm:2.6.2":
+  version: 2.6.2
+  resolution: "@tauri-apps/cli-darwin-x64@npm:2.6.2"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/cli-linux-arm-gnueabihf@npm:2.6.2":
+  version: 2.6.2
+  resolution: "@tauri-apps/cli-linux-arm-gnueabihf@npm:2.6.2"
+  conditions: os=linux & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/cli-linux-arm64-gnu@npm:2.6.2":
+  version: 2.6.2
+  resolution: "@tauri-apps/cli-linux-arm64-gnu@npm:2.6.2"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/cli-linux-arm64-musl@npm:2.6.2":
+  version: 2.6.2
+  resolution: "@tauri-apps/cli-linux-arm64-musl@npm:2.6.2"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/cli-linux-riscv64-gnu@npm:2.6.2":
+  version: 2.6.2
+  resolution: "@tauri-apps/cli-linux-riscv64-gnu@npm:2.6.2"
+  conditions: os=linux & cpu=riscv64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/cli-linux-x64-gnu@npm:2.6.2":
+  version: 2.6.2
+  resolution: "@tauri-apps/cli-linux-x64-gnu@npm:2.6.2"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/cli-linux-x64-musl@npm:2.6.2":
+  version: 2.6.2
+  resolution: "@tauri-apps/cli-linux-x64-musl@npm:2.6.2"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/cli-win32-arm64-msvc@npm:2.6.2":
+  version: 2.6.2
+  resolution: "@tauri-apps/cli-win32-arm64-msvc@npm:2.6.2"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/cli-win32-ia32-msvc@npm:2.6.2":
+  version: 2.6.2
+  resolution: "@tauri-apps/cli-win32-ia32-msvc@npm:2.6.2"
+  conditions: os=win32 & cpu=ia32
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/cli-win32-x64-msvc@npm:2.6.2":
+  version: 2.6.2
+  resolution: "@tauri-apps/cli-win32-x64-msvc@npm:2.6.2"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/cli@npm:2.6.2":
+  version: 2.6.2
+  resolution: "@tauri-apps/cli@npm:2.6.2"
+  dependencies:
+    "@tauri-apps/cli-darwin-arm64": 2.6.2
+    "@tauri-apps/cli-darwin-x64": 2.6.2
+    "@tauri-apps/cli-linux-arm-gnueabihf": 2.6.2
+    "@tauri-apps/cli-linux-arm64-gnu": 2.6.2
+    "@tauri-apps/cli-linux-arm64-musl": 2.6.2
+    "@tauri-apps/cli-linux-riscv64-gnu": 2.6.2
+    "@tauri-apps/cli-linux-x64-gnu": 2.6.2
+    "@tauri-apps/cli-linux-x64-musl": 2.6.2
+    "@tauri-apps/cli-win32-arm64-msvc": 2.6.2
+    "@tauri-apps/cli-win32-ia32-msvc": 2.6.2
+    "@tauri-apps/cli-win32-x64-msvc": 2.6.2
+  dependenciesMeta:
+    "@tauri-apps/cli-darwin-arm64":
+      optional: true
+    "@tauri-apps/cli-darwin-x64":
+      optional: true
+    "@tauri-apps/cli-linux-arm-gnueabihf":
+      optional: true
+    "@tauri-apps/cli-linux-arm64-gnu":
+      optional: true
+    "@tauri-apps/cli-linux-arm64-musl":
+      optional: true
+    "@tauri-apps/cli-linux-riscv64-gnu":
+      optional: true
+    "@tauri-apps/cli-linux-x64-gnu":
+      optional: true
+    "@tauri-apps/cli-linux-x64-musl":
+      optional: true
+    "@tauri-apps/cli-win32-arm64-msvc":
+      optional: true
+    "@tauri-apps/cli-win32-ia32-msvc":
+      optional: true
+    "@tauri-apps/cli-win32-x64-msvc":
+      optional: true
+  bin:
+    tauri: tauri.js
+  checksum: c52bd81e28dc476e991225311ea6997bf72963a3a7c9a16e83fd06ffb2bd3e34c865c2e3a517039eb30b8edd8d4640d2e96d652889ba4871e3102192c2d3a0b2
+  languageName: node
+  linkType: hard
+
 "@testing-library/dom@npm:10.4.0":
   version: 10.4.0
   resolution: "@testing-library/dom@npm:10.4.0"
@@ -9648,6 +9769,7 @@ __metadata:
     "@storybook/react": 9.0.14
     "@storybook/react-webpack5": 9.0.14
     "@tauri-apps/api": 2.5.0
+    "@tauri-apps/cli": 2.6.2
     "@types/babel__core": ^7.20.3
     "@types/babel__preset-env": ^7.10.0
     "@types/case-sensitive-paths-webpack-plugin": 2.1.9

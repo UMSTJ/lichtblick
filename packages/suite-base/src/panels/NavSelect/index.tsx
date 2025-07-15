@@ -19,11 +19,8 @@ import useCallbackWithToast from "@lichtblick/suite-base/hooks/useCallbackWithTo
 import usePublisher from "@lichtblick/suite-base/hooks/usePublisher";
 // Update the import path below to the correct location of VehicleControlConfig
 // If the above path is incorrect, replace it with the actual path where VehicleControlConfig is defined.
-import MapFilesTab from "@lichtblick/suite-base/panels/NavSelect/components/MapFilesTab";
-import TextCard from "@lichtblick/suite-base/panels/NavSelect/components/TextCard";
 import { useVehicleControlSettings } from "@lichtblick/suite-base/panels/NavSelect/settings";
 import { VehicleControlConfig } from "@lichtblick/suite-base/panels/NavSelect/types";
-import { PLAYER_CAPABILITIES } from "@lichtblick/suite-base/players/constants";
 import { SaveConfig } from "@lichtblick/suite-base/types/panels";
 import sendNotification from "@lichtblick/suite-base/util/sendNotification";
 
@@ -45,6 +42,7 @@ type Props = {
 };
 type SandTableMap = {
   map: THREE.DataTexture;
+  maskMap: THREE.DataTexture;
   json: any;
   pgmData: { width: number; height: number; maxVal: number; data: Uint8Array };
   mapConfig: any;
@@ -64,36 +62,148 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   const [isSceneReady, setIsSceneReady] = useState(false);
 
   const [map, setMap] = useState<SandTableMap | undefined>(undefined);
+  const [mapRef, setMapRef] = useState<SandTableMap| undefined>(undefined);
   const [mapName, setMapName] = useState<string>("");
-  const [mapFiles, setMapFiles] = useState<string[]>([]);
   // const WORLD_WIDTH = 10;
   // const { nodeTopicName, nodeDatatype, pathSource, rfidSource, batterySource } = config;
   const { nodeTopicName, nodeDatatype } = config;
 
   const [currentPosition, setCurrentPosition] = useState<string>("无位置");
   const poseMessages = useMessageDataItem(`/pcl_pose.pose.position`);
+  const poseMessagesRef = useRef(poseMessages);
+  // 添加当前位置点的引用
+  const currentPosMarkerRef = useRef<THREE.Mesh | null>(null);
+  useEffect(() => {
+    setMapRef(map);
+  }, [map]);
+
+  // 更新位置点的函数
+  const updatePositionMarker = useCallback((scene: THREE.Scene, x: number, y: number) => {
+    console.log("x:", x);
+    console.log("y:", y);
+    // 如果标记不存在，创建一个新的
+    if (!currentPosMarkerRef.current) {
+      console.log("create currentPosMarkerRef.current");
+      const geometry = new THREE.CircleGeometry(0.5, 32); // 半径0.5米的圆
+      const material = new THREE.MeshBasicMaterial({
+        color: 0x0066ff,  // 蓝色
+        transparent: true,
+        opacity: 0.8,
+        side: THREE.DoubleSide,
+        depthTest: false,
+      });
+      currentPosMarkerRef.current = new THREE.Mesh(geometry, material);
+      currentPosMarkerRef.current.position.z = 0.02; // 确保在最上层
+      scene.add(currentPosMarkerRef.current);
+    }
+
+    // 修正：先判断 interactionManagerRef、map 是否存在，并正确解构 worldToLocal 返回值
+    if(!interactionManagerRef.current) {
+      console.log("interactionManagerRef.current is undefined");
+      return;
+    }
+    if (typeof interactionManagerRef.current.worldToLocal !== "function") {
+      console.log("interactionManagerRef.current.worldToLocal is undefined");
+      return;
+    }
+    // 修复 mapRef 可能为 undefined 的问题，增加判空处理
+    const mapHeight = mapRef?.pgmData?.height;
+    if (mapHeight === undefined) {
+      console.log("mapRef 或 mapRef.pgmData.height 未定义");
+      return;
+    }
+    if (
+      interactionManagerRef.current &&
+      typeof interactionManagerRef.current.worldToLocal === "function" &&
+      map?.pgmData?.height
+    ) {
+      console.log("update currentPosMarkerRef.current");
+      const result = interactionManagerRef.current.worldToLocal(x, y, mapHeight);
+      console.log("result:", result);
+      const localX = result.x;
+      const localY = result.y;
+      // 更新位置
+      console.log("localX:", localX);
+      console.log("localY:", localY);
+      currentPosMarkerRef.current.position.x = localX;
+      currentPosMarkerRef.current.position.y = localY;
+    }
+    else {
+      console.log("interactionManagerRef.current or map.pgmData.height is undefined");
+    }
+  }, [mapRef]);
+
+  // 添加刷新位置的函数
+  const refreshPosition = useCallback(() => {
+    const currentMessages = poseMessagesRef.current;
+    if (currentMessages?.length > 0) {
+      const latestMessage = currentMessages[currentMessages.length - 1];
+
+      if (latestMessage?.queriedData && latestMessage.queriedData.length > 0) {
+        const position = latestMessage.queriedData[0]?.value as {
+          x: number;
+          y: number;
+          z: number;
+        };
+
+        if (position && typeof position.x === "number" && typeof position.y === "number") {
+          setCurrentPosition(`x: ${position.x.toFixed(2)}\ny: ${position.y.toFixed(2)}`);
+          return;
+        }
+      }
+    }
+    setCurrentPosition("无位置");
+  }, []);
+
+  // 更新 ref 的值
+  useEffect(() => {
+    poseMessagesRef.current = poseMessages;
+  }, [poseMessages]);
+
+  useEffect(() => {
+    const interval = setInterval(refreshPosition, 1000);
+    return () => clearInterval(interval);
+  }, [refreshPosition]); // 添加 refreshPosition 作为依赖
 
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log("poseMessages", poseMessages);
-      if (poseMessages && poseMessages.length > 0) {
-        console.log("poseMessages.length", poseMessages.length);
-        const latestMessage = poseMessages[poseMessages.length - 1];
+      const currentMessages = poseMessagesRef.current;
+      if (currentMessages?.length > 0) {
+        const latestMessage = currentMessages[currentMessages.length - 1];
+
         if (latestMessage?.queriedData && latestMessage.queriedData.length > 0) {
-          const position = latestMessage.queriedData[0]?.value as { x: number; y: number; z: number };
-          if (position && typeof position.x === 'number' && typeof position.y === 'number') {
-            const posStr = `x: ${position.x.toFixed(2)}\ny: ${position.y.toFixed(2)}`;
-            setCurrentPosition(posStr);
+          const position = latestMessage.queriedData[0]?.value as {
+            x: number;
+            y: number;
+            z: number;
+          };
+
+          if (position && typeof position.x === "number" && typeof position.y === "number") {
+            setCurrentPosition(`x: ${position.x.toFixed(2)}\ny: ${position.y.toFixed(2)}`);
+            // 如果场景已经准备好，更新位置标记
+            if (sceneRef.current) {
+              updatePositionMarker(sceneRef.current, position.x, position.y);
+            }
             return;
           }
         }
       }
       setCurrentPosition("无位置");
-    }, 500);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [updatePositionMarker]);
 
-    return () => { clearInterval(interval); };
-  }, [poseMessages]);
-
+  // 清理函数
+  useEffect(() => {
+    return () => {
+      if (currentPosMarkerRef.current && sceneRef.current) {
+        sceneRef.current.remove(currentPosMarkerRef.current);
+        currentPosMarkerRef.current.geometry.dispose();
+        (currentPosMarkerRef.current.material as THREE.Material).dispose();
+        currentPosMarkerRef.current = null;
+      }
+    };
+  }, []);
 
   // const rfidMessages = useMessageDataItem(rfidSource);
   // const pathMessages = useMessageDataItem(pathSource);
@@ -160,8 +270,8 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
 
   // 初始化 Three.js
   const initThreeJS = useCallback(() => {
-    if (!map?.map || !map?.json || !mountRef.current || !map?.pgmData || !map?.mapConfig) {
-      console.error("map/pgmData/mapConfig/mountRef.current is undefined");
+    if (!map?.map || !map?.json || !mountRef.current || !map?.pgmData || !map?.mapConfig || !map?.maskMap) {
+      console.error("map/maskMap/pgmData/mapConfig/mountRef.current is undefined");
       return;
     }
     const mount = mountRef.current;
@@ -206,74 +316,93 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(1, 1, 1).normalize();
     scene.add(light);
-    // 加载PGM纹理
-    if (map.map instanceof THREE.DataTexture) {
-      // 对于新的导航点数据格式，我们需要估算地图尺寸
-      // 从导航点数据中计算边界框来确定地图尺寸
-      // let mapWidth = map.pgmData.width /100;
-      // let mapHeight = map.pgmData.height /100;
-      const mapWidth = map.pgmData.width * map.mapConfig.resolution;
-      const mapHeight = map.pgmData.height * map.mapConfig.resolution;
-      console.log("m" + "apWidth:", mapWidth);
-      console.log("mapHeight:", mapHeight);
-      const mapGeometry = new THREE.PlaneGeometry(mapWidth, mapHeight);
-      const mapMaterial = new THREE.MeshBasicMaterial({ map: map.map });
-      mapMaterial.needsUpdate = true;
-      const mapMesh = new THREE.Mesh(mapGeometry, mapMaterial);
-      scene.add(mapMesh);
 
-      // 组装options
-      const options = {
-        origin: map.mapConfig.origin,
-        resolution: map.mapConfig.resolution,
-        pgmWidth: map.pgmData.width,
-        pgmHeight: map.pgmData.height,
-      };
-      // console.log("options", options);
-      // console.log("map.map", map.map);
-      interactionManagerRef.current = parseAndRenderNavPoints(
-        map.json,
-        scene,
-        {
-          width: mapWidth,
-          height: mapHeight,
-        },
-        options,
-      );
+    // 计算地图尺寸
+    const mapWidth = map.pgmData.width * map.mapConfig.resolution;
+    const mapHeight = map.pgmData.height * map.mapConfig.resolution;
+    console.log("mapWidth:", mapWidth);
+    console.log("mapHeight:", mapHeight);
 
-      // 强制刷新所有Group/Line，解决Three.js渲染bug
-      const forceRefresh = () => {
-        // 只处理Group和Line
-        const objs = scene.children.filter((obj) => obj.type === "Group" || obj.type === "Line");
-        objs.forEach((obj) => {
-          scene.remove(obj);
-          scene.add(obj);
-        });
-        renderer.render(scene, camera);
-      };
-      forceRefresh();
+    // 创建地图层
+    const mapGeometry = new THREE.PlaneGeometry(mapWidth, mapHeight);
+    const mapMaterial = new THREE.MeshBasicMaterial({
+      map: map.map,
+      side: THREE.DoubleSide,
+    });
+    mapMaterial.needsUpdate = true;
+    const mapMesh = new THREE.Mesh(mapGeometry, mapMaterial);
+    scene.add(mapMesh);
 
-      if (scene.children.length <= 1) {
-        sendNotification("未检测到点线对象，请检查数据或坐标范围", "", "user", "warn");
-      }
+    // 创建遮罩层
+    const maskGeometry = new THREE.PlaneGeometry(mapWidth, mapHeight);
+    const maskMaterial = new THREE.MeshBasicMaterial({
+      map: map.maskMap,
+      transparent: true,
+      opacity: 1.0,
+      depthTest: false,
+      depthWrite: false,
+      blending: THREE.CustomBlending,
+      blendEquation: THREE.AddEquation,
+      blendSrc: THREE.SrcAlphaFactor,
+      blendDst: THREE.OneMinusSrcAlphaFactor,
+      side: THREE.DoubleSide,
+    });
+    maskMaterial.needsUpdate = true;
+    const maskMesh = new THREE.Mesh(maskGeometry, maskMaterial);
+    maskMesh.position.z = 0.01; // 略微提升以避免z-fighting
+    scene.add(maskMesh);
 
-      // 强制刷新一次，确保新加对象可见
+    // 组装options
+    const options = {
+      origin: map.mapConfig.origin,
+      resolution: map.mapConfig.resolution,
+      pgmWidth: map.pgmData.width,
+      pgmHeight: map.pgmData.height,
+    };
+
+    interactionManagerRef.current = parseAndRenderNavPoints(
+      map.json,
+      scene,
+      {
+        width: mapWidth,
+        height: mapHeight,
+      },
+      options,
+    );
+
+    // 强制刷新所有Group/Line，解决Three.js渲染bug
+    const forceRefresh = () => {
+      const objs = scene.children.filter((obj) => obj.type === "Group" || obj.type === "Line");
+      objs.forEach((obj) => {
+        scene.remove(obj);
+        scene.add(obj);
+      });
       renderer.render(scene, camera);
+    };
+    forceRefresh();
 
-      const maxDimension = Math.max(mapWidth, mapHeight);
-      camera.position.z = maxDimension * 0.7;
-      camera.updateProjectionMatrix();
-      renderer.render(scene, camera);
-      setTimeout(() => {
-        mapMaterial.needsUpdate = true;
-        for (let i = 0; i < 5; i++) {
-          renderer.render(scene, camera);
-        }
-        setIsSceneReady(true);
-      }, 1000);
-    } else {
-      console.error("map.map is not a DataTexture");
+    if (scene.children.length <= 2) { // 考虑到现在有两个基础层
+      sendNotification("未检测到点线对象，请检查数据或坐标范围", "", "user", "warn");
     }
+
+    // 强制刷新一次，确保新加对象可见
+    renderer.render(scene, camera);
+
+    const maxDimension = Math.max(mapWidth, mapHeight);
+    camera.position.z = maxDimension * 0.7;
+    camera.updateProjectionMatrix();
+    renderer.render(scene, camera);
+
+    // 确保材质更新并多次渲染以确保显示
+    setTimeout(() => {
+      mapMaterial.needsUpdate = true;
+      maskMaterial.needsUpdate = true;
+      for (let i = 0; i < 5; i++) {
+        renderer.render(scene, camera);
+      }
+      setIsSceneReady(true);
+    }, 1000);
+
     // 渲染循环
     const animate = () => {
       animationFrameRef.current = requestAnimationFrame(animate);
@@ -493,69 +622,47 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
     };
   }, [mountRef, cameraRef, rendererRef, debouncedResize, resizeObserverRef, map]);
 
-  // 获取位置状态信息并自动设置地图
-  useEffect(() => {
+  // 获取位置状态并设置地图的函数
+  const refreshMapStatus = useCallback(async () => {
     if (!ipAddr) {
       return;
     }
 
-    // 获取位置状态信息
-    fetch(`http://${ipAddr}/api/location/status`)
-      .then(async (res) => await res.json())
-      .then(async (data) => {
-        console.log("位置状态信息:", data);
-        const currentMap = data?.positioningService?.currentMap;
+    try {
+      // 获取位置状态信息
+      const statusRes = await fetch(`http://${ipAddr}/api/location/status`);
+      const statusData = await statusRes.json();
+      console.log("位置状态信息:", statusData);
+      const currentMap = statusData?.positioningService?.currentMap;
 
-        if (currentMap && currentMap !== "N/A") {
-          console.log("检测到当前地图:", currentMap);
-          // 先获取地图列表，然后设置当前地图
-          await fetch(`http://${ipAddr}/mapServer/mapList`)
-            .then(async (res) => await res.json())
-            .then((list) => {
-              // 检查当前地图是否在可用地图列表中
-              if (list.includes(currentMap)) {
-                setMapName(currentMap);
-                sendNotification(`自动切换到地图: ${currentMap}`, "", "user", "info");
-                const newList = ["当前地图", ...list];
-                setMapFiles(newList);
-                // setMapName("当前地图");
-              } else {
-                const newList = ["请选择地图", ...list];
-                setMapFiles(newList);
-                setMapName("请选择地图");
-                sendNotification(`当前地图 ${currentMap} 不在可用地图列表中`, "", "user", "warn");
-              }
-            });
-          return;
+      if (currentMap && currentMap !== "N/A") {
+        console.log("检测到当前地图:", currentMap);
+        // 获取地图列表
+        const listRes = await fetch(`http://${ipAddr}/mapServer/mapList`);
+        const list = await listRes.json();
+
+        // 检查当前地图是否在可用地图列表中
+        if (list.includes(currentMap)) {
+          setMapName(currentMap);
+          sendNotification(`自动切换到地图: ${currentMap}`, "", "user", "info");
         } else {
-          // 如果没有有效的当前地图，只获取地图列表
-          await fetch(`http://${ipAddr}/mapServer/mapList`)
-            .then(async (res) => await res.json())
-            .then((list) => {
-              const newList = ["请选择地图", ...list];
-              setMapFiles(newList);
-              setMapName("请选择地图");
-            });
-          return;
+          setMapName("请选择地图");
+          sendNotification(`当前地图 ${currentMap} 不在可用地图列表中`, "", "user", "warn");
         }
-      })
-      .catch((err) => {
-        console.error("获取位置状态信息失败:", err);
-        // 如果获取位置状态失败，回退到原来的逻辑
-        fetch(`http://${ipAddr}/mapServer/mapList`)
-          .then(async (res) => await res.json())
-          .then((list) => {
-            const newList = ["请选择地图", ...list];
-            setMapFiles(newList);
-            setMapName("请选择地图");
-          })
-          .catch((mapErr) => {
-            console.error("获取地图列表失败:", mapErr);
-            setMapFiles(["请选择地图"]);
-            setMapName("请选择地图");
-          });
-      });
+      } else {
+        setMapName("请选择地图");
+      }
+    } catch (err) {
+      console.error("获取地图状态失败:", err);
+      setMapName("请选择地图");
+      sendNotification("获取地图状态失败", "", "user", "error");
+    }
   }, [ipAddr]);
+
+  // 获取位置状态信息并自动设置地图
+  useEffect(() => {
+    refreshMapStatus();
+  }, [ipAddr, refreshMapStatus]);
 
   // 2. 替换地图图片加载逻辑为PGM下载和解析
   useEffect(() => {
@@ -576,10 +683,14 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       fetch(`http://${ipAddr}/mapServer/download/yamlfile?mapName=${mapName}`).then(
         async (res) => await res.text(),
       ),
+      fetch(`http://${ipAddr}/mapServer/download/${mapName}/maskMap.pgm`).then(
+        async (res) => await res.arrayBuffer(),
+      ),
     ])
-      .then(([buffer, navData, yamlText]) => {
+      .then(([buffer, navData, yamlText, maskBuffer]) => {
         const decoder = new TextDecoder("ascii");
         const headerSnippet = decoder.decode(new Uint8Array(buffer).slice(0, 15));
+        const maskHeaderSnippet = decoder.decode(new Uint8Array(maskBuffer).slice(0, 15));
         const magic = headerSnippet.trim().split(/\s+/)[0];
         let pgmData:
           | { width: number; height: number; maxVal: number; data: Uint8Array }
@@ -594,7 +705,24 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
         if (!pgmData) {
           throw new Error("PGM解析失败");
         }
+        console.log("pgmData:", pgmData);
+
+        // 解析 maskMap
+        let maskPgmData:
+          | { width: number; height: number; maxVal: number; data: Uint8Array }
+          | undefined;
+        const maskMagic = maskHeaderSnippet.trim().split(/\s+/)[0];
+        if (maskMagic === "P2") {
+          maskPgmData = parsePGM(decoder.decode(maskBuffer));
+        } else if (maskMagic === "P5") {
+          maskPgmData = parsePGMBuffer(maskBuffer);
+        }
+        if (!maskPgmData) {
+          throw new Error("Mask PGM解析失败");
+        }
+
         const { width, height, maxVal, data } = pgmData;
+        // 创建原始地图的纹理
         const rgbaData = new Uint8Array(width * height * 4);
         data.forEach((value, index) => {
           const convertValue = Math.floor((value / (maxVal ?? 255)) * 255);
@@ -611,11 +739,38 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
           THREE.UnsignedByteType,
         );
         texture.needsUpdate = true;
+
+        // 创建 mask 的纹理
+        const maskRgbaData = new Uint8Array(width * height * 4);
+        maskPgmData.data.forEach((value, index) => {
+          // 在 P2 中，0 表示障碍物（黑色），255表示空闲区域（白色）
+          const isObstacle = value === 0;  // 修改判断条件，0为障碍物
+          maskRgbaData[index * 4] = 0;     // R - 始终为黑色
+          maskRgbaData[index * 4 + 1] = 0; // G - 始终为黑色
+          maskRgbaData[index * 4 + 2] = 0; // B - 始终为黑色
+          maskRgbaData[index * 4 + 3] = isObstacle ? 255 : 0; // A - 障碍物不透明，其他区域透明
+        });
+        const maskTexture = new THREE.DataTexture(
+          maskRgbaData,
+          width,
+          height,
+          THREE.RGBAFormat,
+          THREE.UnsignedByteType,
+        );
+        maskTexture.flipY = true; // 翻转Y轴
+        maskTexture.needsUpdate = true;
+
         // 解析YAML
         const downloadMapConfig = yaml.load(yamlText) as any;
         console.log("downloadMapConfig:", downloadMapConfig);
         // 使用新的导航点数据格式
-        setMap({ map: texture, json: navData, pgmData, mapConfig: downloadMapConfig });
+        setMap({
+          map: texture,
+          maskMap: maskTexture,
+          json: navData,
+          pgmData,
+          mapConfig: downloadMapConfig
+        });
       })
       .catch((err) => {
         console.error("获取PGM、导航点或YAML数据失败:", err);
@@ -626,37 +781,36 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   return (
     <Stack>
       <PanelToolbar />
-      {/* <div
+      {/* 刷新按钮 - 移到左上角 */}
+      <div
         style={{
-          position: "absolute",
-          top: "35px",
-          left: "10px",
-          zIndex: 1000,
-          backgroundColor: "rgba(0,0,0,0.7)",
-          color: "white",
-          padding: "10px",
+          position: "relative",
+          zIndex: 9999,
+          left: "16px",
+          top: "16px",
+          display: "inline-block", // 修复零宽度字符问题
+          width: "fit-content",    // 关键：让 div 宽度贴合内容
         }}
       >
-        <div>Map URL: {imageUrl ? "Available" : "None"}</div>
-        <div>Load Status: {imageLoadStatus}</div>
-        {imageUrl && (
-          <div>
-            <div>Testing direct image render:</div>
-            <img
-              src={imageUrl}
-              alt="Map test"
-              style={{ width: "100px", height: "auto", border: "1px solid white" }}
-              onLoad={() => {
-                console.log("Image in DOM loaded");
-              }}
-              onError={(e) => {
-                console.error("Image in DOM failed to load", e);
-              }}
-            />
-          </div>
-        )}
-      </div> */}
-      <MapFilesTab mapFiles={mapFiles} setMapName={setMapName} initialValue={mapFiles[0]} />
+        <button
+          onClick={refreshMapStatus}
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            color: "white",
+            border: "none",
+            padding: "8px 16px",
+            borderRadius: "4px",
+            cursor: "pointer",
+            display: "inline-flex", // 使用 inline-flex 保持行内特性 + 对齐图标和文字
+            alignItems: "center",
+            gap: "4px",
+            fontSize: "14px",
+          }}
+        >
+          <span style={{ fontSize: "16px" }}>⟳</span>
+          刷新地图
+        </button>
+      </div>
       <Stack
         ref={mountRef}
         flex="auto"
@@ -669,24 +823,14 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
       >
         {isSceneReady && (
           <>
-            <div
-              style={{
-                position: "absolute",
-                height: "50%",
-                width: "40px",
-                zIndex: 999,
-                right: 0,
-                display: "flex",
-                justifyContent: "center",
-              }}
-            />
+            {/* 位置信息显示 - 右上角 */}
             <div
               style={{
                 position: "absolute",
                 height: "auto",
                 zIndex: 999,
                 right: "10px",
-                bottom: "10px",
+                top: "45px", // 恢复到原来的位置
                 display: "flex",
                 justifyContent: "center",
                 flexDirection: "column",
