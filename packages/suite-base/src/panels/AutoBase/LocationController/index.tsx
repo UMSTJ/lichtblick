@@ -240,7 +240,7 @@ const LocationController: React.FC<LocationControllerProps> = ({ backendIp, disp
           variant="outlined"
           fullWidth
           onClick={async () => {
-            await handleSignal(signalAtStartPoint, "已发送“在起始点”信号");
+            await handleSignal(signalAtStartPoint, "已发送“初始化定位”信号");
           }}
           disabled={loading.signal || !backendIp || locationStatus?.positioningService.atStartPoint}
         >

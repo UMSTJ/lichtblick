@@ -28,5 +28,7 @@ test-results/*
 .sonar_lock
 .scannerwork
 eslint-report.json
-src-tauri/
-src-tauri/
+src-tauri/target/
+# src-tauri/gen/apple/xcuserdata/
+# src-tauri/gen/apple/build/
+# src-tauri/gen/apple/Externals/

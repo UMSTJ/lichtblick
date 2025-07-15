@@ -781,17 +781,15 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
   return (
     <Stack>
       <PanelToolbar />
-      {/* 刷新按钮 - 移到右下角 */}
+      {/* 刷新按钮 - 移到左上角 */}
       <div
         style={{
-          position: "fixed",
-          height: "auto",
+          position: "relative",
           zIndex: 9999,
-          right: "10px",
-          bottom: "10px",
-          display: "flex",
-          justifyContent: "center",
-          flexDirection: "column",
+          left: "16px",
+          top: "16px",
+          display: "inline-block", // 修复零宽度字符问题
+          width: "fit-content",    // 关键：让 div 宽度贴合内容
         }}
       >
         <button
@@ -803,7 +801,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
             padding: "8px 16px",
             borderRadius: "4px",
             cursor: "pointer",
-            display: "flex",
+            display: "inline-flex", // 使用 inline-flex 保持行内特性 + 对齐图标和文字
             alignItems: "center",
             gap: "4px",
             fontSize: "14px",
