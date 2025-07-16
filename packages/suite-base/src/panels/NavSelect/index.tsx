@@ -773,7 +773,7 @@ const NavSelectPanel: React.FC<Props> = ({ config, saveConfig }) => {
           THREE.RGBAFormat,
           THREE.UnsignedByteType,
         );
-        // maskTexture.flipY = false; // 翻转Y轴
+        maskTexture.flipY = true; // 翻转Y轴
         maskTexture.needsUpdate = true;
 
         // 解析YAML

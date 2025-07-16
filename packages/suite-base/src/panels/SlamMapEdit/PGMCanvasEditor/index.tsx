@@ -338,7 +338,7 @@ const PGMCanvasEditor: React.FC = () => {
 
       for (let y = 0; y < maskPGM.height; y++) {
         for (let x = 0; x < maskPGM.width; x++) {
-          const srcIdx = (maskPGM.height - 1 - y) * maskPGM.width + x; // 倒序
+          const srcIdx = (y * maskPGM.width + x);
           const dstIdx = (y * maskPGM.width + x) * 4;
           const value = Math.floor(((maskPGM.data[srcIdx] ?? 0) / maxVal) * 255);
           rgbaData[dstIdx] = value; // Unnecessary conditional, value is always truthy.
@@ -514,6 +514,7 @@ const PGMCanvasEditor: React.FC = () => {
       );
       newTex.generateMipmaps = false;
       // newTex.flipY = false;
+      // 遮罩的图层需旋转
       newTex.flipY = true;
       newTex.needsUpdate = true;
 
@@ -1050,16 +1051,6 @@ const PGMCanvasEditor: React.FC = () => {
     }
 
     const layer = layers.find((l) => l.id === selectedLayerId)!;
-    if (layer.id === "base") {
-      console.warn("不能在基础层上绘制");
-      const now = Date.now();
-      if (now - lastBaseLayerDrawErrorTime.current > 1000) {
-        // 1秒内只弹一次
-        sendNotification("不能在基础层上绘制,请新增图层", "", "user", "error");
-        lastBaseLayerDrawErrorTime.current = now;
-      }
-      return;
-    }
     const mesh = layer.mesh;
     const tex = layer.texture;
 
@@ -1070,7 +1061,7 @@ const PGMCanvasEditor: React.FC = () => {
     const rect = canvas.getBoundingClientRect();
     const ndc = new THREE.Vector2(
       ((e.clientX - rect.left) / rect.width) * 2 - 1,
-      -((e.clientY - rect.top) / rect.height) * 2 + 1,
+      ((e.clientY - rect.top) / rect.height) * 2 - 1,
     );
     // 3. 创建射线
     const raycaster = new THREE.Raycaster();
@@ -1162,69 +1153,132 @@ const PGMCanvasEditor: React.FC = () => {
     // 1. 筛选出所有可见的、非'base'的图层
     const drawableLayers = layers.filter((l) => l.id !== "base" && l.visible);
 
-    if (drawableLayers.length === 0) {
-      sendNotification("没有可保存的绘制图层", "", "user", "info");
+    // 2. 检查是否有可保存的内容
+    const hasDrawableLayers = drawableLayers.length > 0;
+    const baseLayer = layers.find((l) => l.id === "base");
+    const hasBaseLayer = baseLayer != null;
+
+    if (!hasDrawableLayers && !hasBaseLayer) {
+      sendNotification("没有可保存的图层", "", "user", "info");
       return;
     }
 
-    // 2. 创建一个以255（白色）填充的PGM数据缓存
-    const finalPgmData = new Uint8Array(width * height);
-    finalPgmData.fill(255); // PGM的空白区域通常是白色
+    // 3. 保存 maskMap（非base层）
+    if (hasDrawableLayers) {
+      // 创建一个以255（白色）填充的PGM数据缓存
+      const finalPgmData = new Uint8Array(width * height);
+      finalPgmData.fill(255); // PGM的空白区域通常是白色
 
-    // 3. 按照图层顺序，将绘制内容合并到缓存中，并翻转Y轴
-    for (const layer of drawableLayers) {
-      const textureData = layer.texture.image.data; // RGBA Uint8Array
+      // 按照图层顺序，将绘制内容合并到缓存中，并翻转Y轴
+      for (const layer of drawableLayers) {
+        const textureData = layer.texture.image.data; // RGBA Uint8Array
 
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            // PGM目标索引 (y从上到下)
+            const destIdx = y * width + x;
+            // 遮罩纹理数据中的y坐标需要翻转 (y从下到上)
+            // const srcY = height - 1 - y;
+            const srcY = y;
+            const srcIdx = (srcY * width + x) * 4;
+
+            const alpha = textureData[srcIdx + 3];
+
+            // 如果像素的alpha通道为255，说明这里被绘制过
+            if (alpha === 255) {
+              // 对于灰度图，R、G、B值相同，取R值即可
+              const grayValue = textureData[srcIdx]!;
+              finalPgmData[destIdx] = grayValue;
+            }
+          }
+        }
+      }
+
+      // 生成PGM文件字符串
+      const header = `P2\n${width} ${height}\n255\n`;
+      let body = "";
+      for (let i = 0; i < finalPgmData.length; i++) {
+        body += (finalPgmData[i] ?? 0) + ((i + 1) % width === 0 ? "\n" : " ");
+      }
+      const pgmString = header + body;
+
+      // 上传 maskMap
+      const blob = new Blob([pgmString], { type: "application/octet-stream" });
+      const mapName = selectedMap;
+      try {
+        const response = await fetch(
+          `http://${ipAddr}/mapServer/save/maskMap?mapName=${encodeURIComponent(mapName)}`,
+          {
+            method: "POST",
+            headers: {},
+            body: blob,
+          },
+        );
+
+        if (!response.ok) {
+          sendNotification(`maskMap上传失败: ${response.status} ${response.statusText}`, "", "user", "error");
+          throw new Error(`maskMap上传失败: ${response.status} ${response.statusText}`);
+        }
+        sendNotification("maskMap上传成功！", "", "user", "info");
+        // 上传maskMap配置
+        pointManagerRef.current?.uploadMaskMapConfig();
+      } catch (error) {
+        sendNotification(`maskMap上传失败: ${error instanceof Error ? error.message : "未知错误"}`, "", "user", "error");
+        console.error("上传maskMap失败:", error);
+      }
+    }
+
+    // 4. 保存 baseMap（base层）
+    if (hasBaseLayer) {
+      const textureData = baseLayer.texture.image.data; // RGBA Uint8Array
+      const basePgmData = new Uint8Array(width * height);
+
+      // 将base层的纹理数据转换为PGM格式，并翻转Y轴
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           // PGM目标索引 (y从上到下)
           const destIdx = y * width + x;
 
           // 源纹理数据中的y坐标需要翻转 (y从下到上)
-          const srcY = height - 1 - y;
+          const srcY = y;
           const srcIdx = (srcY * width + x) * 4;
 
-          const alpha = textureData[srcIdx + 3];
-
-          // 如果像素的alpha通道为255，说明这里被绘制过
-          if (alpha === 255) {
-            // 对于灰度图，R、G、B值相同，取R值即可
-            const grayValue = textureData[srcIdx]!;
-            finalPgmData[destIdx] = grayValue;
-          }
+          // 对于灰度图，R、G、B值相同，取R值即可
+          const grayValue = textureData[srcIdx]!;
+          basePgmData[destIdx] = grayValue;
         }
       }
-    }
 
-    // 4. 生成PGM文件字符串
-    const header = `P2\n${width} ${height}\n255\n`;
-    let body = "";
-    for (let i = 0; i < finalPgmData.length; i++) {
-      body += (finalPgmData[i] ?? 0) + ((i + 1) % width === 0 ? "\n" : " ");
-    }
-    const pgmString = header + body;
-
-    // 5. 上传
-    const blob = new Blob([pgmString], { type: "application/octet-stream" });
-    const mapName = selectedMap;
-    try {
-      const response = await fetch(
-        `http://${ipAddr}/mapServer/save/maskMap?mapName=${encodeURIComponent(mapName)}`,
-        {
-          method: "POST",
-          headers: {},
-          body: blob,
-        },
-      );
-
-      if (!response.ok) {
-        sendNotification(`PGM上传失败: ${response.status} ${response.statusText}`, "", "user", "error");
-        throw new Error(`上传失败: ${response.status} ${response.statusText}`);
+      // 生成PGM文件字符串
+      const header = `P2\n${width} ${height}\n255\n`;
+      let body = "";
+      for (let i = 0; i < basePgmData.length; i++) {
+        body += (basePgmData[i] ?? 0) + ((i + 1) % width === 0 ? "\n" : " ");
       }
-      sendNotification("PGM上传成功！", "", "user", "info");
-    } catch (error) {
-      sendNotification(`PGM上传失败: ${error instanceof Error ? error.message : "未知错误"}`, "", "user", "error");
-      console.error("上传PGM失败:", error);
+      const pgmString = header + body;
+
+      // 上传 baseMap
+      const blob = new Blob([pgmString], { type: "application/octet-stream" });
+      const mapName = selectedMap;
+      try {
+        const response = await fetch(
+          `http://${ipAddr}/mapServer/save/baseMap?mapName=${encodeURIComponent(mapName)}`,
+          {
+            method: "POST",
+            headers: {},
+            body: blob,
+          },
+        );
+
+        if (!response.ok) {
+          sendNotification(`baseMap上传失败: ${response.status} ${response.statusText}`, "", "user", "error");
+          throw new Error(`baseMap上传失败: ${response.status} ${response.statusText}`);
+        }
+        sendNotification("baseMap上传成功！", "", "user", "info");
+      } catch (error) {
+        sendNotification(`baseMap上传失败: ${error instanceof Error ? error.message : "未知错误"}`, "", "user", "error");
+        console.error("上传baseMap失败:", error);
+      }
     }
   };
 
@@ -1376,8 +1430,6 @@ const PGMCanvasEditor: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameraRef.current, rendererRef.current, pointManagerRef.current]);
 
-  // 节流基础层画画错误提示
-  const lastBaseLayerDrawErrorTime = useRef(0);
 
   // 同步layers变化到PointInteractionManager
   useEffect(() => {

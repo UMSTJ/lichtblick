@@ -31,6 +31,7 @@ export interface Line {
 
 // 地图配置接口
 export interface MapConfig {
+  [x: string]: any;
   image: string;
   resolution: number;
   origin: number[];
@@ -154,6 +155,8 @@ export class PointInteractionManager {
     // 重新渲染所有点位
     this.renderPoints();
   }
+
+
 
   // 更新点位
   public updatePoint(pointId: number, updates: Partial<Point>): void {
@@ -705,6 +708,67 @@ export class PointInteractionManager {
         "error",
       );
     }
+  }
+
+  // 上传遮罩地图配置
+  public async uploadMaskMapConfig(): Promise<void> {
+    if (!this.#mapConfig) {
+      sendNotification("上传失败：缺少地图配置数据", "", "user", "error");
+      return;
+    }
+
+    try {
+      // config添加mode字段
+      const uploadConfig = {
+        ...this.#mapConfig,
+        mode: "trinary",
+      }
+      // 将地图配置转换为YAML格式
+      const yamlContent = this.convertMapConfigToYaml(uploadConfig);
+      console.log("uploadConfig:", uploadConfig);
+      // 创建Blob对象
+      const blob = new Blob([yamlContent], { type: 'text/yaml' });
+
+      // 创建FormData对象
+      const formData = new FormData();
+      formData.append('file', blob, 'maskMap.yaml');
+
+      // 发送请求
+      const url = `http://${this.#ipAddr}/mapServer/save/maskYaml?mapName=${encodeURIComponent(this.#selectedMap)}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`上传失败: ${response.status} ${response.statusText}`);
+      }
+
+      sendNotification("遮罩地图配置上传成功", "", "user", "info");
+    } catch (error) {
+      console.error("上传遮罩地图配置失败:", error);
+      sendNotification(
+        `遮罩地图配置上传失败：${error instanceof Error ? error.message : "未知错误"}`,
+        "",
+        "user",
+        "error",
+      );
+    }
+  }
+
+  // 将地图配置转换为YAML格式
+  private convertMapConfigToYaml(mapConfig: MapConfig): string {
+    const yamlLines = [
+      `image: ${mapConfig.image}`,
+      `resolution: ${mapConfig.resolution}`,
+      `origin: [${mapConfig.origin.join(', ')}]`,
+      `negate: ${mapConfig.negate}`,
+      `occupied_thresh: ${mapConfig.occupied_thresh}`,
+      `free_thresh: ${mapConfig.free_thresh}`,
+      `mode: ${mapConfig.mode}`,
+    ];
+
+    return yamlLines.join('\n');
   }
 
   // 导出线段数据
