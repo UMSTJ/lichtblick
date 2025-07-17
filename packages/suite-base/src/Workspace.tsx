@@ -24,7 +24,6 @@ import { ConfigProvider, theme } from "antd";
 import { t } from "i18next";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-
 import Logger from "@lichtblick/log";
 import { AppSetting } from "@lichtblick/suite-base/AppSetting";
 // import { useStyles } from "@lichtblick/suite-base/Workspace.style";
@@ -72,7 +71,6 @@ import {
 import { SyncAdapters } from "@lichtblick/suite-base/components/SyncAdapters";
 import { TopicList } from "@lichtblick/suite-base/components/TopicList";
 import VariablesList from "@lichtblick/suite-base/components/VariablesList";
-import VehiclesStateList from "@lichtblick/suite-base/components/VehiclesStateList";
 import { WorkspaceDialogs } from "@lichtblick/suite-base/components/WorkspaceDialogs";
 import { AllowedFileExtensions } from "@lichtblick/suite-base/constants/allowedFileExtensions";
 import { useAppContext } from "@lichtblick/suite-base/context/AppContext";
@@ -111,6 +109,9 @@ import isDesktopApp from "@lichtblick/suite-base/util/isDesktopApp";
 
 import VerticalAppBar from "./components/AppBar/VerticalAppBar";
 import { useWorkspaceActions } from "./context/Workspace/useWorkspaceActions";
+import NewVehiclesStateList from "@lichtblick/suite-base/components/NewVehiclesStateList";
+import ProcessSidebar from "@lichtblick/suite-base/components/ProcessSidebar";
+import VehiclesStateList from "@lichtblick/suite-base/components/VehiclesStateList";
 
 const log = Logger.getLogger(__filename);
 
@@ -425,18 +426,39 @@ function WorkspaceContent(props: WorkspaceProps): React.JSX.Element {
 
   const rightSidebarItems = useMemo(() => {
     const items = new Map<RightSidebarItemKey, SidebarItem>([
+      // [
+      //   "variables",
+      //   {
+      //     title: t("workspace:variables"),
+      //     component: VariablesList,
+      //   },
+      // ],
+      // [
+      //   "vehiclesState",
+      //   {
+      //     title: t("workspace:vehiclesState"),
+      //     component: VehiclesStateList,
+      //   },
+      // ],
       [
         "variables",
         {
-          title: t("workspace:variables"),
-          component: VariablesList,
+          title: "系统状态", //t("workspace:systemState"),
+          component: VehiclesStateList,
         },
       ],
       [
         "vehiclesState",
         {
-          title: t("workspace:vehiclesState"),
-          component: VehiclesStateList,
+          title: "车辆状态",  //t("workspace:vehiclesState"),
+          component: NewVehiclesStateList,
+        },
+      ],
+      [
+        "process",
+        {
+          title: "进程", //t("workspace:process"),
+          component: ProcessSidebar,
         },
       ],
     ]);

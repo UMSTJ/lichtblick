@@ -38,6 +38,7 @@ export const RightSidebarItemKeys = [
   "logs-settings",
   "performance",
   "vehiclesState",
+  "process",
 ] as const;
 export type RightSidebarItemKey = (typeof RightSidebarItemKeys)[number];
 
