@@ -47,6 +47,11 @@ import threeDeeRenderThumbnail from "./ThreeDeeRender/thumbnail.png";
 
 export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
   {
+    title:"MotionState",
+    type:"MotionState",
+    module:async() => await import("./MotionState")
+  },
+  {
     title: "wheel2Status",
     type: "Wheel2Status",
     module: async () => await import("./wheel2Status"),
