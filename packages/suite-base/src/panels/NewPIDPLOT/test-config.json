@@ -1,0 +1,38 @@
+{
+  "title": "NewPIDPLOT简单测试配置",
+  "type": "NewPIDPLOT",
+  "config": {
+    "paths": [
+      {
+        "value": "/cmd_vel_chassis.linear.x",
+        "enabled": true,
+        "label": "线速度X",
+        "timestampMethod": "receiveTime",
+        "parameterType": "setpoint",
+        "rosParameter": "/cmd_vel_chassis/linear/x",
+        "color": "#ff0000",
+        "showLine": true,
+        "lineSize": 2
+      }
+    ],
+    "minXValue": 0,
+    "minYValue": -1,
+    "maxYValue": 1,
+    "showXAxisLabels": true,
+    "showYAxisLabels": true,
+    "showLegend": true,
+    "legendDisplay": "floating",
+    "showPlotValuesInLegend": true,
+    "isSynced": true,
+    "xAxisVal": "timestamp",
+    "sidebarDimension": 240,
+    "pidParameters": {
+      "kp": 2.0,
+      "ki": 0.5,
+      "kd": 0.1,
+      "rosParameterPrefix": "/cmd_vel_chassis/"
+    },
+    "showParameterPanel": true,
+    "parameterPanelPosition": "right"
+  }
+}

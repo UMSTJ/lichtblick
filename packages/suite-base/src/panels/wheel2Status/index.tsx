@@ -380,9 +380,17 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
     navStopPublish({ data: "stop" } as Record<string, unknown>);
   }, [navStopPublish]);
 
+  const setNavStopOne = useCallbackWithToast(() => {
+    navStopPublish({ data: "1" } as Record<string, unknown>);
+  }, [navStopPublish]);
+
   const handleCancelNavigation = () => {
     setNavStop().catch(() => {}); // Handle any errors silently
     // setNavigationStatus(NavigationStatus.CANCELLED);
+  };
+
+  const handleStopNavOne = () => {
+    setNavStopOne().catch(() => {}); // Handle any errors silently
   };
   const currentControlStyle = controlModeStyles[controlMode];
   const currentNavigationStyle = navigationStatusStyles[navigationStatus];
@@ -463,6 +471,15 @@ const WheelPanel: React.FC<WheelPanelProps> = ({
             {" "}
             停止导航{" "}
           </Button> */}
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleStopNavOne}
+            style={{ marginTop: "8px", width: "100%", height: "50px", fontSize: "1.8rem" }}
+          >
+            {" "}
+            停止导航{" "}
+          </Button>
           <Button
             variant="contained"
             color="error"

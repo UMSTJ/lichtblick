@@ -18,6 +18,7 @@ import { useCodeServerSettings } from "./settings";
 import { Joysetting } from "./types";
 import "./Joystick.css";
 import { Button } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
 type Props = {
   config: Joysetting;
@@ -30,6 +31,9 @@ interface Position {
 }
 
 function Joystick(props: Props): React.JSX.Element {
+  const theme = useTheme();
+  const textColor = theme.palette.mode === 'dark' ? '#ffffff' : '#000000';
+
   const { config, saveConfig } = props;
   const { topics, datatypes } = useDataSourceInfo();
   const [isDragging, setIsDragging] = useState(false);
@@ -56,10 +60,10 @@ function Joystick(props: Props): React.JSX.Element {
     schemaName: "geometry_msgs/msg/Twist",
     datatypes,
   });
-
   useEffect(() => {
     if (isEmergency) {
       intervalEmergencyRef.current = setInterval(() => {
+        console.log("Publishing cmd_vel:", position)
         cmdPublish({
           linear: { x: 0, y: 0, z: 0 },
           angular: { x: 0, y: 0, z: 0 },
@@ -108,6 +112,7 @@ function Joystick(props: Props): React.JSX.Element {
   const publishCmdVel = useCallback(() => {
     if (position.x !== 0 || position.y !== 0) {
       try {
+        console.log("Publishing cmd_vel:", position)
         cmdPublish({
           linear: { x: position.y * -1, y: 0, z: 0 },
           angular: { x: 0, y: 0, z: position.x * -1 },
@@ -286,6 +291,16 @@ function Joystick(props: Props): React.JSX.Element {
                 setIsDragging(true);
               }}
             >
+              {/* 上方文字 */}
+              <div className="label-top" style={{ color: textColor }}>前进</div>
+              {/* 左侧文字 */}
+              <div className="label-left" style={{ color: textColor }}>左转</div>
+              {/* 右侧文字 */}
+              <div className="label-right" style={{ color: textColor }}>右转</div>
+              {/* 下方文字 */}
+              <div className="label-bottom" style={{ color: textColor }}>后退</div>
+
+              {/* 中心的摇杆把手 */}
               <div
                 className="handle"
                 style={{
@@ -295,6 +310,7 @@ function Joystick(props: Props): React.JSX.Element {
                 }}
               ></div>
             </div>
+
             <div style={{ marginTop: "16px" }}>
               <Button
                 onClick={() => {
@@ -305,7 +321,7 @@ function Joystick(props: Props): React.JSX.Element {
                 style={{ marginTop: "8px", width: "100%", height: "50px" }}
               >
                 {" "}
-                {isEmergency ? "Emergency Stop Cancel" : "Emergency Stop"}{" "}
+                {isEmergency ? "启动" : "刹车"}{" "}
               </Button>
               <p>Gamepad Status: {isGamepadConnected ? "Connected" : "Disconnected"}</p>
               {isGamepadConnected && (
@@ -336,9 +352,7 @@ const defaultConfig: Joysetting = {
   mode: false,
 };
 
-export default Panel(
-  Object.assign(TeleopPanelAdapter, {
-    panelType: "Joystick",
-    defaultConfig,
-  }),
-);
+export default Panel(Object.assign(TeleopPanelAdapter, {
+  panelType: "Joystick",
+  defaultConfig
+}));

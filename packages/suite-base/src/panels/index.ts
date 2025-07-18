@@ -52,6 +52,12 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     module:async() => await import("./MotionState")
   },
   {
+    title: "NewPIDPLOT",
+    type: "NewPIDPLOT",
+    description: "PID控制曲线面板",
+    module: async () => await import("./NewPIDPLOT"),
+  },
+  {
     title: "wheel2Status",
     type: "Wheel2Status",
     module: async () => await import("./wheel2Status"),

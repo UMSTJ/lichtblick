@@ -718,26 +718,28 @@ export class PointInteractionManager {
     }
 
     try {
-      // config添加mode字段
+      // 只包含指定的字段
       const uploadConfig = {
-        ...this.#mapConfig,
+        image: "maskMap.pgm",
+        resolution: this.#mapConfig.resolution,
+        origin: this.#mapConfig.origin,
+        negate: this.#mapConfig.negate,
+        occupied_thresh: this.#mapConfig.occupied_thresh,
+        free_thresh: this.#mapConfig.free_thresh,
         mode: "trinary",
       }
       // 将地图配置转换为YAML格式
       const yamlContent = this.convertMapConfigToYaml(uploadConfig);
       console.log("uploadConfig:", uploadConfig);
-      // 创建Blob对象
-      const blob = new Blob([yamlContent], { type: 'text/yaml' });
 
-      // 创建FormData对象
-      const formData = new FormData();
-      formData.append('file', blob, 'maskMap.yaml');
-
-      // 发送请求
+      // 发送请求 - 直接发送YAML文本
       const url = `http://${this.#ipAddr}/mapServer/save/maskYaml?mapName=${encodeURIComponent(this.#selectedMap)}`;
       const response = await fetch(url, {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'text/yaml',
+        },
+        body: yamlContent,
       });
 
       if (!response.ok) {
@@ -757,7 +759,7 @@ export class PointInteractionManager {
   }
 
   // 将地图配置转换为YAML格式
-  private convertMapConfigToYaml(mapConfig: MapConfig): string {
+  private convertMapConfigToYaml(mapConfig: { image: string; resolution: number; origin: number[]; negate: 0 | 1; occupied_thresh: number; free_thresh: number; mode: string }): string {
     const yamlLines = [
       `image: ${mapConfig.image}`,
       `resolution: ${mapConfig.resolution}`,

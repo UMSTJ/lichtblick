@@ -1,0 +1,60 @@
+{
+  "title": "NewPIDPLOT示例",
+  "type": "NewPIDPLOT",
+  "config": {
+    "paths": [
+      {
+        "value": "/robot/pid/setpoint",
+        "enabled": true,
+        "label": "设定值",
+        "timestampMethod": "receiveTime",
+        "parameterType": "setpoint",
+        "rosParameter": "/robot/pid/setpoint",
+        "color": "#ff0000",
+        "showLine": true,
+        "lineSize": 2
+      },
+      {
+        "value": "/robot/pid/feedback",
+        "enabled": true,
+        "label": "反馈值",
+        "timestampMethod": "receiveTime",
+        "parameterType": "feedback",
+        "rosParameter": "/robot/pid/feedback",
+        "color": "#00ff00",
+        "showLine": true,
+        "lineSize": 2
+      },
+      {
+        "value": "/robot/pid/output",
+        "enabled": true,
+        "label": "输出值",
+        "timestampMethod": "receiveTime",
+        "parameterType": "output",
+        "rosParameter": "/robot/pid/output",
+        "color": "#0000ff",
+        "showLine": true,
+        "lineSize": 2
+      }
+    ],
+    "minXValue": 0,
+    "minYValue": -16,
+    "maxYValue": 16,
+    "showXAxisLabels": true,
+    "showYAxisLabels": true,
+    "showLegend": true,
+    "legendDisplay": "floating",
+    "showPlotValuesInLegend": true,
+    "isSynced": true,
+    "xAxisVal": "timestamp",
+    "sidebarDimension": 240,
+    "pidParameters": {
+      "kp": 2.0,
+      "ki": 0.5,
+      "kd": 0.1,
+      "rosParameterPrefix": "/robot/pid/"
+    },
+    "showParameterPanel": true,
+    "parameterPanelPosition": "right"
+  }
+}

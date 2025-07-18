@@ -69,6 +69,7 @@ export type Size = { width: number; height: number };
 export type ReferenceLine = { color: string; value: number };
 
 export type UpdateAction = {
+  // grid: { x: boolean; y: boolean; };
   type: "update";
   size?: { width: number; height: number };
   showXAxisLabels?: boolean;
@@ -79,6 +80,11 @@ export type UpdateAction = {
   referenceLines?: ReferenceLine[];
   interactionEvents?: InteractionEvent[];
 };
+// export type PIDVerticalBarsProps = {
+//   coordinator?: PIDPlotCoordinator;
+//   hoverComponentId: string;
+//   xAxisIsPlaybackTime: boolean;
+// };
 
 // allows us to override the chart.ctx instance field which zoom plugin uses for adding event listeners
 export type MutableContext<T> = Omit<Chart, "ctx"> & { ctx: T };
